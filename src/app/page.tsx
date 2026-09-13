@@ -505,30 +505,6 @@ export default function Home() {
       events.forEach((ev) => window.removeEventListener(ev, handleActivity));
     };
   }, []);
-      clearTimeout(timer);
-      events.forEach((event) => window.removeEventListener(event, resetIdle));
-=======
-    let idleTimer: NodeJS.Timeout;
-
-    const handleActivity = () => {
-      setIsIdle(false);
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        setIsIdle(true);
-      }, 10000); // 10 seconds of no mouse/keyboard/touch
-    };
-
-    handleActivity();
-
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel'];
-    events.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
-
-    return () => {
-      clearTimeout(idleTimer);
-      events.forEach((ev) => window.removeEventListener(ev, handleActivity));
->>>>>>> a257f14 (refactor: remove scroll intro, add 10s idle detector and cinematic ambient background)
-    };
-  }, []);
 
   // Stepper animation
   useEffect(() => {
