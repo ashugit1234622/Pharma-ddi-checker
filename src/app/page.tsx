@@ -4,6 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { DDIAnalysis } from "../lib/ai/schemas";
 import { Pill, Microscope, AlertTriangle, CheckCircle, ArrowRightLeft, XCircle, AlertOctagon, AlertCircle, FileText, Scale, ArrowUp, User, ClipboardList, Settings, Users, Dna, BarChart, Lightbulb, Beaker } from "lucide-react";
 import OrganToxicityAnatomy from '../components/OrganToxicityAnatomy';
+import AnalysisScanner from '../components/AnalysisScanner';
+import PrintSummary from '../components/PrintSummary';
+import AasthaChat from '../components/AasthaChat';
+import CinematicBackground from '@/components/CinematicBackground';
 
 interface DrugSearchResult {
   id: string;
@@ -465,15 +469,11 @@ function DrugSearchBox({ id, label, drug, onSelect, onClear, accentColor }: {
   );
 }
 
-import AnalysisScanner from '../components/AnalysisScanner';
-import PrintSummary from '../components/PrintSummary';
-import AasthaChat from '../components/AasthaChat';
-import { CinematicVisualLayer } from '../components/CinematicVisualLayer';
-
 /* ══════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════ */
 export default function Home() {
+  const [isIdle, setIsIdle] = useState(false);
   const [drug1, setDrug1] = useState<DrugSearchResult | null>(null);
   const [drug2, setDrug2] = useState<DrugSearchResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -483,21 +483,50 @@ export default function Home() {
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
   const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'alternatives'>('overview');
   const reportRef = useRef<HTMLDivElement>(null);
-  const [isIdle, setIsIdle] = useState(false);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const resetIdle = () => {
+    let idleTimer: NodeJS.Timeout;
+
+    const handleActivity = () => {
       setIsIdle(false);
-      clearTimeout(timer);
-      timer = setTimeout(() => setIsIdle(true), 10_000);
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        setIsIdle(true);
+      }, 10000); // 10 seconds of no mouse/keyboard/touch
     };
-    resetIdle();
-    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'click', 'keydown', 'touchstart', 'scroll', 'wheel'];
-    events.forEach((event) => window.addEventListener(event, resetIdle, { passive: true }));
+
+    handleActivity();
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel'];
+    events.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
+
     return () => {
+      clearTimeout(idleTimer);
+      events.forEach((ev) => window.removeEventListener(ev, handleActivity));
+    };
+  }, []);
       clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, resetIdle));
+=======
+    let idleTimer: NodeJS.Timeout;
+
+    const handleActivity = () => {
+      setIsIdle(false);
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        setIsIdle(true);
+      }, 10000); // 10 seconds of no mouse/keyboard/touch
+    };
+
+    handleActivity();
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel'];
+    events.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
+
+    return () => {
+      clearTimeout(idleTimer);
+      events.forEach((ev) => window.removeEventListener(ev, handleActivity));
+>>>>>>> a257f14 (refactor: remove scroll intro, add 10s idle detector and cinematic ambient background)
     };
   }, []);
 
@@ -573,11 +602,25 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ position: 'relative', minHeight: '220vh', background: '#02070B' }}>
-      <CinematicVisualLayer autoPlayAtMidpoint midpointThreshold={0.50} autoPlayDuration={10} />
-      <div style={{ position: 'relative', zIndex: 10, opacity: isIdle ? 0.35 : 1, transition: 'opacity 700ms ease-in-out' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', background: '#02070b' }}>
+      {/* 1. Fixed 3D Canvas Layer */}
+      <CinematicBackground autoPlayAtMidpoint={true} autoPlayDuration={10} />
+
+      {/* 2. Interactive Page Content (Dims to 0.35 on 10s idle) */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          opacity: isIdle ? 0.35 : 1,
+          transition: 'opacity 0.8s ease-in-out',
+          minHeight: '100vh',
+        }}
+      >
         <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} currentStepText={steps[stepIndex]} />
-        <div className="print-hide" style={{ paddingBottom: '4rem' }}>
+        <div className="print-hide" style={{
+          paddingBottom: '4rem',
+          position: 'relative'
+        }}>
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem', paddingTop: '1.5rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}><Pill size={48} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 12px var(--accent-glow))' }} /></div>
@@ -872,7 +915,7 @@ export default function Home() {
           </div>
         </div>
       )}
-        </div>
+      </div>
       </div>
       <PrintSummary report={report} drug1={drug1} drug2={drug2} />
       <AasthaChat isAnalyzing={analyzing} drug1={drug1} drug2={drug2} report={report} />

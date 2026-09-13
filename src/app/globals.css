@@ -35,8 +35,8 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: transparent;
-  color: var(--text-main);
+  background-color: #02070b; /* matches the 3D canvas clear color */
+  color: #e8e8ec;
   line-height: 1.6;
   min-height: 100vh;
   display: flex;
@@ -109,17 +109,22 @@ a:hover { color: var(--accent-hover); }
 
 .logo span { color: var(--accent-primary); }
 
-/* Cards */
-.card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border);
+/* Cards and Panels (Translucent Glass for 3D Background) */
+.card, 
+.panel, 
+.drug-search-box {
+  background: rgba(18, 26, 38, 0.75) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 1.5rem;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-.card:hover {
-  border-color: var(--border-hover);
+.card:hover,
+.panel:hover,
+.drug-search-box:hover {
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Buttons */

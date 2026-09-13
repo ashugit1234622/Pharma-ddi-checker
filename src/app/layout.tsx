@@ -3,7 +3,6 @@ import './globals.css';
 import './medcheck.css';
 import './pwa.css';
 import Script from 'next/script';
-import CinematicIntro from '@/components/CinematicIntro';
 import Header from '@/components/Header';
 
 export const viewport: Viewport = {
@@ -63,7 +62,6 @@ export default function RootLayout({
             `,
           }}
         />
-        <CinematicIntro />
         <Header />
         <main className="container">{children}</main>
       </body>
