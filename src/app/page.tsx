@@ -7,7 +7,7 @@ import OrganToxicityAnatomy from '../components/OrganToxicityAnatomy';
 import AnalysisScanner from '../components/AnalysisScanner';
 import PrintSummary from '../components/PrintSummary';
 import AasthaChat from '../components/AasthaChat';
-import CinematicBackground from '@/components/CinematicBackground';
+import { CinematicVisualLayer } from '../components/CinematicVisualLayer';
 
 interface DrugSearchResult {
   id: string;
@@ -579,16 +579,35 @@ export default function Home() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', background: '#02070b' }}>
-      {/* 1. Fixed 3D Canvas Layer */}
-      <CinematicBackground autoPlayAtMidpoint={true} autoPlayDuration={10} />
+      {/* 1. Fixed WebGL Cinematic Layer — ramps to full screensaver on 10s idle */}
+      <CinematicVisualLayer
+        isIdle={isIdle}
+        autoPlayAtMidpoint={true}
+        autoPlayDuration={10}
+        enablePointerParallax={true}
+      />
 
-      {/* 2. Interactive Page Content (Dims to 0.35 on 10s idle) */}
+      {/* 2. Idle vignette overlay — fades in to make the 3D layer pop */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 5,
+          pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(2,7,11,0.55) 100%)',
+          opacity: isIdle ? 1 : 0,
+          transition: 'opacity 1.2s ease-in-out',
+        }}
+      />
+
+      {/* 3. Interactive Page Content — dims gracefully on 10s idle */}
       <div
         style={{
           position: 'relative',
           zIndex: 10,
-          opacity: isIdle ? 0.35 : 1,
-          transition: 'opacity 0.8s ease-in-out',
+          opacity: isIdle ? 0.28 : 1,
+          transition: 'opacity 1.2s ease-in-out',
           minHeight: '100vh',
         }}
       >

@@ -53,15 +53,26 @@ body {
   pointer-events: none;
   user-select: none;
   background: #02070B;
+  /* Smooth transition when idle state changes opacity */
+  transition: opacity 1.2s ease-in-out;
 }
 
-.cinematic-visual-layer canvas,
-.cinematic-visual-fallback {
+.cinematic-visual-layer canvas {
   display: block;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
+
+/* Graceful fallback for devices without WebGL */
+.cinematic-visual-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, #0d2b45 0%, #02070b 70%);
+}
+
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
