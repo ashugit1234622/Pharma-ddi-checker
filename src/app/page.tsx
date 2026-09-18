@@ -368,7 +368,7 @@ function DrugSearchBox({ id, label, drug, onSelect, onClear, accentColor }: {
   };
 
   return (
-    <div id={id} className="card" style={{ flex: '1 1 280px', minHeight: '180px' }}>
+    <div id={id} className="card" style={{ flex: '1 1 280px', minHeight: '180px', zIndex: isOpen ? 50 : 1, position: 'relative' }}>
       <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 500 }}>{label}</h3>
       {!drug ? (
         <div style={{ position: 'relative' }}>
