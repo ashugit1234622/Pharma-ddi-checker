@@ -513,6 +513,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [analyzing]);
 
+
   const runAnalysis = useCallback(async (d1: DrugSearchResult, d2: DrugSearchResult) => {
     setAnalyzing(true);
     setReport(null);
@@ -532,6 +533,32 @@ export default function Home() {
     } catch { setError('Failed to reach analysis service.'); }
     finally { setAnalyzing(false); }
   }, []);
+
+  // Listen for prescription-triggered interaction checks (dispatched by PrescriptionScanner via MedCheck)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { drug1, drug2 } = (e as CustomEvent<{ drug1: string; drug2: string }>).detail;
+      if (!drug1 || !drug2) return;
+      const makeStub = (name: string): DrugSearchResult => ({
+        id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        name,
+        genericName: name,
+        drugClass: [],
+        synonyms: [],
+        indications: [],
+      });
+      const d1 = makeStub(drug1);
+      const d2 = makeStub(drug2);
+      setDrug1(d1);
+      setDrug2(d2);
+      setReport(null);
+      setError('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => runAnalysis(d1, d2), 400);
+    };
+    window.addEventListener('farma-check-interaction', handler);
+    return () => window.removeEventListener('farma-check-interaction', handler);
+  }, [runAnalysis]);
 
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
 

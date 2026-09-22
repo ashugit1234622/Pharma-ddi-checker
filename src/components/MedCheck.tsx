@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Upload, Camera, Loader2, CheckCircle2, AlertTriangle, Info, ScanBarcode, ChevronLeft } from 'lucide-react';
+import { X, Upload, Camera, Loader2, CheckCircle2, AlertTriangle, Info, ScanBarcode, ChevronLeft, FileText } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import PrescriptionScanner from './PrescriptionScanner';
 
 type ScanState = 'idle' | 'camera_active' | 'processing' | 'identifying' | 'result' | 'error';
+type MedCheckTab = 'qr' | 'prescription';
 
 interface MedCheckResult {
   medicineName?: string;
@@ -20,6 +22,7 @@ interface MedCheckResult {
 }
 
 export default function MedCheck({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<MedCheckTab>('qr');
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
@@ -164,6 +167,11 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handleInteractionCheck = (drug1: string, drug2: string) => {
+    onClose();
+    window.dispatchEvent(new CustomEvent('farma-check-interaction', { detail: { drug1, drug2 } }));
+  };
+
   return (
     <div className="medcheck-overlay">
       <div className="medcheck-container">
@@ -178,13 +186,35 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {/* Tab bar */}
+        <div className="medcheck-tabs">
+          <button
+            className={`medcheck-tab ${activeTab === 'qr' ? 'medcheck-tab-active' : ''}`}
+            onClick={() => setActiveTab('qr')}
+          >
+            <ScanBarcode size={16} /> Medicine QR
+          </button>
+          <button
+            className={`medcheck-tab ${activeTab === 'prescription' ? 'medcheck-tab-active' : ''}`}
+            onClick={() => setActiveTab('prescription')}
+          >
+            <FileText size={16} /> Prescription Scan
+          </button>
+        </div>
+
         {/* Hidden div for file scanning */}
         <div id="medcheck-reader-hidden" style={{ display: 'none' }}></div>
 
         {/* Content Area */}
         <div className="medcheck-content">
-          
-          {(scanState === 'idle' || scanState === 'camera_active' || scanState === 'processing') && (
+
+          {/* Prescription Scan Tab */}
+          {activeTab === 'prescription' && (
+            <PrescriptionScanner onCheckInteraction={handleInteractionCheck} />
+          )}
+
+          {/* QR / Barcode Tab */}
+          {activeTab === 'qr' && (scanState === 'idle' || scanState === 'camera_active' || scanState === 'processing') && (
             <div className="medcheck-scan-view">
               <p className="medcheck-instruction">
                 Scan a medicine barcode or QR code to verify its identity and classification.
@@ -251,7 +281,7 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {scanState === 'identifying' && (
+          {activeTab === 'qr' && scanState === 'identifying' && (
             <div className="medcheck-identifying">
               <div className="identifying-pulse">
                 <ScanBarcode size={64} className="text-accent" />
@@ -262,7 +292,7 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {scanState === 'error' && (
+          {activeTab === 'qr' && scanState === 'error' && (
             <div className="medcheck-result-card error">
               <div className="result-header">
                 <AlertTriangle size={32} style={{ color: 'var(--danger)' }} />
@@ -283,7 +313,7 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {scanState === 'result' && result && (
+          {activeTab === 'qr' && scanState === 'result' && result && (
             <div className="medcheck-result-card">
               <div className="result-top">
                 <div className="result-badge success">

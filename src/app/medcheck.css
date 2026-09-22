@@ -351,3 +351,432 @@
   justify-content: center;
   border-top: 1px solid var(--border);
 }
+
+/* ==========================================================================
+   TAB BAR
+   ========================================================================== */
+
+.medcheck-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-main);
+}
+
+.medcheck-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex: 1;
+  justify-content: center;
+}
+
+.medcheck-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.medcheck-tab-active {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-primary) !important;
+  border-bottom: 2px solid var(--accent-primary);
+}
+
+/* ==========================================================================
+   PRESCRIPTION SCANNER
+   ========================================================================== */
+
+.presc-scanner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.presc-scan-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Drop zone */
+.presc-dropzone {
+  width: 100%;
+  min-height: 200px;
+  border-radius: 18px;
+  border: 2px dashed var(--border);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.25s, background 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.presc-dropzone:hover,
+.presc-dropzone-drag {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.presc-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  text-align: center;
+  padding: 2rem;
+}
+
+.presc-dropzone-icon {
+  color: var(--accent-primary);
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.presc-dropzone-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.presc-dropzone-hint {
+  font-size: 0.87rem;
+  color: var(--text-muted);
+}
+
+.presc-dropzone-formats {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+}
+
+/* Camera */
+.presc-camera-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.presc-camera-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.presc-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.presc-ar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Shutter button */
+.presc-shutter-btn {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.presc-shutter-btn:hover {
+  transform: translateX(-50%) scale(1.08);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.presc-shutter-btn:active {
+  transform: translateX(-50%) scale(0.94);
+}
+
+.presc-shutter-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: white;
+  display: block;
+  transition: background 0.15s;
+}
+
+.presc-shutter-btn:active .presc-shutter-inner {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.presc-cancel-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.presc-cancel-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Processing */
+.presc-processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 1rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.presc-processing-icon {
+  margin-bottom: 1rem;
+}
+
+.presc-spin {
+  animation: spin 1s linear infinite;
+  color: var(--accent-primary);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Result card */
+.presc-result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.presc-error {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.presc-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.presc-result-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.04);
+  text-align: center;
+}
+
+.presc-result-top h3 {
+  margin: 0;
+  color: var(--danger);
+}
+
+.presc-result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+/* Meta grid */
+.presc-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+
+.presc-meta-item {
+  background: var(--bg-card);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Medicines list */
+.presc-medicines {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.presc-medicines-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.presc-select-hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.presc-medicines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.presc-med-card {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+}
+
+.presc-med-card:hover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.presc-med-selected {
+  border-color: var(--accent-primary) !important;
+  background: rgba(99, 102, 241, 0.09) !important;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.presc-med-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.presc-med-name {
+  font-weight: 600;
+  font-size: 0.97rem;
+  color: var(--text-main);
+}
+
+.presc-med-generic {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.presc-med-check {
+  color: var(--accent-primary);
+  margin-top: 0.1rem;
+}
+
+.presc-med-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.presc-med-pill {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+.presc-med-note {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.77rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+/* Interaction CTA */
+.presc-interaction-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+/* No meds */
+.presc-no-meds {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Result actions */
+.presc-result-actions {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+}
+
