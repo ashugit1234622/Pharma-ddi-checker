@@ -111,36 +111,39 @@ export class FallbackProvider implements AIProvider {
     return `Fallback Chain (Primary: ${this.providers[0].modelId})`;
   }
 
-  private async delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
   async complete(system: string, user: string, useSearch: boolean = false): Promise<string> {
     const allErrors: string[] = [];
     
-    for (const provider of this.providers) {
-      let retries = 2; // Try up to 3 times per provider
-      while (retries >= 0) {
-        try {
-          console.log(`[AI] Attempting generation with ${provider.modelId}... (Search: ${useSearch})`);
-          const result = await provider.complete(system, user, useSearch);
-          console.log(`[AI] Success with ${provider.modelId}`);
-          return result;
-        } catch (err: any) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          console.error(`[AI] Provider ${provider.modelId} failed:`, errMsg);
-          
-          // Only retry on rate limits or server overloads (429 or 503)
-          if (retries > 0 && (errMsg.includes("503") || errMsg.includes("429") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand") || errMsg.includes("RESOURCE_EXHAUSTED"))) {
-            console.log(`[AI] Waiting 2 seconds before retrying ${provider.modelId}...`);
-            await this.delay(2000);
-            retries--;
-          } else {
-            // Unrecoverable error or out of retries, record it and move to next provider
-            allErrors.push(`[${provider.modelId}]: ${errMsg}`);
-            break;
-          }
+    for (let i = 0; i < this.providers.length; i++) {
+      const provider = this.providers[i];
+      const isApi1 = i === 0;
+      const isApi2 = i === 1;
+      
+      if (isApi1) console.log(`[AI ROUTER] Using API 1`);
+      
+      try {
+        const result = await provider.complete(system, user, useSearch);
+        if (isApi2) console.log(`[AI ROUTER] API 2 response received`);
+        return result;
+      } catch (err: any) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        allErrors.push(`[${provider.modelId}]: ${errMsg}`);
+        
+        const isRecoverableQuotaError = errMsg.includes("503") || 
+                                      errMsg.includes("429") || 
+                                      errMsg.includes("UNAVAILABLE") || 
+                                      errMsg.includes("high demand") || 
+                                      errMsg.includes("RESOURCE_EXHAUSTED");
+                                      
+        if (isApi1 && isRecoverableQuotaError && this.providers.length > 1) {
+          console.log(`[AI ROUTER] API 1 quota error → switching to API 2`);
+          continue; // Try API 2
+        } else if (isApi1) {
+          // If it's an unrecoverable error for API 1, do NOT switch to API 2.
+          break;
         }
+        
+        // If API 2 fails, we just exit the loop
       }
     }
     
@@ -157,23 +160,28 @@ export function getAIProvider(): AIProvider {
   if (!cachedProvider) {
     const availableProviders: AIProvider[] = [];
     
-    // Groq is commented out as requested
-    /*
+    // Primary Gemini (API 1)
     try {
-      availableProviders.push(new GroqProvider());
+      const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
+      if (key1) {
+        // We override the process.env just for the constructor check since it reads from process.env
+        process.env.GEMINI_API_KEY_1_EFF = key1;
+        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-2.5-flash"));
+      }
     } catch (e) {
-      console.warn("GroqProvider skipped:", e instanceof Error ? e.message : String(e));
+      console.warn("API 1 skipped:", e instanceof Error ? e.message : String(e));
     }
-    */
-    
-    // Primary Gemini (uses 3.6-flash to avoid 404s)
+
+    // Secondary Gemini (API 2)
     try {
-      availableProviders.push(new GeminiProvider("GEMINI_API_KEY", "gemini-3.6-flash"));
+      const key2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SECONDARY;
+      if (key2) {
+        process.env.GEMINI_API_KEY_2_EFF = key2;
+        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_2_EFF", "gemini-3.5-flash"));
+      }
     } catch (e) {
-      console.warn("Primary GeminiProvider skipped:", e instanceof Error ? e.message : String(e));
+      console.warn("API 2 skipped:", e instanceof Error ? e.message : String(e));
     }
-    
-    // We removed GEMINI_API_KEY_SECONDARY here to strictly reserve it for OCR token limits.
     
     if (availableProviders.length === 0) {
       throw new Error("No AI providers could be initialized. Please check your API keys (.env).");

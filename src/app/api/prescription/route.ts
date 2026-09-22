@@ -3,48 +3,49 @@ import { GoogleGenAI } from "@google/genai";
 import { extractJson } from "../../../lib/ai/provider";
 
 export interface PrescribedMedicine {
-  name: string;
-  genericName?: string;
-  dose?: string;
-  frequency?: string;
-  duration?: string;
-  instructions?: string;
+  rawName: string;
+  normalizedName: string;
+  strength: string;
+  dosageForm: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+  confidence: number;
+  status: "verified" | "uncertain" | "unreadable";
 }
 
 export interface PrescriptionResult {
-  patient?: string;
-  date?: string;
-  doctor?: string;
-  clinic?: string;
   medicines: PrescribedMedicine[];
-  rawInstructions?: string;
-  confidence: "High" | "Medium" | "Low";
+  overallConfidence: number;
   error?: string;
 }
 
-const SYSTEM_PROMPT = `You are an expert clinical pharmacist AI specialized in reading difficult, messy, and handwritten medical prescriptions.
-Your task is to carefully analyze the prescription image and accurately extract all text, especially the names of medicines, dosages, and instructions.
-Pay close attention to doctor's handwriting. Guess the most likely medication name if it's partially illegible, based on common drugs.
+const SYSTEM_PROMPT = `You are a strict Prescription OCR AI. Your ONLY job is to extract visible medicine data from the provided image.
 Return ONLY valid JSON with this exact structure:
 {
-  "patient": string|null,
-  "date": string|null,
-  "doctor": string|null,
-  "clinic": string|null,
   "medicines": [
     {
-      "name": string,
-      "genericName": string,
-      "dose": string,
-      "frequency": string,
-      "duration": string,
-      "instructions": string
+      "rawName": "string",
+      "normalizedName": "string",
+      "strength": "string",
+      "dosageForm": "string",
+      "frequency": "string",
+      "duration": "string",
+      "instructions": "string",
+      "confidence": number (0 to 100),
+      "status": "verified" | "uncertain" | "unreadable"
     }
   ],
-  "rawInstructions": string|null,
-  "confidence": "High"|"Medium"|"Low"
+  "overallConfidence": number (0 to 100)
 }
-Extract ALL medicines listed. If a field is unreadable, leave it empty or null. Always return at least an empty medicines array. Never add markdown.`;
+RULES:
+1. Read ONLY what is visible. NEVER invent medicine names, strengths, dosages, or frequencies.
+2. If text is unclear, mark status as "uncertain" or "unreadable".
+3. Avoid guessing from common prescribing patterns if the text doesn't match.
+4. If a field is unreadable or absent, leave it as an empty string "".
+5. Never add markdown formatting or backticks around the JSON.`;
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -56,26 +57,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY_SECONDARY;
+  const apiKey = process.env.PRESCRIPTION_GEMINI_API_KEY_3;
   if (!apiKey) {
-    return NextResponse.json({ error: "Secondary Gemini API key not found. Please set GEMINI_API_KEY_SECONDARY for OCR token separation." }, { status: 500 });
+    console.error("[PRESCRIPTION OCR] Missing API 3 key.");
+    return NextResponse.json({ error: "Prescription OCR is not configured." }, { status: 500 });
   }
 
-  let lastError = "";
-  let retries = 3;
-  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-  while (retries > 0) {
+  while (attempt < MAX_RETRIES) {
     try {
-      console.log(`[Prescription] Attempting AI generation... (Retries left: ${retries - 1})`);
+      console.log(`[PRESCRIPTION OCR] Using API 3 (Attempt ${attempt + 1}/${MAX_RETRIES})`);
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        // A model suitable for image input and document understanding
+        model: "gemini-3.6-flash", 
         contents: [{
           role: "user",
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: image } },
-            { text: SYSTEM_PROMPT + "\n\nExtract all prescription data from this image." }
+            { text: SYSTEM_PROMPT }
           ]
         }],
         config: { 
@@ -88,29 +90,38 @@ export async function POST(req: NextRequest) {
       if (!raw) throw new Error("AI returned no content.");
 
       let parsed: PrescriptionResult;
-      try { parsed = JSON.parse(extractJson(raw)); }
-      catch { throw new Error("Could not parse AI response as JSON."); }
+      try { 
+        parsed = JSON.parse(extractJson(raw)); 
+      } catch { 
+        throw new Error("Could not parse AI response as JSON."); 
+      }
 
       if (!Array.isArray(parsed.medicines)) parsed.medicines = [];
-      console.log(`[Prescription] Extracted ${parsed.medicines.length} medicines successfully.`);
+      console.log(`[PRESCRIPTION OCR] OCR response received. Extracted ${parsed.medicines.length} medicines.`);
       return NextResponse.json(parsed);
+      
     } catch (err: unknown) {
-      lastError = err instanceof Error ? err.message : String(err);
-      console.error(`[Prescription] OCR API failed:`, lastError);
+      attempt++;
+      const msg = err instanceof Error ? err.message : String(err);
       
-      // Stop retrying on errors like invalid JSON parsing from our own side, 
-      // but continue retrying for API errors like 503, 429, etc.
-      if (lastError.includes("Could not parse") && !lastError.includes("503") && !lastError.includes("429")) {
-        break; 
-      }
+      const isRecoverable = msg.includes("503") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED");
       
-      retries--;
-      if (retries > 0) {
-        console.log(`[Prescription] Waiting 2 seconds before retrying OCR...`);
-        await delay(2000);
+      if (isRecoverable && attempt < MAX_RETRIES) {
+        // Exponential backoff with jitter
+        const baseDelay = 1000 * Math.pow(2, attempt);
+        const jitter = Math.random() * 500;
+        const waitTime = baseDelay + jitter;
+        console.warn(`[PRESCRIPTION OCR] Recoverable error encountered: ${msg}. Retrying in ${Math.round(waitTime)}ms...`);
+        await delay(waitTime);
+      } else {
+        console.error(`[PRESCRIPTION OCR] Failed after ${attempt} attempts:`, msg);
+        // Do not expose raw Gemini errors or API keys to the user
+        return NextResponse.json({ 
+          error: "Prescription reading is temporarily busy.\nPlease try again in a moment." 
+        }, { status: 503 });
       }
     }
   }
 
-  return NextResponse.json({ error: "Failed to analyze the prescription image.", details: lastError }, { status: 500 });
+  return NextResponse.json({ error: "Prescription reading is temporarily busy.\nPlease try again in a moment." }, { status: 503 });
 }

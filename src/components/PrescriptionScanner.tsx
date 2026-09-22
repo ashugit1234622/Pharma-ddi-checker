@@ -6,22 +6,20 @@ import { Upload, Camera, Loader2, X, FileText, CheckCircle2, AlertTriangle, Zap,
 type PrescScanState = 'idle' | 'camera_active' | 'processing' | 'result' | 'error';
 
 export interface PrescribedMedicine {
-  name: string;
-  genericName?: string;
-  dose?: string;
-  frequency?: string;
-  duration?: string;
-  instructions?: string;
+  rawName: string;
+  normalizedName: string;
+  strength: string;
+  dosageForm: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+  confidence: number;
+  status: 'verified' | 'uncertain' | 'unreadable';
 }
 
 export interface PrescriptionResult {
-  patient?: string;
-  date?: string;
-  doctor?: string;
-  clinic?: string;
   medicines: PrescribedMedicine[];
-  rawInstructions?: string;
-  confidence?: 'High' | 'Medium' | 'Low';
+  overallConfidence: number;
 }
 
 interface Props {
@@ -44,6 +42,7 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const arAnimRef = useRef<number | null>(null);
   const detectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isProcessingRef = useRef(false);
   const arRectRef = useRef(arRect);
 
   useEffect(() => { arRectRef.current = arRect; }, [arRect]);
@@ -204,6 +203,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
   };
 
   const sendToApi = async (base64: string) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setScanState('processing');
     setErrorMsg('');
     try {
@@ -215,7 +216,7 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
       const data = await res.json();
       if (!res.ok || data.error) {
         setScanState('error');
-        setErrorMsg(data.details ? `${data.error} (${data.details})` : data.error || 'Could not read the prescription.');
+        setErrorMsg(data.error || 'Could not read the prescription.');
         return;
       }
       setResult(data);
@@ -223,6 +224,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
     } catch {
       setScanState('error');
       setErrorMsg('Network error. Please try again.');
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
@@ -253,8 +256,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
   const handleInteractionCheck = () => {
     if (!result || !selectedPair) return;
     const [i, j] = selectedPair;
-    const d1 = result.medicines[i]?.genericName || result.medicines[i]?.name || '';
-    const d2 = result.medicines[j]?.genericName || result.medicines[j]?.name || '';
+    const d1 = result.medicines[i]?.normalizedName || result.medicines[i]?.rawName || '';
+    const d2 = result.medicines[j]?.normalizedName || result.medicines[j]?.rawName || '';
     if (d1 && d2) onCheckInteraction(d1, d2);
   };
 
@@ -353,19 +356,11 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
             <div className="presc-result-badge">
               <CheckCircle2 size={14} /> Prescription Read
             </div>
-            {result.confidence && (
-              <div className={`confidence-badge confidence-${result.confidence.toLowerCase()}`}>
-                {result.confidence} Confidence
+            {result.overallConfidence !== undefined && (
+              <div className={`confidence-badge confidence-${result.overallConfidence >= 80 ? 'high' : result.overallConfidence >= 50 ? 'medium' : 'low'}`}>
+                {result.overallConfidence}% Confidence
               </div>
             )}
-          </div>
-
-          {/* Meta */}
-          <div className="presc-meta-grid">
-            {result.patient && <div className="presc-meta-item"><span className="field-label">Patient</span><span className="field-value">{result.patient}</span></div>}
-            {result.doctor && <div className="presc-meta-item"><span className="field-label">Doctor</span><span className="field-value">{result.doctor}</span></div>}
-            {result.clinic && <div className="presc-meta-item"><span className="field-label">Clinic</span><span className="field-value">{result.clinic}</span></div>}
-            {result.date && <div className="presc-meta-item"><span className="field-label">Date</span><span className="field-value">{result.date}</span></div>}
           </div>
 
           {/* Medicines */}
@@ -402,9 +397,13 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
                     >
                       <div className="presc-med-header">
                         <div>
-                          <div className="presc-med-name">{med.name}</div>
-                          {med.genericName && med.genericName !== med.name && (
-                            <div className="presc-med-generic">{med.genericName}</div>
+                          <div className="presc-med-name">
+                            {med.rawName}
+                            {med.status === 'uncertain' && <span style={{ marginLeft: 6, fontSize: '0.75rem', color: 'var(--warning)', fontWeight: 500 }}>(Uncertain)</span>}
+                            {med.status === 'unreadable' && <span style={{ marginLeft: 6, fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 500 }}>(Unreadable)</span>}
+                          </div>
+                          {med.normalizedName && med.normalizedName !== med.rawName && (
+                            <div className="presc-med-generic">{med.normalizedName}</div>
                           )}
                         </div>
                         {isSelected && (
@@ -412,7 +411,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
                         )}
                       </div>
                       <div className="presc-med-details">
-                        {med.dose && <span className="presc-med-pill">{med.dose}</span>}
+                        {med.strength && <span className="presc-med-pill">{med.strength}</span>}
+                        {med.dosageForm && <span className="presc-med-pill">{med.dosageForm}</span>}
                         {med.frequency && <span className="presc-med-pill">{med.frequency}</span>}
                         {med.duration && <span className="presc-med-pill">{med.duration}</span>}
                       </div>
@@ -428,7 +428,7 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
               {selectedPair && selectedPair[0] !== -1 && selectedPair[1] !== -1 && selectedPair[1] !== undefined && (
                 <button className="presc-interaction-btn btn btn-primary" onClick={handleInteractionCheck}>
                   <Zap size={18} />
-                  Check Interaction: {result.medicines[selectedPair[0]]?.name} ↔ {result.medicines[selectedPair[1]]?.name}
+                  Check Interaction: {result.medicines[selectedPair[0]]?.rawName} ↔ {result.medicines[selectedPair[1]]?.rawName}
                 </button>
               )}
             </div>
@@ -436,14 +436,6 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
             <div className="presc-no-meds">
               <AlertTriangle size={24} style={{ color: 'var(--warning)', marginBottom: '0.5rem' }} />
               <p>No medicines could be extracted. Please try a clearer image.</p>
-            </div>
-          )}
-
-          {/* General instructions */}
-          {result.rawInstructions && (
-            <div className="ai-summary-box" style={{ margin: '0 1.5rem 1.5rem' }}>
-              <div className="ai-summary-header"><Info size={15} className="text-accent" /><span>General Instructions</span></div>
-              <p className="ai-summary-text">{result.rawInstructions}</p>
             </div>
           )}
 
