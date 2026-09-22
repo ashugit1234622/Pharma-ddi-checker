@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Camera, Loader2, X, FileText, CheckCircle2, AlertTriangle, Zap, Info, ChevronsDown } from 'lucide-react';
@@ -215,7 +215,7 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
       const data = await res.json();
       if (!res.ok || data.error) {
         setScanState('error');
-        setErrorMsg(data.error || 'Could not read the prescription.');
+        setErrorMsg(data.details ? `${data.error} (${data.details})` : data.error || 'Could not read the prescription.');
         return;
       }
       setResult(data);
