@@ -24,7 +24,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="header" style={{ position: 'relative', zIndex: 50 }}>
+      <header className="header" style={{ position: 'sticky', top: 0, zIndex: 50, width: '100%' }}>
         <div className="logo">
           <span>💊 Farma</span> DDI Checker
         </div>

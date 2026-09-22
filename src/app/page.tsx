@@ -535,7 +535,7 @@ export default function Home() {
 
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
 
-  const handleReset = () => { setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); };
+  const handleReset = () => { setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const handlePrint = () => window.print();
 
@@ -604,19 +604,19 @@ export default function Home() {
       {/* 3. Interactive Page Content — dims gracefully on 10s idle */}
       <div
         style={{
-          position: !report ? 'sticky' : 'relative',
-          top: 0,
+          position: 'relative',
           zIndex: 10,
           opacity: isIdle ? 0.28 : 1,
           transition: 'opacity 1.2s ease-in-out',
-          minHeight: '100vh',
-          paddingTop: '80px',
+          minHeight: !report ? '300vh' : '100vh',
         }}
       >
         <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} currentStepText={steps[stepIndex]} />
         <div className="print-hide" style={{
           paddingBottom: '4rem',
-          position: 'relative'
+          position: !report ? 'sticky' : 'relative',
+          top: !report ? '70px' : 'auto',
+          zIndex: 20
         }}>
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem', paddingTop: '1.5rem' }}>
