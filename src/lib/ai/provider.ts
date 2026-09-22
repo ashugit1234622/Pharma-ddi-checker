@@ -166,19 +166,14 @@ export function getAIProvider(): AIProvider {
     }
     */
     
-    // Primary Gemini (uses 2.5-flash by default)
+    // Primary Gemini (uses 3.6-flash to avoid 404s)
     try {
-      availableProviders.push(new GeminiProvider("GEMINI_API_KEY", "gemini-2.5-flash"));
+      availableProviders.push(new GeminiProvider("GEMINI_API_KEY", "gemini-3.6-flash"));
     } catch (e) {
       console.warn("Primary GeminiProvider skipped:", e instanceof Error ? e.message : String(e));
     }
-
-    // Secondary Gemini (uses 3.5-flash since 2.5-flash is restricted for new keys)
-    try {
-      availableProviders.push(new GeminiProvider("GEMINI_API_KEY_SECONDARY", "gemini-3.5-flash"));
-    } catch (e) {
-      console.warn("Secondary GeminiProvider skipped:", e instanceof Error ? e.message : String(e));
-    }
+    
+    // We removed GEMINI_API_KEY_SECONDARY here to strictly reserve it for OCR token limits.
     
     if (availableProviders.length === 0) {
       throw new Error("No AI providers could be initialized. Please check your API keys (.env).");

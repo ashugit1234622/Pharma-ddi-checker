@@ -56,17 +56,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
   }
 
-  const keys = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_SECONDARY].filter(Boolean) as string[];
-  if (keys.length === 0) {
-    return NextResponse.json({ error: "No Gemini API key available." }, { status: 500 });
+  const apiKey = process.env.GEMINI_API_KEY_SECONDARY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "Secondary Gemini API key not found. Please set GEMINI_API_KEY_SECONDARY for OCR token separation." }, { status: 500 });
   }
 
   let lastError = "";
+  let retries = 3;
+  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-  for (let i = 0; i < keys.length; i++) {
-    const apiKey = keys[i];
+  while (retries > 0) {
     try {
-      console.log(`[Prescription] Attempting AI generation with API Key ${i + 1}/${keys.length}...`);
+      console.log(`[Prescription] Attempting AI generation... (Retries left: ${retries - 1})`);
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
@@ -91,16 +92,22 @@ export async function POST(req: NextRequest) {
       catch { throw new Error("Could not parse AI response as JSON."); }
 
       if (!Array.isArray(parsed.medicines)) parsed.medicines = [];
-      console.log(`[Prescription] Extracted ${parsed.medicines.length} medicines using API Key ${i + 1}`);
+      console.log(`[Prescription] Extracted ${parsed.medicines.length} medicines successfully.`);
       return NextResponse.json(parsed);
     } catch (err: unknown) {
       lastError = err instanceof Error ? err.message : String(err);
-      console.error(`[Prescription] API Key ${i + 1} failed:`, lastError);
+      console.error(`[Prescription] OCR API failed:`, lastError);
       
       // Stop retrying on errors like invalid JSON parsing from our own side, 
       // but continue retrying for API errors like 503, 429, etc.
       if (lastError.includes("Could not parse") && !lastError.includes("503") && !lastError.includes("429")) {
         break; 
+      }
+      
+      retries--;
+      if (retries > 0) {
+        console.log(`[Prescription] Waiting 2 seconds before retrying OCR...`);
+        await delay(2000);
       }
     }
   }
