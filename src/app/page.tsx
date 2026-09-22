@@ -527,7 +527,7 @@ export default function Home() {
       if (json.error) setError(json.error);
       else if (json.data?.analysis) {
         setReport(json.data.analysis);
-        setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+        setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
       } else if (json.data?.aiError) setError(json.data.aiError);
     } catch { setError('Failed to reach analysis service.'); }
     finally { setAnalyzing(false); }
@@ -578,7 +578,7 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', background: '#02070b' }}>
+    <div style={{ position: 'relative', minHeight: !report ? '300vh' : '100vh', background: '#02070b' }}>
       {/* 1. Fixed WebGL Cinematic Layer — ramps to full screensaver on 10s idle */}
       <CinematicVisualLayer
         isIdle={isIdle}
@@ -604,11 +604,13 @@ export default function Home() {
       {/* 3. Interactive Page Content — dims gracefully on 10s idle */}
       <div
         style={{
-          position: 'relative',
+          position: !report ? 'sticky' : 'relative',
+          top: 0,
           zIndex: 10,
           opacity: isIdle ? 0.28 : 1,
           transition: 'opacity 1.2s ease-in-out',
           minHeight: '100vh',
+          paddingTop: '80px',
         }}
       >
         <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} currentStepText={steps[stepIndex]} />
