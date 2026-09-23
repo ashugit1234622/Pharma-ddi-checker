@@ -57,16 +57,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
   }
 
-  // Use dedicated OCR key (API 3) first; fall back to any available real Gemini key
+  // OCR key fallback chain (dedicated OCR keys first, then shared DDI keys as last resort)
   const apiKey = (() => {
     const candidates = [
       { name: "PRESCRIPTION_GEMINI_API_KEY_3", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
+      { name: "PRESCRIPTION_GEMINI_API_KEY_4", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
       { name: "GEMINI_API_KEY_SECONDARY",       val: process.env.GEMINI_API_KEY_SECONDARY },
       { name: "GEMINI_API_KEY",                  val: process.env.GEMINI_API_KEY },
     ];
     for (const c of candidates) {
       if (c.val && !c.val.startsWith("your-")) {
-        if (c.name !== "PRESCRIPTION_GEMINI_API_KEY_3") {
+        if (!c.name.startsWith("PRESCRIPTION_")) {
           console.warn(`[PRESCRIPTION OCR] Falling back to ${c.name} for OCR.`);
         }
         return c.val;
