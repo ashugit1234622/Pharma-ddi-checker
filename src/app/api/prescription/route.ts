@@ -88,8 +88,8 @@ export async function POST(req: NextRequest) {
       console.log(`[PRESCRIPTION OCR] Using API 3 (Attempt ${attempt + 1}/${MAX_RETRIES})`);
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        // gemini-1.5-flash: fast, multimodal, handles handwritten text well
-        model: "gemini-1.5-flash",
+        // gemini-3.6-flash: confirmed available for this API key (recommended by Gemini API)
+        model: "gemini-3.6-flash",
         contents: [{
           role: "user",
           parts: [

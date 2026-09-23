@@ -165,7 +165,7 @@ export function getAIProvider(): AIProvider {
       const key1 = process.env.GEMINI_API_KEY_SECONDARY || process.env.GEMINI_API_KEY;
       if (key1 && !key1.startsWith("your-")) {
         process.env.GEMINI_API_KEY_1_EFF = key1;
-        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-1.5-flash"));
+        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-3.6-flash"));
       }
     } catch (e) {
       console.warn("API 1 skipped:", e instanceof Error ? e.message : String(e));
