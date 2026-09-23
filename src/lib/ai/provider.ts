@@ -160,24 +160,23 @@ export function getAIProvider(): AIProvider {
   if (!cachedProvider) {
     const availableProviders: AIProvider[] = [];
     
-    // Primary Gemini (API 1)
+    // Primary Gemini (API 1) — tries GEMINI_API_KEY_SECONDARY first (most likely to be real), then GEMINI_API_KEY
     try {
-      const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-      if (key1) {
-        // We override the process.env just for the constructor check since it reads from process.env
+      const key1 = process.env.GEMINI_API_KEY_SECONDARY || process.env.GEMINI_API_KEY;
+      if (key1 && !key1.startsWith("your-")) {
         process.env.GEMINI_API_KEY_1_EFF = key1;
-        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-2.5-flash"));
+        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-1.5-flash"));
       }
     } catch (e) {
       console.warn("API 1 skipped:", e instanceof Error ? e.message : String(e));
     }
 
-    // Secondary Gemini (API 2)
+    // Secondary Gemini (API 2) — only if a distinct second key is configured
     try {
-      const key2 = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_SECONDARY;
-      if (key2) {
+      const key2 = process.env.GEMINI_API_KEY_2;
+      if (key2 && !key2.startsWith("your-")) {
         process.env.GEMINI_API_KEY_2_EFF = key2;
-        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_2_EFF", "gemini-3.5-flash"));
+        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_2_EFF", "gemini-1.5-flash"));
       }
     } catch (e) {
       console.warn("API 2 skipped:", e instanceof Error ? e.message : String(e));

@@ -57,10 +57,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
   }
 
-  const apiKey = process.env.PRESCRIPTION_GEMINI_API_KEY_3;
+  // Use dedicated OCR key (API 3) first; fall back to any available real Gemini key
+  const apiKey = (() => {
+    const candidates = [
+      { name: "PRESCRIPTION_GEMINI_API_KEY_3", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
+      { name: "GEMINI_API_KEY_SECONDARY",       val: process.env.GEMINI_API_KEY_SECONDARY },
+      { name: "GEMINI_API_KEY",                  val: process.env.GEMINI_API_KEY },
+    ];
+    for (const c of candidates) {
+      if (c.val && !c.val.startsWith("your-")) {
+        if (c.name !== "PRESCRIPTION_GEMINI_API_KEY_3") {
+          console.warn(`[PRESCRIPTION OCR] Falling back to ${c.name} for OCR.`);
+        }
+        return c.val;
+      }
+    }
+    return null;
+  })();
+
   if (!apiKey) {
-    console.error("[PRESCRIPTION OCR] Missing API 3 key.");
-    return NextResponse.json({ error: "Prescription OCR is not configured." }, { status: 500 });
+    console.error("[PRESCRIPTION OCR] No valid Gemini API key found for OCR.");
+    return NextResponse.json({ error: "Prescription OCR is not configured. Please add a Gemini API key." }, { status: 500 });
   }
 
   const MAX_RETRIES = 3;
@@ -71,8 +88,8 @@ export async function POST(req: NextRequest) {
       console.log(`[PRESCRIPTION OCR] Using API 3 (Attempt ${attempt + 1}/${MAX_RETRIES})`);
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        // A model suitable for image input and document understanding
-        model: "gemini-3.6-flash", 
+        // gemini-1.5-flash: fast, multimodal, handles handwritten text well
+        model: "gemini-1.5-flash",
         contents: [{
           role: "user",
           parts: [
