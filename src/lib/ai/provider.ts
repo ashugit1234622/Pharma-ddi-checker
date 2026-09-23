@@ -113,40 +113,25 @@ export class FallbackProvider implements AIProvider {
 
   async complete(system: string, user: string, useSearch: boolean = false): Promise<string> {
     const allErrors: string[] = [];
-    
+
     for (let i = 0; i < this.providers.length; i++) {
       const provider = this.providers[i];
-      const isApi1 = i === 0;
-      const isApi2 = i === 1;
-      
-      if (isApi1) console.log(`[AI ROUTER] Using API 1`);
-      
+      console.log(`[AI ROUTER] Trying provider ${i + 1}/${this.providers.length}: ${provider.modelId}`);
+
       try {
         const result = await provider.complete(system, user, useSearch);
-        if (isApi2) console.log(`[AI ROUTER] API 2 response received`);
         return result;
       } catch (err: any) {
         const errMsg = err instanceof Error ? err.message : String(err);
         allErrors.push(`[${provider.modelId}]: ${errMsg}`);
-        
-        const isRecoverableQuotaError = errMsg.includes("503") || 
-                                      errMsg.includes("429") || 
-                                      errMsg.includes("UNAVAILABLE") || 
-                                      errMsg.includes("high demand") || 
-                                      errMsg.includes("RESOURCE_EXHAUSTED");
-                                      
-        if (isApi1 && isRecoverableQuotaError && this.providers.length > 1) {
-          console.log(`[AI ROUTER] API 1 quota error → switching to API 2`);
-          continue; // Try API 2
-        } else if (isApi1) {
-          // If it's an unrecoverable error for API 1, do NOT switch to API 2.
-          break;
+
+        if (i < this.providers.length - 1) {
+          // Always try the next provider — rate limits, quota errors, or model errors all warrant a retry with a new key
+          console.warn(`[AI ROUTER] Provider ${i + 1} failed — rotating to provider ${i + 2}. Error: ${errMsg.slice(0, 120)}`);
         }
-        
-        // If API 2 fails, we just exit the loop
       }
     }
-    
+
     throw new Error(`All AI providers failed.\nErrors:\n${allErrors.join('\n')}`);
   }
 }
@@ -159,33 +144,42 @@ let cachedProvider: AIProvider | null = null;
 export function getAIProvider(): AIProvider {
   if (!cachedProvider) {
     const availableProviders: AIProvider[] = [];
-    
-    // Primary Gemini (API 1) — tries GEMINI_API_KEY_SECONDARY first (most likely to be real), then GEMINI_API_KEY
-    try {
-      const key1 = process.env.GEMINI_API_KEY_SECONDARY || process.env.GEMINI_API_KEY;
-      if (key1 && !key1.startsWith("your-")) {
-        process.env.GEMINI_API_KEY_1_EFF = key1;
-        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_1_EFF", "gemini-3.6-flash"));
+
+    // All available Gemini keys registered as separate providers in priority order.
+    // FallbackProvider will rotate through them automatically on any failure.
+    const ddiKeys = [
+      { envVar: "GEMINI_API_KEY_SECONDARY", val: process.env.GEMINI_API_KEY_SECONDARY },
+      { envVar: "GEMINI_API_KEY",           val: process.env.GEMINI_API_KEY },
+    ];
+
+    for (const { envVar, val } of ddiKeys) {
+      if (val && !val.startsWith("your-")) {
+        try {
+          const effVar = `${envVar}_EFF`;
+          process.env[effVar] = val;
+          availableProviders.push(new GeminiProvider(effVar, "gemini-3.6-flash"));
+          console.log(`[AI ROUTER] Registered provider: ${envVar}`);
+        } catch (e) {
+          console.warn(`[AI ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
+        }
       }
-    } catch (e) {
-      console.warn("API 1 skipped:", e instanceof Error ? e.message : String(e));
     }
 
-    // Secondary Gemini (API 2) — only if a distinct second key is configured
-    try {
-      const key2 = process.env.GEMINI_API_KEY_2;
-      if (key2 && !key2.startsWith("your-")) {
-        process.env.GEMINI_API_KEY_2_EFF = key2;
-        availableProviders.push(new GeminiProvider("GEMINI_API_KEY_2_EFF", "gemini-1.5-flash"));
+    // Groq as final fallback if Gemini is completely unavailable
+    if (process.env.GROQ_API_KEY) {
+      try {
+        availableProviders.push(new GroqProvider());
+        console.log(`[AI ROUTER] Registered provider: GROQ_API_KEY (final fallback)`);
+      } catch (e) {
+        console.warn("[AI ROUTER] Groq skipped:", e instanceof Error ? e.message : String(e));
       }
-    } catch (e) {
-      console.warn("API 2 skipped:", e instanceof Error ? e.message : String(e));
     }
-    
+
     if (availableProviders.length === 0) {
       throw new Error("No AI providers could be initialized. Please check your API keys (.env).");
     }
-    
+
+    console.log(`[AI ROUTER] Initialized with ${availableProviders.length} provider(s).`);
     cachedProvider = new FallbackProvider(availableProviders);
   }
   return cachedProvider;
