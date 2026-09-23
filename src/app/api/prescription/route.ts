@@ -47,6 +47,19 @@ RULES:
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+/** Returns all real (non-placeholder) API keys in priority order for OCR. */
+function getOcrApiKeys(): Array<{ name: string; key: string }> {
+  const candidates = [
+    { name: "PRESCRIPTION_GEMINI_API_KEY_3", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
+    { name: "PRESCRIPTION_GEMINI_API_KEY_4", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
+    { name: "GEMINI_API_KEY_SECONDARY",       val: process.env.GEMINI_API_KEY_SECONDARY },
+    { name: "GEMINI_API_KEY",                  val: process.env.GEMINI_API_KEY },
+  ];
+  return candidates
+    .filter(c => c.val && !c.val.startsWith("your-"))
+    .map(c => ({ name: c.name, key: c.val! }));
+}
+
 export async function POST(req: NextRequest) {
   let body: unknown;
   try { body = await req.json(); }
@@ -57,39 +70,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
   }
 
-  // OCR key fallback chain (dedicated OCR keys first, then shared DDI keys as last resort)
-  const apiKey = (() => {
-    const candidates = [
-      { name: "PRESCRIPTION_GEMINI_API_KEY_3", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
-      { name: "PRESCRIPTION_GEMINI_API_KEY_4", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
-      { name: "GEMINI_API_KEY_SECONDARY",       val: process.env.GEMINI_API_KEY_SECONDARY },
-      { name: "GEMINI_API_KEY",                  val: process.env.GEMINI_API_KEY },
-    ];
-    for (const c of candidates) {
-      if (c.val && !c.val.startsWith("your-")) {
-        if (!c.name.startsWith("PRESCRIPTION_")) {
-          console.warn(`[PRESCRIPTION OCR] Falling back to ${c.name} for OCR.`);
-        }
-        return c.val;
-      }
-    }
-    return null;
-  })();
+  const ocrKeys = getOcrApiKeys();
 
-  if (!apiKey) {
+  if (ocrKeys.length === 0) {
     console.error("[PRESCRIPTION OCR] No valid Gemini API key found for OCR.");
     return NextResponse.json({ error: "Prescription OCR is not configured. Please add a Gemini API key." }, { status: 500 });
   }
 
-  const MAX_RETRIES = 3;
-  let attempt = 0;
+  console.log(`[PRESCRIPTION OCR] ${ocrKeys.length} key(s) available: ${ocrKeys.map(k => k.name).join(", ")}`);
 
-  while (attempt < MAX_RETRIES) {
+  // Try each key in order — on failure, immediately rotate to the next key
+  for (let i = 0; i < ocrKeys.length; i++) {
+    const { name, key } = ocrKeys[i];
+    const isLastKey = i === ocrKeys.length - 1;
+
     try {
-      console.log(`[PRESCRIPTION OCR] Using API 3 (Attempt ${attempt + 1}/${MAX_RETRIES})`);
-      const ai = new GoogleGenAI({ apiKey });
+      console.log(`[PRESCRIPTION OCR] Attempting with ${name} (${i + 1}/${ocrKeys.length})`);
+      const ai = new GoogleGenAI({ apiKey: key });
       const response = await ai.models.generateContent({
-        // gemini-3.6-flash: confirmed available for this API key (recommended by Gemini API)
+        // gemini-3.6-flash: confirmed available for this API key tier
         model: "gemini-3.6-flash",
         contents: [{
           role: "user",
@@ -98,7 +97,7 @@ export async function POST(req: NextRequest) {
             { text: SYSTEM_PROMPT }
           ]
         }],
-        config: { 
+        config: {
           temperature: 0,
           responseMimeType: "application/json"
         }
@@ -108,36 +107,36 @@ export async function POST(req: NextRequest) {
       if (!raw) throw new Error("AI returned no content.");
 
       let parsed: PrescriptionResult;
-      try { 
-        parsed = JSON.parse(extractJson(raw)); 
-      } catch { 
-        throw new Error("Could not parse AI response as JSON."); 
+      try {
+        parsed = JSON.parse(extractJson(raw));
+      } catch {
+        throw new Error("Could not parse AI response as JSON.");
       }
 
       if (!Array.isArray(parsed.medicines)) parsed.medicines = [];
-      console.log(`[PRESCRIPTION OCR] OCR response received. Extracted ${parsed.medicines.length} medicines.`);
+      console.log(`[PRESCRIPTION OCR] Success with ${name}. Extracted ${parsed.medicines.length} medicines.`);
       return NextResponse.json(parsed);
-      
+
     } catch (err: unknown) {
-      attempt++;
       const msg = err instanceof Error ? err.message : String(err);
-      
-      const isRecoverable = msg.includes("503") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED");
-      
-      if (isRecoverable && attempt < MAX_RETRIES) {
-        // Exponential backoff with jitter
-        const baseDelay = 1000 * Math.pow(2, attempt);
-        const jitter = Math.random() * 500;
-        const waitTime = baseDelay + jitter;
-        console.warn(`[PRESCRIPTION OCR] Recoverable error encountered: ${msg}. Retrying in ${Math.round(waitTime)}ms...`);
-        await delay(waitTime);
-      } else {
-        console.error(`[PRESCRIPTION OCR] Failed after ${attempt} attempts:`, msg);
-        // Do not expose raw Gemini errors or API keys to the user
-        return NextResponse.json({ 
-          error: "Prescription reading is temporarily busy.\nPlease try again in a moment." 
+      const isRateLimit = msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota");
+      const isBusy      = msg.includes("503") || msg.includes("overloaded");
+
+      if (isLastKey) {
+        console.error(`[PRESCRIPTION OCR] All ${ocrKeys.length} key(s) exhausted. Last error:`, msg);
+        return NextResponse.json({
+          error: "Prescription reading is temporarily busy.\nPlease try again in a moment."
         }, { status: 503 });
       }
+
+      if (isRateLimit || isBusy) {
+        console.warn(`[PRESCRIPTION OCR] ${name} rate-limited/busy — rotating to next key.`);
+      } else {
+        console.warn(`[PRESCRIPTION OCR] ${name} failed (${msg.slice(0, 120)}) — trying next key.`);
+      }
+
+      // Small pause before next key
+      await delay(300);
     }
   }
 
