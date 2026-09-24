@@ -26,7 +26,7 @@ export default function Header() {
     <>
       <header className="header" style={{ position: 'sticky', top: 0, zIndex: 50, width: '100%' }}>
         <div className="logo">
-          <span>💊 Farma</span> DDI Checker
+          <span>💊 Pharma</span> DDI Checker
         </div>
         <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span className="print-hide" style={{ fontSize: '0.78rem', color: 'var(--text-dim)', padding: '0.3rem 0.7rem', background: 'var(--bg-hover)', borderRadius: '6px' }}>

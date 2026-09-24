@@ -191,7 +191,7 @@ async function tryOpenProductsFacts(barcode: string): Promise<MedicineData | nul
   for (const url of endpoints) {
     try {
       const res = await fetch(url, {
-        headers: { "User-Agent": "FarmaDDIChecker/1.0 (medicine-safety)" },
+        headers: { "User-Agent": "PharmaDDIChecker/1.0 (medicine-safety)" },
         signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) continue;
@@ -468,7 +468,7 @@ async function generateAISummary(medicine: MedicineData): Promise<string> {
   try {
     const provider = getAIProvider();
     const raw = await provider.complete(
-      `You are MedCheck AI for Farma DDI Checker. Write a 1-2 sentence factual summary of the
+      `You are MedCheck AI for Pharma DDI Checker. Write a 1-2 sentence factual summary of the
 verified medicine record below. Max 65 words. Do NOT add dosing advice, warnings, or side effects
 not in the data. End with the data source. Return ONLY JSON: {"summary": "..."}`,
       `Summarize:\n${JSON.stringify(medicine, null, 2)}`

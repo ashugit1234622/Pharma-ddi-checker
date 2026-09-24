@@ -70,7 +70,7 @@ export default function PWAInstallButton() {
     <div style={{ position: 'relative' }}>
       <button
         onClick={handleInstall}
-        title="Install Farma as an app"
+        title="Install Pharma as an app"
         aria-label="Install app"
         className="pwa-install-btn"
       >

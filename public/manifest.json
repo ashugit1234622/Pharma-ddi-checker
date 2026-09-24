@@ -1,6 +1,6 @@
 {
-  "name": "Farma DDI Checker",
-  "short_name": "Farma",
+  "name": "Pharma DDI Checker",
+  "short_name": "Pharma",
   "description": "AI-Powered Drug Interaction Analysis with ADME, toxicity profiles, and clinical recommendations.",
   "start_url": "/",
   "display": "standalone",

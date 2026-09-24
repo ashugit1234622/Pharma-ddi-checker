@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     // Call the provider
     rawResponse = await provider.complete(
-      "You are Aastha, an AI assistant for Farma DDI Checker. Output structured JSON only.",
+      "You are Aastha, an AI assistant for Pharma DDI Checker. Output structured JSON only.",
       prompt
     );
 

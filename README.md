@@ -1,4 +1,4 @@
-# Farma DDI Checker
+# Pharma DDI Checker
 
 AI-Powered Oncology & Pharmacology Platform for Drug-Drug Interaction Analysis.
 Built with Node.js, Express, Chart.js, better-sqlite3, and OpenAI.

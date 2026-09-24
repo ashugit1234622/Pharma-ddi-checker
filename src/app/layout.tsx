@@ -13,14 +13,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Farma DDI Checker | AI-Powered Drug Interaction Analysis',
+  title: 'Pharma DDI Checker | AI-Powered Drug Interaction Analysis',
   description:
     'Check drug-drug interactions with AI-powered analysis, ADME comparison charts, toxicity profiles, and clinical recommendations based on KD Tripathi pharmacology.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Farma DDI',
+    title: 'Pharma DDI',
   },
   icons: {
     icon: '/icon-512.jpg',
@@ -40,7 +40,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-512.jpg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Farma DDI" />
+        <meta name="apple-mobile-web-app-title" content="Pharma DDI" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0d1117" />
         <meta name="msapplication-TileImage" content="/icon-512.jpg" />

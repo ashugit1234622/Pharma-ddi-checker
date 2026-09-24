@@ -148,7 +148,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     if (!isOpen) return;
     const welcomeText = report
       ? "Hi, I'm Aastha. I can help explain this report, including the interaction mechanism, ADME findings, toxicity, monitoring considerations, alternatives, and evidence."
-      : "Hi, I'm Aastha. I can help you understand how Farma DDI Checker works and explain pharmacology concepts. Once you run an analysis, I can also explain the findings from your report.";
+      : "Hi, I'm Aastha. I can help you understand how Pharma DDI Checker works and explain pharmacology concepts. Once you run an analysis, I can also explain the findings from your report.";
     setMessages([{ role: 'assistant', content: welcomeText }]);
   }, [drug1?.id, drug2?.id, report, isOpen]);
 
@@ -533,7 +533,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
                   </span>
                 )}
               </div>
-              <div className="aastha-subtitle">Farma DDI Assistant</div>
+              <div className="aastha-subtitle">Pharma DDI Assistant</div>
             </div>
             <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
               {/* Change language button (inside voice mode) */}
