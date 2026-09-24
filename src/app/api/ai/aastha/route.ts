@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getAIProvider, extractJson } from "@/lib/ai/provider";
+import { getGeminiProvider, extractJson } from "@/lib/ai/provider";
 import { buildAasthaPrompt } from "@/lib/ai/prompts";
 import { AasthaResponseSchema } from "@/lib/ai/schemas";
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   let rawResponse: string | null = null;
   try {
-    const provider = getAIProvider();
+    const provider = getGeminiProvider();
 
     // Build the constrained prompt based on current context
     const prompt = buildAasthaPrompt(

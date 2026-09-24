@@ -188,6 +188,44 @@ export function getAIProvider(): AIProvider {
   return cachedProvider;
 }
 
+let cachedGeminiProvider: AIProvider | null = null;
+
+/**
+ * Returns a Gemini-only FallbackProvider (no Groq).
+ * Use this for Aastha chat where response quality matters
+ * and Groq's smaller models are not appropriate.
+ */
+export function getGeminiProvider(): AIProvider {
+  if (!cachedGeminiProvider) {
+    const geminiKeys = [
+      { envVar: "GEMINI_API_KEY_SECONDARY", val: process.env.GEMINI_API_KEY_SECONDARY },
+      { envVar: "GEMINI_API_KEY",           val: process.env.GEMINI_API_KEY },
+    ];
+
+    const providers: AIProvider[] = [];
+    for (const { envVar, val } of geminiKeys) {
+      if (val && !val.startsWith("your-")) {
+        try {
+          const effVar = `${envVar}_CHAT_EFF`;
+          process.env[effVar] = val;
+          providers.push(new GeminiProvider(effVar, "gemini-3.6-flash"));
+          console.log(`[AASTHA ROUTER] Registered Gemini provider: ${envVar}`);
+        } catch (e) {
+          console.warn(`[AASTHA ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
+        }
+      }
+    }
+
+    if (providers.length === 0) {
+      throw new Error("No Gemini API keys available for Aastha chat. Please add GEMINI_API_KEY_SECONDARY or GEMINI_API_KEY to .env");
+    }
+
+    console.log(`[AASTHA ROUTER] Initialized with ${providers.length} Gemini provider(s).`);
+    cachedGeminiProvider = new FallbackProvider(providers);
+  }
+  return cachedGeminiProvider;
+}
+
 /** Strips accidental markdown code fences some models add despite instructions. */
 export function extractJson(raw: string): string {
   const trimmed = raw.trim();
