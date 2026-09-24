@@ -1,50 +1,9 @@
-import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 
 export interface AIProvider {
   /** Sends a system + user prompt pair, expects back a raw JSON string. */
   complete(system: string, user: string, useSearch?: boolean): Promise<string>;
   readonly modelId: string;
-}
-
-/**
- * Groq implementation using the OpenAI-compatible SDK.
- */
-export class GroqProvider implements AIProvider {
-  private client: OpenAI;
-  readonly modelId: string;
-
-  constructor() {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      throw new Error("GROQ_API_KEY is not set.");
-    }
-    this.client = new OpenAI({
-      apiKey,
-      baseURL: "https://api.groq.com/openai/v1",
-    });
-    // llama-3.3-70b-versatile: current free-tier Groq model with strong JSON generation
-    this.modelId = process.env.AI_MODEL || "llama-3.3-70b-versatile";
-  }
-
-  async complete(system: string, user: string, _useSearch?: boolean): Promise<string> {
-    // Groq free tier does not support response_format: json_object reliably.
-    // We instruct JSON via the system prompt instead.
-    const response = await this.client.chat.completions.create({
-      model: this.modelId,
-      messages: [
-        { role: "system", content: system + "\n\nYou MUST respond with valid JSON only. No markdown, no extra text." },
-        { role: "user", content: user },
-      ],
-      temperature: 0,
-    });
-
-    const text = response.choices?.[0]?.message?.content;
-    if (!text) {
-      throw new Error("Groq returned no text content.");
-    }
-    return text;
-  }
 }
 
 /**
@@ -56,7 +15,7 @@ export class GeminiProvider implements AIProvider {
   private envVarName: string;
   private modelName: string;
 
-  constructor(envVarName: string = "GEMINI_API_KEY", modelName: string = "gemini-2.5-flash") {
+  constructor(envVarName: string = "GEMINI_API_KEY", modelName: string = "gemini-3.6-flash") {
     this.envVarName = envVarName;
     this.modelName = modelName;
     const apiKey = process.env[envVarName];
@@ -75,7 +34,6 @@ export class GeminiProvider implements AIProvider {
 
     if (useSearch) {
       // Google Search Grounding is incompatible with responseMimeType: "application/json"
-      // The model needs to return grounded text which we'll parse ourselves
       config.tools = [{ googleSearch: {} }];
     } else {
       config.responseMimeType = "application/json";
@@ -95,11 +53,11 @@ export class GeminiProvider implements AIProvider {
 }
 
 /**
- * Fallback provider that tries multiple providers in sequence with retries.
+ * Tries multiple Gemini providers in sequence — rotates on any failure.
  */
 export class FallbackProvider implements AIProvider {
   private providers: AIProvider[];
-  
+
   constructor(providers: AIProvider[]) {
     if (providers.length === 0) {
       throw new Error("FallbackProvider requires at least one provider.");
@@ -107,7 +65,6 @@ export class FallbackProvider implements AIProvider {
     this.providers = providers;
   }
 
-  // Uses the modelId of the primary (first) provider for reporting purposes
   get modelId() {
     return `Fallback Chain (Primary: ${this.providers[0].modelId})`;
   }
@@ -132,7 +89,7 @@ export class FallbackProvider implements AIProvider {
       }
     }
 
-    // Reset both caches so next request re-initialises with fresh providers
+    // Reset caches so next request re-initialises with fresh providers
     cachedProvider = null;
     cachedGeminiProvider = null;
 
@@ -140,94 +97,65 @@ export class FallbackProvider implements AIProvider {
   }
 }
 
+// ─── Shared key list (used by both provider functions) ────────────────────────
+const GEMINI_KEY_CONFIGS = [
+  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.5-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.5-flash" },
+] as const;
+
+function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {
+  const providers: AIProvider[] = [];
+  for (const { envVar, model } of GEMINI_KEY_CONFIGS) {
+    const val = process.env[envVar];
+    if (val && !val.startsWith("your-")) {
+      try {
+        const effVar = `${envVar}_${effSuffix}`;
+        process.env[effVar] = val;
+        providers.push(new GeminiProvider(effVar, model));
+        console.log(`[${logPrefix}] Registered: ${envVar} → ${model}`);
+      } catch (e) {
+        console.warn(`[${logPrefix}] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
+      }
+    }
+  }
+  return providers;
+}
+
+// ─── DDI Analysis provider ────────────────────────────────────────────────────
 let cachedProvider: AIProvider | null = null;
 
-/** 
- * Returns a FallbackProvider that tries providers sequentially.
+/**
+ * Returns a Gemini FallbackProvider for DDI analysis, MedCheck, and Ask routes.
+ * Rotates through all 4 Gemini keys automatically on quota/availability errors.
  */
 export function getAIProvider(): AIProvider {
   if (!cachedProvider) {
-    const availableProviders: AIProvider[] = [];
-
-    // All available Gemini keys registered as separate providers in priority order.
-    // FallbackProvider will rotate through them automatically on any failure.
-    // Alternate models across keys so each key+model combo has its own RPD bucket
-    const ddiKeys = [
-      { envVar: "GEMINI_API_KEY_SECONDARY",       model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY_SECONDARY },
-      { envVar: "GEMINI_API_KEY",                  model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY },
-      { envVar: "PRESCRIPTION_GEMINI_API_KEY_3",  model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
-      { envVar: "PRESCRIPTION_GEMINI_API_KEY_4",  model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
-    ];
-
-    for (const { envVar, model, val } of ddiKeys) {
-      if (val && !val.startsWith("your-")) {
-        try {
-          const effVar = `${envVar}_EFF`;
-          process.env[effVar] = val;
-          availableProviders.push(new GeminiProvider(effVar, model));
-          console.log(`[AI ROUTER] Registered provider: ${envVar} → ${model}`);
-        } catch (e) {
-          console.warn(`[AI ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
-        }
-      }
+    const providers = buildGeminiProviders("EFF", "AI ROUTER");
+    if (providers.length === 0) {
+      throw new Error("No Gemini API keys configured. Add at least one to .env");
     }
-
-    // Groq as final fallback if Gemini is completely unavailable
-    if (process.env.GROQ_API_KEY) {
-      try {
-        availableProviders.push(new GroqProvider());
-        console.log(`[AI ROUTER] Registered provider: GROQ_API_KEY (final fallback)`);
-      } catch (e) {
-        console.warn("[AI ROUTER] Groq skipped:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
-    if (availableProviders.length === 0) {
-      throw new Error("No AI providers could be initialized. Please check your API keys (.env).");
-    }
-
-    console.log(`[AI ROUTER] Initialized with ${availableProviders.length} provider(s).`);
-    cachedProvider = new FallbackProvider(availableProviders);
+    console.log(`[AI ROUTER] Initialized with ${providers.length} provider(s).`);
+    cachedProvider = new FallbackProvider(providers);
   }
   return cachedProvider;
 }
 
+// ─── Aastha chat provider (Gemini-only) ───────────────────────────────────────
 let cachedGeminiProvider: AIProvider | null = null;
 
 /**
- * Returns a Gemini-only FallbackProvider (no Groq).
- * All 4 Gemini keys are registered with alternating models so each
- * key+model pair has its own independent 20 RPD free-tier quota bucket.
- * Chain: SECONDARY (3.6) → KEY (3.6) → OCR_3 (3.5) → OCR_4 (3.5)
+ * Returns a Gemini FallbackProvider for the Aastha chatbot.
+ * Same key list and rotation as getAIProvider — kept separate so chat and
+ * analysis failures don't cross-contaminate their caches.
  */
 export function getGeminiProvider(): AIProvider {
   if (!cachedGeminiProvider) {
-    // Each key+model combo has its own RPD quota bucket
-    const geminiKeys = [
-      { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY_SECONDARY },
-      { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY },
-      { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
-      { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
-    ];
-
-    const providers: AIProvider[] = [];
-    for (const { envVar, model, val } of geminiKeys) {
-      if (val && !val.startsWith("your-")) {
-        try {
-          const effVar = `${envVar}_CHAT_EFF`;
-          process.env[effVar] = val;
-          providers.push(new GeminiProvider(effVar, model));
-          console.log(`[AASTHA ROUTER] Registered: ${envVar} → ${model}`);
-        } catch (e) {
-          console.warn(`[AASTHA ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
-        }
-      }
-    }
-
+    const providers = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER");
     if (providers.length === 0) {
       throw new Error("No Gemini API keys available for Aastha. Add at least one Gemini key to .env");
     }
-
     console.log(`[AASTHA ROUTER] Initialized with ${providers.length} Gemini provider(s).`);
     cachedGeminiProvider = new FallbackProvider(providers);
   }
