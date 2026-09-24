@@ -23,19 +23,20 @@ export class GroqProvider implements AIProvider {
       apiKey,
       baseURL: "https://api.groq.com/openai/v1",
     });
-    // Use llama-3.1-8b-instant as the supported and available free-tier model
-    this.modelId = process.env.AI_MODEL || "llama-3.1-8b-instant";
+    // llama-3.3-70b-versatile: current free-tier Groq model with strong JSON generation
+    this.modelId = process.env.AI_MODEL || "llama-3.3-70b-versatile";
   }
 
-  async complete(system: string, user: string, useSearch?: boolean): Promise<string> {
+  async complete(system: string, user: string, _useSearch?: boolean): Promise<string> {
+    // Groq free tier does not support response_format: json_object reliably.
+    // We instruct JSON via the system prompt instead.
     const response = await this.client.chat.completions.create({
       model: this.modelId,
       messages: [
-        { role: "system", content: system },
+        { role: "system", content: system + "\n\nYou MUST respond with valid JSON only. No markdown, no extra text." },
         { role: "user", content: user },
       ],
       temperature: 0,
-      response_format: { type: "json_object" },
     });
 
     const text = response.choices?.[0]?.message?.content;
@@ -126,11 +127,13 @@ export class FallbackProvider implements AIProvider {
         allErrors.push(`[${provider.modelId}]: ${errMsg}`);
 
         if (i < this.providers.length - 1) {
-          // Always try the next provider — rate limits, quota errors, or model errors all warrant a retry with a new key
           console.warn(`[AI ROUTER] Provider ${i + 1} failed — rotating to provider ${i + 2}. Error: ${errMsg.slice(0, 120)}`);
         }
       }
     }
+
+    // Reset cache so next request can re-initialize with fresh providers
+    cachedProvider = null;
 
     throw new Error(`All AI providers failed.\nErrors:\n${allErrors.join('\n')}`);
   }

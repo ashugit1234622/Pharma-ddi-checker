@@ -35,29 +35,39 @@ export async function POST(req: NextRequest) {
 
   const { message, conversationHistory, drugContext, reportContext } = parsed.data;
 
+  let rawResponse: string | null = null;
   try {
     const provider = getAIProvider();
-    
+
     // Build the constrained prompt based on current context
     const prompt = buildAasthaPrompt(
-      conversationHistory, 
-      drugContext || null, 
+      conversationHistory,
+      drugContext || null,
       reportContext || null,
       message
     );
 
-    // Call the provider. The prompt acts as both system instructions and context.
-    const rawResponse = await provider.complete(
-      "You are Aastha, an AI assistant for Farma DDI Checker. Output structured JSON only.", 
+    // Call the provider
+    rawResponse = await provider.complete(
+      "You are Aastha, an AI assistant for Farma DDI Checker. Output structured JSON only.",
       prompt
     );
 
-    // Parse and validate the response structure
-    const parsedAiResponse = AasthaResponseSchema.parse(JSON.parse(extractJson(rawResponse)));
+    // Parse JSON then validate schema
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractJson(rawResponse));
+    } catch {
+      console.error("[AASTHA] JSON parse failed. Raw response:", rawResponse?.slice(0, 500));
+      throw new Error("AI returned non-JSON response.");
+    }
 
+    const parsedAiResponse = AasthaResponseSchema.parse(parsed);
     return NextResponse.json({ data: parsedAiResponse });
+
   } catch (err) {
-    console.error("[AASTHA API Error]:", err);
+    console.error("[AASTHA API Error]:", err instanceof Error ? err.message : err);
+    if (rawResponse) console.error("[AASTHA] Raw AI response was:", rawResponse.slice(0, 500));
     return NextResponse.json(
       { error: "I couldn't generate a response right now. Please try again." },
       { status: 500 }
