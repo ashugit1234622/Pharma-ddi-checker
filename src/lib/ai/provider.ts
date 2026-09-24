@@ -132,8 +132,9 @@ export class FallbackProvider implements AIProvider {
       }
     }
 
-    // Reset cache so next request can re-initialize with fresh providers
+    // Reset both caches so next request re-initialises with fresh providers
     cachedProvider = null;
+    cachedGeminiProvider = null;
 
     throw new Error(`All AI providers failed.\nErrors:\n${allErrors.join('\n')}`);
   }
@@ -192,24 +193,28 @@ let cachedGeminiProvider: AIProvider | null = null;
 
 /**
  * Returns a Gemini-only FallbackProvider (no Groq).
- * Use this for Aastha chat where response quality matters
- * and Groq's smaller models are not appropriate.
+ * All 4 Gemini keys are registered with alternating models so each
+ * key+model pair has its own independent 20 RPD free-tier quota bucket.
+ * Chain: SECONDARY (3.6) → KEY (3.6) → OCR_3 (3.5) → OCR_4 (3.5)
  */
 export function getGeminiProvider(): AIProvider {
   if (!cachedGeminiProvider) {
+    // Each key+model combo has its own RPD quota bucket
     const geminiKeys = [
-      { envVar: "GEMINI_API_KEY_SECONDARY", val: process.env.GEMINI_API_KEY_SECONDARY },
-      { envVar: "GEMINI_API_KEY",           val: process.env.GEMINI_API_KEY },
+      { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY_SECONDARY },
+      { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY },
+      { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
+      { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
     ];
 
     const providers: AIProvider[] = [];
-    for (const { envVar, val } of geminiKeys) {
+    for (const { envVar, model, val } of geminiKeys) {
       if (val && !val.startsWith("your-")) {
         try {
           const effVar = `${envVar}_CHAT_EFF`;
           process.env[effVar] = val;
-          providers.push(new GeminiProvider(effVar, "gemini-3.6-flash"));
-          console.log(`[AASTHA ROUTER] Registered Gemini provider: ${envVar}`);
+          providers.push(new GeminiProvider(effVar, model));
+          console.log(`[AASTHA ROUTER] Registered: ${envVar} → ${model}`);
         } catch (e) {
           console.warn(`[AASTHA ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
         }
@@ -217,7 +222,7 @@ export function getGeminiProvider(): AIProvider {
     }
 
     if (providers.length === 0) {
-      throw new Error("No Gemini API keys available for Aastha chat. Please add GEMINI_API_KEY_SECONDARY or GEMINI_API_KEY to .env");
+      throw new Error("No Gemini API keys available for Aastha. Add at least one Gemini key to .env");
     }
 
     console.log(`[AASTHA ROUTER] Initialized with ${providers.length} Gemini provider(s).`);
