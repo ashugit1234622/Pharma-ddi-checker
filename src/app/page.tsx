@@ -483,6 +483,9 @@ export default function Home() {
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
   const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'alternatives'>('overview');
   const reportRef = useRef<HTMLDivElement>(null);
+  // Ref-based in-flight guard — prevents duplicate API calls from rapid clicks,
+  // prescription scanner events, or swap triggers firing before React re-renders.
+  const isRunningRef = useRef(false);
 
   useEffect(() => {
     let idleTimer: NodeJS.Timeout;
@@ -515,6 +518,11 @@ export default function Home() {
 
 
   const runAnalysis = useCallback(async (d1: DrugSearchResult, d2: DrugSearchResult) => {
+    if (isRunningRef.current) {
+      console.log('[PHARMA] Analysis already in flight — skipping duplicate call');
+      return;
+    }
+    isRunningRef.current = true;
     setAnalyzing(true);
     setReport(null);
     setError('');
@@ -531,7 +539,10 @@ export default function Home() {
         setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
       } else if (json.data?.aiError) setError(json.data.aiError);
     } catch { setError('Failed to reach analysis service.'); }
-    finally { setAnalyzing(false); }
+    finally {
+      setAnalyzing(false);
+      isRunningRef.current = false;
+    }
   }, []);
 
   // Listen for prescription-triggered interaction checks (dispatched by PrescriptionScanner via MedCheck)
@@ -568,6 +579,7 @@ export default function Home() {
 
   // Quick-Swap alternative into Drug2
   const handleSwap = async (altName: string) => {
+    if (isRunningRef.current) return; // block if analysis already in flight
     try {
       const res = await fetch(`/api/drugs?q=${encodeURIComponent(altName)}`);
       const data = await res.json();
@@ -576,7 +588,6 @@ export default function Home() {
         setDrug2(match);
         runAnalysis(drug1, match);
       } else {
-        // Alt not in local db — create a stub so AI can still analyze
         const stub: DrugSearchResult = { id: altName.toLowerCase().replace(/\s+/g, '-'), name: altName, genericName: altName, drugClass: [], synonyms: [], indications: [] };
         setDrug2(stub);
         if (drug1) runAnalysis(drug1, stub);

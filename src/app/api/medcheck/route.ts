@@ -464,7 +464,13 @@ async function fetchQRUrl(url: string): Promise<{ medicine?: MedicineData; produ
 }
 
 // ─── AI Summary (Gemini — used ONLY for summary text, NOT for identification) ──
+// Only calls AI when the medicine record is sparse to conserve API quota.
 async function generateAISummary(medicine: MedicineData): Promise<string> {
+  // If we already have good structured data, just build a local summary — no AI needed.
+  const hasGoodData = medicine.medicineName && (medicine.strength || medicine.manufacturer);
+  if (hasGoodData) {
+    return buildFallbackSummary(medicine);
+  }
   try {
     const provider = getAIProvider();
     const raw = await provider.complete(
