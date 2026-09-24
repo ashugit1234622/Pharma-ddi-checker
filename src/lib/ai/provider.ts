@@ -151,18 +151,21 @@ export function getAIProvider(): AIProvider {
 
     // All available Gemini keys registered as separate providers in priority order.
     // FallbackProvider will rotate through them automatically on any failure.
+    // Alternate models across keys so each key+model combo has its own RPD bucket
     const ddiKeys = [
-      { envVar: "GEMINI_API_KEY_SECONDARY", val: process.env.GEMINI_API_KEY_SECONDARY },
-      { envVar: "GEMINI_API_KEY",           val: process.env.GEMINI_API_KEY },
+      { envVar: "GEMINI_API_KEY_SECONDARY",       model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY_SECONDARY },
+      { envVar: "GEMINI_API_KEY",                  model: "gemini-3.6-flash", val: process.env.GEMINI_API_KEY },
+      { envVar: "PRESCRIPTION_GEMINI_API_KEY_3",  model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_3 },
+      { envVar: "PRESCRIPTION_GEMINI_API_KEY_4",  model: "gemini-3.5-flash", val: process.env.PRESCRIPTION_GEMINI_API_KEY_4 },
     ];
 
-    for (const { envVar, val } of ddiKeys) {
+    for (const { envVar, model, val } of ddiKeys) {
       if (val && !val.startsWith("your-")) {
         try {
           const effVar = `${envVar}_EFF`;
           process.env[effVar] = val;
-          availableProviders.push(new GeminiProvider(effVar, "gemini-3.6-flash"));
-          console.log(`[AI ROUTER] Registered provider: ${envVar}`);
+          availableProviders.push(new GeminiProvider(effVar, model));
+          console.log(`[AI ROUTER] Registered provider: ${envVar} → ${model}`);
         } catch (e) {
           console.warn(`[AI ROUTER] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
         }
