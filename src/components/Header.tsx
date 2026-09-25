@@ -65,11 +65,13 @@ export default function Header() {
               <Link href="/reminders" className="nav-link">
                 <Bell size={16} /> Reminders
               </Link>
-              {session.user.image ? (
-                <img src={session.user.image} alt={session.user.name || 'User'} className="user-avatar" />
-              ) : (
-                <div className="user-avatar-placeholder"><User size={16} /></div>
-              )}
+              <Link href="/profile" className="nav-link">
+                {session.user.image ? (
+                  <img src={session.user.image} alt={session.user.name || 'User'} className="user-avatar" />
+                ) : (
+                  <div className="user-avatar-placeholder"><User size={16} /></div>
+                )}
+              </Link>
               <button onClick={() => signOut()} className="btn-signout">
                 <LogOut size={14} /> Sign Out
               </button>
@@ -103,12 +105,14 @@ export default function Header() {
           {status === 'loading' ? (
             <div className="avatar-skeleton pulse" />
           ) : session?.user ? (
-            <img
-              src={session.user.image || ''}
-              alt={session.user.name || 'User'}
-              className="user-avatar"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+            <Link href="/profile" className="nav-link">
+              <img
+                src={session.user.image || ''}
+                alt={session.user.name || 'User'}
+                className="user-avatar"
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </Link>
           ) : (
             <button onClick={() => signIn('google')} className="btn-signin btn-signin-mobile">
               <User size={14} /> Sign In

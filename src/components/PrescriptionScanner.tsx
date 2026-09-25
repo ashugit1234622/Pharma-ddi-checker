@@ -225,6 +225,24 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
       // Auto-save prescription scan to history
       try {
         const medsList = data.medicines.map((m: any) => m.rawName).join(', ');
+        
+        // Compress image for history storage
+        const compressedBase64 = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const cvs = document.createElement('canvas');
+            const scale = Math.min(600 / img.width, 600 / img.height, 1);
+            cvs.width = img.width * scale;
+            cvs.height = img.height * scale;
+            const ctx = cvs.getContext('2d');
+            ctx?.drawImage(img, 0, 0, cvs.width, cvs.height);
+            resolve(cvs.toDataURL('image/jpeg', 0.4));
+          };
+          img.src = 'data:image/jpeg;base64,' + base64;
+        });
+
+        const historyData = { ...data, thumbnail: compressedBase64 };
+
         fetch('/api/history', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -232,7 +250,7 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
             record_type: 'prescription_scan',
             title: 'Prescription Scan',
             summary: `Extracted medicines: ${medsList}`,
-            data_json: data
+            data_json: historyData
           })
         }).catch(err => console.error('Failed to auto-save prescription', err));
       } catch(e) {}
