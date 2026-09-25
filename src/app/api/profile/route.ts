@@ -38,10 +38,12 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Step 1: Verify session
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: no session', step: 'auth' }, { status: 401 });
   }
+
   try {
     const body = await req.json();
     const {
@@ -50,10 +52,16 @@ export async function POST(req: NextRequest) {
       medical_history, emergency_contact
     } = body;
 
+    // Step 2: Get DB
     const db = tryGetDatabase();
-    if (!db) return NextResponse.json({ error: 'DB unavailable' }, { status: 503 });
+    if (!db) {
+      return NextResponse.json({ 
+        error: 'Database unavailable on this server. Native module (better-sqlite3) failed to load.',
+        step: 'db_init'
+      }, { status: 503 });
+    }
 
-    // Upsert user in case they don't exist yet (fallback)
+    // Step 3: Upsert user
     let user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as any;
     if (!user) {
       const newId = uuidv4();
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
       user = { id: newId };
     }
 
+    // Step 4: Upsert profile
     const existing = db.prepare('SELECT id FROM patient_profiles WHERE user_id = ?').get(user.id) as any;
     const profileId = existing?.id || uuidv4();
 
@@ -73,16 +82,10 @@ export async function POST(req: NextRequest) {
           medical_history=?, emergency_contact=?, updated_at=datetime('now')
         WHERE user_id=?
       `).run(
-        display_name || null,
-        age ? parseInt(age) : null,
-        gender || null,
-        blood_group || null,
-        JSON.stringify(underlying_diseases || []),
-        JSON.stringify(allergies || []),
-        JSON.stringify(current_medications || []),
-        medical_history || null,
-        emergency_contact || null,
-        user.id
+        display_name || null, age ? parseInt(age) : null, gender || null, blood_group || null,
+        JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
+        JSON.stringify(current_medications || []), medical_history || null,
+        emergency_contact || null, user.id
       );
     } else {
       db.prepare(`
@@ -91,23 +94,18 @@ export async function POST(req: NextRequest) {
            underlying_diseases, allergies, current_medications, medical_history, emergency_contact)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        profileId,
-        user.id,
-        display_name || null,
-        age ? parseInt(age) : null,
-        gender || null,
-        blood_group || null,
-        JSON.stringify(underlying_diseases || []),
-        JSON.stringify(allergies || []),
-        JSON.stringify(current_medications || []),
-        medical_history || null,
+        profileId, user.id, display_name || null, age ? parseInt(age) : null,
+        gender || null, blood_group || null,
+        JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
+        JSON.stringify(current_medications || []), medical_history || null,
         emergency_contact || null
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
-    console.error('[Profile API] Error:', e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error('[Profile API] Error:', e.message, e.stack);
+    return NextResponse.json({ error: e.message, step: 'db_write' }, { status: 500 });
   }
 }
+

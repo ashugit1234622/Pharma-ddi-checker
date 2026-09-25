@@ -57,13 +57,16 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, age: form.age ? parseInt(form.age) : null }),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         router.push('/?welcome=1');
       } else {
-        alert('Failed to save profile. Please try again.');
+        const errMsg = data.error || 'Unknown error';
+        const step = data.step ? ` [${data.step}]` : '';
+        alert(`Failed to save profile${step}: ${errMsg}`);
       }
-    } catch {
-      alert('Network error. Please try again.');
+    } catch (err: any) {
+      alert(`Network error: ${err.message}`);
     } finally {
       setSaving(false);
     }
