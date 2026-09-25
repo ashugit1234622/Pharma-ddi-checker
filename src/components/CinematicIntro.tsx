@@ -50,7 +50,7 @@ export default function CinematicIntro() {
       return;
     }
 
-    const hasSeenIntro = sessionStorage.getItem('farma_intro_seen');
+    const hasSeenIntro = sessionStorage.getItem('pharma_intro_seen');
     const isDebug = window.location.search.includes('introDebug=true');
 
     if (hasSeenIntro && !PLAY_INTRO_ON_RETURNING_VISITS && !isDebug) {
@@ -100,7 +100,7 @@ export default function CinematicIntro() {
       return () => clearTimeout(t);
     }
     if (stage === 'ZOOM_REVEAL') {
-      sessionStorage.setItem('farma_intro_seen', 'true');
+      sessionStorage.setItem('pharma_intro_seen', 'true');
       const t = setTimeout(() => {
         setStage('COMPLETE');
         document.body.style.overflow = '';

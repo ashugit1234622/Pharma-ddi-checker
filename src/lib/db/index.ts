@@ -6,7 +6,7 @@ let db: Database.Database | null = null;
 
 export function getDatabase(): Database.Database {
   if (db) return db;
-  const dbPath = process.env.DATABASE_PATH || './data/farma.db';
+  const dbPath = process.env.DATABASE_PATH || './data/pharma.db';
   const fullPath = path.resolve(process.cwd(), dbPath);
   const dir = path.dirname(fullPath);
   if (!fs.existsSync(dir)) {
@@ -80,5 +80,84 @@ function initializeSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_drug_enzymes_drug_id ON drug_enzymes(drug_id);
     CREATE INDEX IF NOT EXISTS idx_interactions_drugs ON interactions(drug1_id, drug2_id);
     CREATE INDEX IF NOT EXISTS idx_ai_analyses_drugs ON ai_analyses(drug1_id, drug2_id);
+
+    -- NextAuth tables (standard schema for databases)
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      email TEXT UNIQUE,
+      emailVerified TEXT,
+      image TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS accounts (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      type TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      providerAccountId TEXT NOT NULL,
+      refresh_token TEXT,
+      access_token TEXT,
+      expires_at INTEGER,
+      token_type TEXT,
+      scope TEXT,
+      id_token TEXT,
+      session_state TEXT,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      sessionToken TEXT UNIQUE NOT NULL,
+      userId TEXT NOT NULL,
+      expires TEXT NOT NULL,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS verification_tokens (
+      identifier TEXT NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      expires TEXT NOT NULL,
+      PRIMARY KEY (identifier, token)
+    );
+
+    -- Patient History Hub
+    CREATE TABLE IF NOT EXISTS patient_records (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      record_type TEXT NOT NULL, -- 'ddi_check', 'prescription_ocr', 'medcheck'
+      title TEXT NOT NULL,
+      summary TEXT,
+      data_json TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_patient_records_user_id ON patient_records(user_id);
+
+    -- Medication Reminders
+    CREATE TABLE IF NOT EXISTS medication_reminders (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      drug_name TEXT NOT NULL,
+      dosage TEXT NOT NULL,
+      frequency TEXT NOT NULL,
+      times_json TEXT NOT NULL,
+      instructions TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_medication_reminders_user_id ON medication_reminders(user_id);
+
+    -- Dose Logs
+    CREATE TABLE IF NOT EXISTS dose_logs (
+      id TEXT PRIMARY KEY,
+      reminder_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      scheduled_time TEXT NOT NULL,
+      status TEXT NOT NULL, -- 'taken', 'skipped'
+      logged_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (reminder_id) REFERENCES medication_reminders(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_dose_logs_reminder_user ON dose_logs(reminder_id, user_id);
   `);
 }

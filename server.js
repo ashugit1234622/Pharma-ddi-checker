@@ -67,7 +67,7 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(` FARMA DDI CHECKER — Node.js Server Running!`);
+  console.log(` PHARMA DDI CHECKER — Node.js Server Running!`);
   console.log(` Access Application: http://localhost:${PORT}`);
   console.log(`====================================================`);
 });

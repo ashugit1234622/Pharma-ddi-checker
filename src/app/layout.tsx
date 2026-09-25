@@ -4,6 +4,7 @@ import './medcheck.css';
 import './pwa.css';
 import Script from 'next/script';
 import Header from '@/components/Header';
+import NextAuthProvider from '@/components/NextAuthProvider';
 
 export const viewport: Viewport = {
   themeColor: '#0d1117',
@@ -46,24 +47,26 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/icon-512.jpg" />
       </head>
       <body>
-        {/* Service Worker Registration */}
-        <Script
-          id="sw-register"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(reg) { console.log('[SW] Registered:', reg.scope); })
-                    .catch(function(err) { console.warn('[SW] Registration failed:', err); });
-                });
-              }
-            `,
-          }}
-        />
-        <Header />
-        <main className="container">{children}</main>
+        <NextAuthProvider>
+          {/* Service Worker Registration */}
+          <Script
+            id="sw-register"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                      .then(function(reg) { console.log('[SW] Registered:', reg.scope); })
+                      .catch(function(err) { console.warn('[SW] Registration failed:', err); });
+                  });
+                }
+              `,
+            }}
+          />
+          <Header />
+          <main className="container">{children}</main>
+        </NextAuthProvider>
       </body>
     </html>
   );

@@ -1,8 +1,8 @@
-// Farma DDI Checker - Service Worker
+// Pharma DDI Checker - Service Worker
 // Strategy: Network-first for API calls, Cache-first for static assets
 
-const CACHE_NAME = 'farma-ddi-v2';
-const STATIC_CACHE = 'farma-static-v2';
+const CACHE_NAME = 'pharma-ddi-v2';
+const STATIC_CACHE = 'pharma-static-v2';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [

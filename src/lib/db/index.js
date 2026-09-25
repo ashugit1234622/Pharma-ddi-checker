@@ -11,7 +11,7 @@ let db = null;
 function getDatabase() {
     if (db)
         return db;
-    const dbPath = process.env.DATABASE_PATH || './data/farma.db';
+    const dbPath = process.env.DATABASE_PATH || './data/pharma.db';
     const fullPath = path_1.default.resolve(process.cwd(), dbPath);
     const dir = path_1.default.dirname(fullPath);
     if (!fs_1.default.existsSync(dir)) {

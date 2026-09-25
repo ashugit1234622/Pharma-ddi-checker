@@ -169,7 +169,7 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
 
   const handleInteractionCheck = (drug1: string, drug2: string) => {
     onClose();
-    window.dispatchEvent(new CustomEvent('farma-check-interaction', { detail: { drug1, drug2 } }));
+    window.dispatchEvent(new CustomEvent('pharma-check-interaction', { detail: { drug1, drug2 } }));
   };
 
   return (
@@ -368,9 +368,36 @@ export default function MedCheck({ onClose }: { onClose: () => void }) {
                 <p className="ai-summary-text">{result.summary || "No summary available."}</p>
               </div>
 
-              <div className="result-actions">
+              <div className="result-actions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <button className="btn btn-secondary" onClick={resetScanner}>
                   <ChevronLeft size={18} /> Scan Another
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async (e) => {
+                    const btn = e.currentTarget;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<span class="icon-spin">↻</span> Saving...';
+                    try {
+                      await fetch('/api/history', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          record_type: 'medcheck',
+                          title: result.medicineName || result.brandName || "Unknown Medicine",
+                          summary: result.summary,
+                          data_json: result
+                        })
+                      });
+                      btn.innerHTML = '✓ Saved to History';
+                      setTimeout(() => btn.innerHTML = originalText, 2000);
+                    } catch (err) {
+                      btn.innerHTML = '❌ Failed';
+                      setTimeout(() => btn.innerHTML = originalText, 2000);
+                    }
+                  }}
+                >
+                  <FileText size={18} /> Save to History
                 </button>
               </div>
             </div>

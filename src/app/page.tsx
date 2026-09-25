@@ -567,8 +567,8 @@ export default function Home() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => runAnalysis(d1, d2), 400);
     };
-    window.addEventListener('farma-check-interaction', handler);
-    return () => window.removeEventListener('farma-check-interaction', handler);
+    window.addEventListener('pharma-check-interaction', handler);
+    return () => window.removeEventListener('pharma-check-interaction', handler);
   }, [runAnalysis]);
 
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
@@ -747,10 +747,40 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              {/* Print button */}
-              <button className="btn btn-outline print-hide" style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem', flexShrink: 0 }} onClick={handlePrint}>
-                <FileText className="icon" size={16} /> Print Summary
-              </button>
+              {/* Print button & Save Button */}
+              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                <button className="btn btn-outline print-hide" style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }} onClick={handlePrint}>
+                  <FileText className="icon" size={16} /> Print Summary
+                </button>
+                <button 
+                  className="btn btn-primary print-hide" 
+                  style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }}
+                  onClick={async (e) => {
+                    const btn = e.currentTarget;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<span class="icon-spin">↻</span> Saving...';
+                    try {
+                      await fetch('/api/history', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          record_type: 'ddi_check',
+                          title: `${drug1?.name} + ${drug2?.name}`,
+                          summary: report.executiveSummary,
+                          data_json: report
+                        })
+                      });
+                      btn.innerHTML = '✓ Saved';
+                      setTimeout(() => btn.innerHTML = originalText, 2000);
+                    } catch (err) {
+                      btn.innerHTML = '❌ Failed';
+                      setTimeout(() => btn.innerHTML = originalText, 2000);
+                    }
+                  }}
+                >
+                  Save to History
+                </button>
+              </div>
             </div>
           </Reveal>
 

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: farma-ddi-checker
+    name: pharma-ddi-checker
     env: node
     plan: free # Change this to 'starter' or higher if you need more resources
     buildCommand: npm install && npm run build
@@ -8,9 +8,29 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NEXTAUTH_URL
+        value: https://pharma-ddi-checker-1.onrender.com
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: DATABASE_PATH
+        value: ./data/pharma.db
       # Add your Gemini API Key below. Do NOT commit the actual key to git!
       # You can override this value in the Render dashboard.
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_SECONDARY
+        sync: false
+      - key: PRESCRIPTION_GEMINI_API_KEY_3
+        sync: false
+      - key: PRESCRIPTION_GEMINI_API_KEY_4
+        sync: false
+      - key: GEMINI_API_KEY_5
+        sync: false
+      - key: GEMINI_API_KEY_6
         sync: false
       - key: AI_MODEL
         value: gemini-2.5-flash
