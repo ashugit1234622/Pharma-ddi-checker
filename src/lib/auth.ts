@@ -46,7 +46,11 @@ export const authOptions: NextAuthOptions = {
       return false;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === 'update' && session?.profileComplete) {
+        token.profileComplete = session.profileComplete;
+      }
+
       if (user?.email) {
         try {
           const db = tryGetDatabase();

@@ -59,7 +59,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        await update(); // Refetch session so profileComplete becomes true
+        await update({ profileComplete: true }); // Refetch session so profileComplete becomes true
         router.push('/?welcome=1');
       } else {
         const errMsg = data.error || 'Unknown error';
