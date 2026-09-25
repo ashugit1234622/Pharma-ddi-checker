@@ -1,12 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { User, LogOut, Clock, Bell } from 'lucide-react';
 
 export default function AuthUI() {
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      if (!sessionStorage.getItem('post_signin_reload')) {
+        sessionStorage.setItem('post_signin_reload', 'true');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } else if (status === 'unauthenticated') {
+      sessionStorage.removeItem('post_signin_reload');
+    }
+  }, [status]);
 
   if (status === 'loading') {
     return <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-hover)' }} className="pulse" />;
