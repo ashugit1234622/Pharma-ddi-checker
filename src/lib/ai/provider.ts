@@ -85,6 +85,7 @@ export class FallbackProvider implements AIProvider {
 
         if (i < this.providers.length - 1) {
           console.warn(`[AI ROUTER] Provider ${i + 1} failed — rotating to provider ${i + 2}. Error: ${errMsg.slice(0, 120)}`);
+          await new Promise(r => setTimeout(r, 1500));
         }
       }
     }
