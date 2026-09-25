@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -40,11 +40,11 @@ export default function Header() {
     <>
       <header className="header">
         {/* ── Brand / Logo ── */}
-        <div className="logo">
+        <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
           <span>💊</span>
           <span className="logo-brand">Pharma</span>
           <span className="logo-sub">DDI Checker</span>
-        </div>
+        </Link>
 
         {/* ── Desktop nav (hidden on mobile) ── */}
         <nav className="header-nav-desktop">
@@ -54,6 +54,11 @@ export default function Header() {
             <div className="avatar-skeleton pulse" />
           ) : session?.user ? (
             <>
+              {pathname !== '/' && (
+                <Link href="/" className="nav-link">
+                  <Home size={16} /> Home
+                </Link>
+              )}
               <Link href="/history" className="nav-link">
                 <Clock size={16} /> History
               </Link>
@@ -130,6 +135,11 @@ export default function Header() {
                   )}
                   <span className="mobile-user-name">{session.user.name || session.user.email}</span>
                 </div>
+                {pathname !== '/' && (
+                  <Link href="/" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                    <Home size={18} style={{ color: 'var(--accent-primary)' }} /> Home
+                  </Link>
+                )}
                 <Link href="/history" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
                   <Clock size={18} style={{ color: 'var(--accent-primary)' }} /> History
                 </Link>
