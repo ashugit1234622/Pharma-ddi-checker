@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 
 function tryGetDatabase() {
@@ -12,7 +13,7 @@ function tryGetDatabase() {
 }
 
 export async function GET() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -37,23 +38,33 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
     const body = await req.json();
-    const { display_name, age, gender, blood_group, underlying_diseases, allergies, current_medications, medical_history, emergency_contact } = body;
+    const {
+      display_name, age, gender, blood_group,
+      underlying_diseases, allergies, current_medications,
+      medical_history, emergency_contact
+    } = body;
 
     const db = tryGetDatabase();
     if (!db) return NextResponse.json({ error: 'DB unavailable' }, { status: 503 });
 
-    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as any;
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    // Upsert user in case they don't exist yet (fallback)
+    let user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as any;
+    if (!user) {
+      const newId = uuidv4();
+      db.prepare(`INSERT INTO users (id, name, email, image) VALUES (?, ?, ?, ?)`)
+        .run(newId, session.user.name || '', session.user.email, (session.user as any).image || '');
+      user = { id: newId };
+    }
 
     const existing = db.prepare('SELECT id FROM patient_profiles WHERE user_id = ?').get(user.id) as any;
-
     const profileId = existing?.id || uuidv4();
+
     if (existing) {
       db.prepare(`
         UPDATE patient_profiles SET
@@ -62,27 +73,41 @@ export async function POST(req: NextRequest) {
           medical_history=?, emergency_contact=?, updated_at=datetime('now')
         WHERE user_id=?
       `).run(
-        display_name, age, gender, blood_group,
+        display_name || null,
+        age ? parseInt(age) : null,
+        gender || null,
+        blood_group || null,
         JSON.stringify(underlying_diseases || []),
         JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []),
-        medical_history, emergency_contact, user.id
+        medical_history || null,
+        emergency_contact || null,
+        user.id
       );
     } else {
       db.prepare(`
-        INSERT INTO patient_profiles (id, user_id, display_name, age, gender, blood_group,
-          underlying_diseases, allergies, current_medications, medical_history, emergency_contact)
+        INSERT INTO patient_profiles 
+          (id, user_id, display_name, age, gender, blood_group,
+           underlying_diseases, allergies, current_medications, medical_history, emergency_contact)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        profileId, user.id, display_name, age, gender, blood_group,
+        profileId,
+        user.id,
+        display_name || null,
+        age ? parseInt(age) : null,
+        gender || null,
+        blood_group || null,
         JSON.stringify(underlying_diseases || []),
         JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []),
-        medical_history, emergency_contact
+        medical_history || null,
+        emergency_contact || null
       );
     }
+
     return NextResponse.json({ success: true });
   } catch (e: any) {
+    console.error('[Profile API] Error:', e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
