@@ -17,6 +17,7 @@ export default function RemindersPage() {
   const [dosage, setDosage] = useState('');
   const [frequency, setFrequency] = useState('Daily');
   const [times, setTimes] = useState('08:00');
+  const [times2, setTimes2] = useState('20:00');
   const [instructions, setInstructions] = useState('');
 
   useEffect(() => {
@@ -31,6 +32,8 @@ export default function RemindersPage() {
     }
   }, [status]);
 
+
+
   const checkNotificationStatus = () => {
     if ('Notification' in window) {
       setNotificationsEnabled(Notification.permission === 'granted');
@@ -38,13 +41,15 @@ export default function RemindersPage() {
   };
 
   const requestNotifications = async () => {
-    if (!('Notification' in window)) return;
+    if (!('Notification' in window)) {
+      alert("Your browser doesn't support notifications.");
+      return;
+    }
     const permission = await Notification.requestPermission();
     setNotificationsEnabled(permission === 'granted');
     if (permission === 'granted') {
       new Notification('Reminders Enabled', {
-        body: 'You will now receive medication reminders.',
-        icon: '/icon-512.jpg'
+        body: 'You will now receive medication reminders when you have this app open.',
       });
     }
   };
@@ -66,6 +71,11 @@ export default function RemindersPage() {
   const handleAddReminder = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let times_json = [times];
+      if (frequency === 'Twice Daily') {
+        times_json = [times, times2];
+      }
+
       const res = await fetch('/api/reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +83,7 @@ export default function RemindersPage() {
           drug_name: drugName,
           dosage,
           frequency,
-          times_json: [times], // simplifying for MVP
+          times_json,
           instructions
         })
       });
@@ -83,6 +93,8 @@ export default function RemindersPage() {
         setDrugName('');
         setDosage('');
         setTimes('08:00');
+        setTimes2('20:00');
+        setFrequency('Daily');
         setInstructions('');
         fetchReminders();
       }
@@ -187,9 +199,15 @@ export default function RemindersPage() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-dim)' }}>Time</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-dim)' }}>Time {frequency === 'Twice Daily' ? '1' : ''}</label>
                 <input required value={times} onChange={e => setTimes(e.target.value)} type="time" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)' }} />
               </div>
+              {frequency === 'Twice Daily' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-dim)' }}>Time 2</label>
+                  <input required value={times2} onChange={e => setTimes2(e.target.value)} type="time" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)' }} />
+                </div>
+              )}
             </div>
             
             <div style={{ marginBottom: '1.5rem' }}>

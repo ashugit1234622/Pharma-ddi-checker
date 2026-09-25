@@ -22,7 +22,18 @@ interface MedCheckResult {
 }
 
 export default function MedCheck({ onClose }: { onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<MedCheckTab>('qr');
+  const [activeTab, setActiveTab] = useState<MedCheckTab>(() => {
+    try {
+      const stored = localStorage.getItem('pharma_medcheck_tab');
+      return (stored as MedCheckTab) || 'qr';
+    } catch(e) { return 'qr'; }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pharma_medcheck_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
