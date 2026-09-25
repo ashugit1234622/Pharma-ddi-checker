@@ -39,11 +39,18 @@ export class GeminiProvider implements AIProvider {
       config.responseMimeType = "application/json";
     }
 
-    const response = await this.ai.models.generateContent({
+    const generatePromise = this.ai.models.generateContent({
       model: this.modelName,
       contents: user,
       config
     });
+
+    // Hard 12-second timeout to prevent the SDK from hanging endlessly on internal retries
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("503 Timeout: API took too long to respond.")), 12000);
+    });
+
+    const response = await Promise.race([generatePromise, timeoutPromise]) as any;
 
     if (!response.text) {
       throw new Error("Gemini returned no text content.");
@@ -76,17 +83,36 @@ export class FallbackProvider implements AIProvider {
       const provider = this.providers[i];
       console.log(`[AI ROUTER] Trying provider ${i + 1}/${this.providers.length}: ${provider.modelId}`);
 
-      try {
-        const result = await provider.complete(system, user, useSearch);
-        return result;
-      } catch (err: any) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        allErrors.push(`[${provider.modelId}]: ${errMsg}`);
+      let success = false;
+      let result = "";
 
-        if (i < this.providers.length - 1) {
-          console.warn(`[AI ROUTER] Provider ${i + 1} failed — rotating to provider ${i + 2}. Error: ${errMsg.slice(0, 120)}`);
+      // Retry up to 2 times for 503/Busy errors before burning the key
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          result = await provider.complete(system, user, useSearch);
+          success = true;
+          break;
+        } catch (err: any) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
+          
+          if (attempt === 2 || !isBusy) {
+            allErrors.push(`[${provider.modelId}]: ${errMsg}`);
+            break; // Break the retry loop, move to next provider
+          }
+          
+          console.warn(`[AI ROUTER] Provider ${i + 1} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 1.5s...`);
           await new Promise(r => setTimeout(r, 1500));
         }
+      }
+
+      if (success) {
+        return result;
+      }
+
+      if (i < this.providers.length - 1) {
+        console.warn(`[AI ROUTER] Provider ${i + 1} fully failed — rotating to provider ${i + 2}.`);
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
 
@@ -105,10 +131,10 @@ export class FallbackProvider implements AIProvider {
 const GEMINI_KEY_CONFIGS = [
   { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash" },
   { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.5-flash" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.5-flash" },
-  { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.5-flash" },
-  { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.5-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.6-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.6-flash" },
 ] as const;
 
 function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {
