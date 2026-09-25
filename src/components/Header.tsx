@@ -1,110 +1,149 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Menu, ScanBarcode, X } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User } from 'lucide-react';
+import Link from 'next/link';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import MedCheck from './MedCheck';
 import PWAInstallButton from './PWAInstallButton';
-import AuthUI from './AuthUI';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMedCheckOpen, setIsMedCheckOpen] = useState(false);
+  const { data: session, status } = useSession();
 
-  const toggleMenu = () => {
-    setIsMenuOpen(prev => !prev);
-  };
+  const toggleMenu = () => setIsMenuOpen(prev => !prev);
 
   const openMedCheck = () => {
     setIsMedCheckOpen(true);
-    setIsMenuOpen(false); // Close the hamburger menu
+    setIsMenuOpen(false);
   };
 
-  const closeMedCheck = () => {
-    setIsMedCheckOpen(false);
-  };
+  const closeMedCheck = () => setIsMedCheckOpen(false);
 
   return (
     <>
-      <header className="header" style={{ position: 'sticky', top: 0, zIndex: 50, width: '100%' }}>
+      <header className="header">
+        {/* ── Brand / Logo ── */}
         <div className="logo">
-          <span>💊 Pharma</span> DDI Checker
+          <span>💊</span>
+          <span className="logo-brand">Pharma</span>
+          <span className="logo-sub">DDI Checker</span>
         </div>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="print-hide" style={{ fontSize: '0.78rem', color: 'var(--text-dim)', padding: '0.3rem 0.7rem', background: 'var(--bg-hover)', borderRadius: '6px' }}>
-            Powered by Gemini AI
-          </span>
-          
-          <AuthUI />
+
+        {/* ── Desktop nav (hidden on mobile) ── */}
+        <nav className="header-nav-desktop">
+          <span className="powered-badge">Powered by Gemini AI</span>
+
+          {status === 'loading' ? (
+            <div className="avatar-skeleton pulse" />
+          ) : session?.user ? (
+            <>
+              <Link href="/history" className="nav-link">
+                <Clock size={16} /> History
+              </Link>
+              <Link href="/reminders" className="nav-link">
+                <Bell size={16} /> Reminders
+              </Link>
+              {session.user.image ? (
+                <img src={session.user.image} alt={session.user.name || 'User'} className="user-avatar" />
+              ) : (
+                <div className="user-avatar-placeholder"><User size={16} /></div>
+              )}
+              <button onClick={() => signOut()} className="btn-signout">
+                <LogOut size={14} /> Sign Out
+              </button>
+            </>
+          ) : (
+            <button onClick={() => signIn('google')} className="btn-signin">
+              <User size={16} /> Sign In
+            </button>
+          )}
+
           <PWAInstallButton />
 
-          <div className="hamburger-container print-hide" style={{ position: 'relative' }}>
-            <button 
-              onClick={toggleMenu}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-main)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0.5rem',
-                borderRadius: '8px',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              aria-label="Menu"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {/* Hamburger */}
+          <div className="hamburger-container">
+            <button onClick={toggleMenu} className="hamburger-btn" aria-label="Menu">
+              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-
             {isMenuOpen && (
-              <div 
-                style={{
-                  position: 'absolute',
-                  top: '120%',
-                  right: 0,
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                  minWidth: '200px',
-                  padding: '0.5rem',
-                  zIndex: 100,
-                  animation: 'fadeIn 0.2s ease'
-                }}
-              >
-                <button
-                  onClick={openMedCheck}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-main)',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    fontWeight: 500,
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <ScanBarcode size={20} style={{ color: 'var(--accent-primary)' }} />
+              <div className="dropdown-menu">
+                <button onClick={openMedCheck} className="dropdown-item">
+                  <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
                   MedCheck
                 </button>
               </div>
             )}
           </div>
         </nav>
+
+        {/* ── Mobile right side ── */}
+        <div className="header-nav-mobile">
+          {status === 'loading' ? (
+            <div className="avatar-skeleton pulse" />
+          ) : session?.user ? (
+            <img
+              src={session.user.image || ''}
+              alt={session.user.name || 'User'}
+              className="user-avatar"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <button onClick={() => signIn('google')} className="btn-signin btn-signin-mobile">
+              <User size={14} /> Sign In
+            </button>
+          )}
+
+          <button onClick={toggleMenu} className="hamburger-btn" aria-label="Menu">
+            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+
+        {/* ── Mobile dropdown (full) ── */}
+        {isMenuOpen && (
+          <div className="mobile-dropdown">
+            <div className="mobile-dropdown-header">
+              <span className="powered-badge">Powered by Gemini AI</span>
+            </div>
+
+            {session?.user ? (
+              <>
+                <div className="mobile-user-row">
+                  {session.user.image && (
+                    <img src={session.user.image} alt={session.user.name || ''} className="user-avatar" />
+                  )}
+                  <span className="mobile-user-name">{session.user.name || session.user.email}</span>
+                </div>
+                <Link href="/history" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                  <Clock size={18} style={{ color: 'var(--accent-primary)' }} /> History
+                </Link>
+                <Link href="/reminders" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                  <Bell size={18} style={{ color: 'var(--accent-primary)' }} /> Reminders
+                </Link>
+                <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="mobile-menu-item mobile-signout">
+                  <LogOut size={18} /> Sign Out
+                </button>
+              </>
+            ) : (
+              <button onClick={() => { signIn('google'); setIsMenuOpen(false); }} className="mobile-menu-item mobile-signin-full">
+                <User size={18} /> Sign In with Google
+              </button>
+            )}
+
+            <div className="mobile-menu-divider" />
+
+            <button onClick={openMedCheck} className="mobile-menu-item">
+              <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} /> MedCheck
+            </button>
+
+            <div className="mobile-pwa-row">
+              <PWAInstallButton />
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Full Screen MedCheck Overlay */}
       {isMedCheckOpen && <MedCheck onClose={closeMedCheck} />}
     </>
   );

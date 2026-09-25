@@ -98,28 +98,261 @@ a:hover { color: var(--accent-hover); }
 
 .header {
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: rgba(10, 10, 12, 0.85);
+  background-color: rgba(10, 10, 12, 0.92);
   backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
   width: 100%;
-  z-index: 50;
+  z-index: 100;
+  /* allow mobile dropdown to overlap below */
+  flex-wrap: wrap;
+  gap: 0;
 }
 
+/* ── Logo ── */
 .logo {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   color: var(--text-main);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.logo-brand { color: var(--accent-primary); }
+.logo-sub   { color: var(--text-main); font-weight: 600; }
+
+/* ── Desktop nav ── */
+.header-nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.logo span { color: var(--accent-primary); }
+/* ── Mobile nav (logo row right side) ── */
+.header-nav-mobile {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Powered badge ── */
+.powered-badge {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  padding: 0.25rem 0.6rem;
+  background: var(--bg-hover);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ── Nav links (desktop) ── */
+.nav-link {
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.nav-link:hover { background: var(--bg-hover); }
+
+/* ── Auth buttons ── */
+.btn-signin {
+  background: var(--accent-primary);
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn-signin:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-signin-mobile { font-size: 0.78rem; padding: 0.35rem 0.65rem; }
+
+.btn-signout {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-signout:hover { background: var(--bg-hover); }
+
+/* ── Avatar ── */
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.user-avatar-placeholder {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.avatar-skeleton {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  flex-shrink: 0;
+}
+
+/* ── Hamburger ── */
+.hamburger-container { position: relative; }
+.hamburger-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.hamburger-btn:hover { background: var(--bg-hover); }
+
+/* ── Desktop dropdown (small) ── */
+.dropdown-menu {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  min-width: 180px;
+  padding: 0.4rem;
+  z-index: 200;
+  animation: fadeIn 0.15s ease;
+}
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.dropdown-item:hover { background: var(--bg-hover); }
+
+/* ── Mobile full-width dropdown ── */
+.mobile-dropdown {
+  display: none;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  background: rgba(10, 10, 12, 0.97);
+  padding: 0.5rem 1rem 0.75rem;
+  flex-direction: column;
+  gap: 0.2rem;
+  animation: fadeIn 0.15s ease;
+  order: 3;
+}
+.mobile-dropdown-header {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.3rem;
+}
+.mobile-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.5rem 0.3rem;
+}
+.mobile-user-name {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.92rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background 0.15s;
+  text-align: left;
+}
+.mobile-menu-item:hover { background: var(--bg-hover); }
+.mobile-signout { color: #ff6b6b; }
+.mobile-signin-full {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0.65rem !important;
+  margin-top: 0.25rem;
+}
+.mobile-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+.mobile-pwa-row {
+  padding: 0.3rem 0;
+}
+
+/* ── Responsive breakpoints ── */
+@media (max-width: 640px) {
+  .header { padding: 0.55rem 1rem; }
+  .header-nav-desktop { display: none; }
+  .header-nav-mobile  { display: flex; }
+  .mobile-dropdown    { display: flex; }
+  .logo-sub { font-size: 0.88rem; }
+  .logo-brand { font-size: 1rem; }
+}
 
 /* Cards and Panels (Translucent Glass for 3D Background) */
 .card, 
