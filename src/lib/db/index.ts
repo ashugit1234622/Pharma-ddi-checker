@@ -90,6 +90,25 @@ function initializeSchema(db: Database.Database) {
       image TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Patient profile (onboarding data)
+    CREATE TABLE IF NOT EXISTS patient_profiles (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      display_name TEXT,
+      age INTEGER,
+      gender TEXT,
+      blood_group TEXT,
+      underlying_diseases TEXT DEFAULT '[]',
+      allergies TEXT DEFAULT '[]',
+      current_medications TEXT DEFAULT '[]',
+      medical_history TEXT,
+      emergency_contact TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_patient_profiles_user_id ON patient_profiles(user_id);
     CREATE TABLE IF NOT EXISTS accounts (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,

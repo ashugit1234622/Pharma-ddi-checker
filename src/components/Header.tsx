@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { useRouter, usePathname } from 'next/navigation';
 import MedCheck from './MedCheck';
 import PWAInstallButton from './PWAInstallButton';
 
@@ -11,6 +12,20 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMedCheckOpen, setIsMedCheckOpen] = useState(false);
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Redirect new users (no profile yet) to onboarding
+  useEffect(() => {
+    if (
+      status === 'authenticated' &&
+      session?.user &&
+      (session.user as any).profileComplete === false &&
+      pathname !== '/onboarding'
+    ) {
+      router.push('/onboarding');
+    }
+  }, [session, status, pathname]);
 
   const toggleMenu = () => setIsMenuOpen(prev => !prev);
 
