@@ -102,12 +102,12 @@ export class FallbackProvider implements AIProvider {
 // DDI analysis, Aastha chat, MedCheck, Ask, and Prescription OCR.
 // Each key+model combo has its own independent free-tier quota bucket.
 const GEMINI_KEY_CONFIGS = [
-  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-1.5-flash" },
-  { envVar: "GEMINI_API_KEY",                model: "gemini-1.5-flash" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-1.5-flash" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-1.5-flash" },
-  { envVar: "GEMINI_API_KEY_5",              model: "gemini-1.5-flash" },
-  { envVar: "GEMINI_API_KEY_6",              model: "gemini-1.5-flash" },
+  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.5-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.5-flash" },
+  { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.5-flash" },
+  { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.5-flash" },
 ] as const;
 
 function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {
