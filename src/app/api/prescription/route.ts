@@ -89,20 +89,37 @@ export async function POST(req: NextRequest) {
     try {
       console.log(`[PRESCRIPTION OCR] Attempting with ${name} (${i + 1}/${ocrKeys.length})`);
       const ai = new GoogleGenAI({ apiKey: key });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents: [{
-          role: "user",
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: image } },
-            { text: SYSTEM_PROMPT }
-          ]
-        }],
-        config: {
-          temperature: 0,
-          responseMimeType: "application/json"
+      let response;
+      
+      // 3-retry brute force loop for 503s
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const generatePromise = ai.models.generateContent({
+            model: "gemini-3.8-flash",
+            contents: [{
+              role: "user",
+              parts: [
+                { inlineData: { mimeType: "image/jpeg", data: image } },
+                { text: SYSTEM_PROMPT }
+              ]
+            }],
+            config: { temperature: 0, responseMimeType: "application/json" }
+          });
+          
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (35s).")), 35000);
+          });
+          
+          response = await Promise.race([generatePromise, timeoutPromise]) as any;
+          break; // success, break out of retry loop
+        } catch (err: any) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
+          if (attempt === 3 || !isBusy) throw err; // propagate to key-rotation catch block
+          console.warn(`[PRESCRIPTION OCR] ${name} attempt ${attempt} busy. Cooldown 2.5s...`);
+          await new Promise(r => setTimeout(r, 2500));
         }
-      });
+      }
 
       const raw = response.text || "";
       if (!raw) throw new Error("AI returned no content.");
