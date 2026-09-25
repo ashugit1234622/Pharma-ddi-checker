@@ -7,8 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npm rebuild better-sqlite3 --build-from-source"
+    "lint": "next lint"
   },
   "keywords": [],
   "author": "",
@@ -34,9 +33,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "uuid": "^14.0.2",
-    "zod": "^4.5.2"
-  },
-  "devDependencies": {
+    "zod": "^4.5.2",
     "@types/pg": "^8.23.1"
   }
 }
