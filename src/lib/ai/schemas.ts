@@ -128,11 +128,11 @@ export const ConstrainedAnswerSchema = z.object({
 });
 
 export const AasthaResponseSchema = z.object({
-  answer: z.string(),
-  confidence: z.enum(['high', 'moderate', 'limited', 'insufficient']),
-  basedOnReport: z.boolean(),
-  sourceIds: z.array(z.string()),
-  limitation: z.string().nullable()
+  answer: z.string().catch("I couldn't generate a clear response. Please try again."),
+  confidence: z.enum(['high', 'moderate', 'limited', 'insufficient', 'low']).catch('moderate'),
+  basedOnReport: z.boolean().catch(false),
+  sourceIds: z.array(z.string()).catch([]),
+  limitation: z.string().nullable().optional().catch(null)
 });
 
 export type AasthaResponse = z.infer<typeof AasthaResponseSchema>;
