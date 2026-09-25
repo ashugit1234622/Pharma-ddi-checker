@@ -87,8 +87,8 @@ export class FallbackProvider implements AIProvider {
       let success = false;
       let result = "";
 
-      // Retry up to 2 times for 503/Busy errors before burning the key
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      // Retry up to 3 times for 503/Busy errors before burning the key
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           result = await provider.complete(system, user, useSearch);
           success = true;
@@ -97,13 +97,13 @@ export class FallbackProvider implements AIProvider {
           const errMsg = err instanceof Error ? err.message : String(err);
           const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
           
-          if (attempt === 2 || !isBusy) {
+          if (attempt === 3 || !isBusy) {
             allErrors.push(`[${provider.modelId}]: ${errMsg}`);
             break; // Break the retry loop, move to next provider
           }
           
-          console.warn(`[AI ROUTER] Provider ${i + 1} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 1.5s...`);
-          await new Promise(r => setTimeout(r, 1500));
+          console.warn(`[AI ROUTER] Provider ${i + 1} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 2.5s...`);
+          await new Promise(r => setTimeout(r, 2500));
         }
       }
 
@@ -130,12 +130,12 @@ export class FallbackProvider implements AIProvider {
 // DDI analysis, Aastha chat, MedCheck, Ask, and Prescription OCR.
 // Each key+model combo has its own independent free-tier quota bucket.
 const GEMINI_KEY_CONFIGS = [
-  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-1.5-flash-8b" },
-  { envVar: "GEMINI_API_KEY",                model: "gemini-1.5-flash-8b" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-1.5-flash-8b" },
-  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-1.5-flash-8b" },
-  { envVar: "GEMINI_API_KEY_5",              model: "gemini-1.5-flash-8b" },
-  { envVar: "GEMINI_API_KEY_6",              model: "gemini-1.5-flash-8b" },
+  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY",                model: "gemini-3.6-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.6-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.6-flash" },
+  { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.6-flash" },
 ] as const;
 
 function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {
