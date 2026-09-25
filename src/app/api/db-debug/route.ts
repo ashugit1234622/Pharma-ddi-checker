@@ -12,17 +12,16 @@ function tryGetDatabase() {
 
 export async function GET() {
   try {
-    const db = tryGetDatabase();
-    if (db && !('error' in db)) {
-      const tables = (db as any).prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+    const pool = tryGetDatabase();
+    if (pool && !('error' in pool)) {
+      const result = await (pool as any).query("SELECT tablename as name FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'");
       return NextResponse.json({ 
         status: 'connected', 
-        tables: tables.map((t: any) => t.name),
-        db_path: process.env.DATABASE_PATH || './data/pharma.db',
-        cwd: process.cwd()
+        tables: result.rows.map((t: any) => t.name),
+        database_type: 'postgres'
       });
     } else {
-      return NextResponse.json({ status: 'error', details: (db as any)?.error || 'Unknown' });
+      return NextResponse.json({ status: 'error', details: (pool as any)?.error || 'Unknown' });
     }
   } catch (e: any) {
     return NextResponse.json({ status: 'fatal', error: e.message });

@@ -19,12 +19,16 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const db = tryGetDatabase();
-    if (!db) return NextResponse.json({ profile: null });
-    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as any;
-    if (!user) return NextResponse.json({ profile: null });
-    const profile = db.prepare('SELECT * FROM patient_profiles WHERE user_id = ?').get(user.id) as any;
-    if (!profile) return NextResponse.json({ profile: null });
+    const pool = tryGetDatabase();
+    if (!pool) return NextResponse.json({ profile: null });
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+    if (userRes.rows.length === 0) return NextResponse.json({ profile: null });
+    const user = userRes.rows[0];
+    
+    const profileRes = await pool.query('SELECT * FROM patient_profiles WHERE user_id = $1', [user.id]);
+    if (profileRes.rows.length === 0) return NextResponse.json({ profile: null });
+    const profile = profileRes.rows[0];
+    
     return NextResponse.json({
       profile: {
         ...profile,
@@ -54,53 +58,57 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Step 2: Get DB
-    const db = tryGetDatabase();
-    if (!db) {
+    const pool = tryGetDatabase();
+    if (!pool) {
       return NextResponse.json({ 
-        error: 'Database unavailable on this server. Native module (better-sqlite3) failed to load.',
+        error: 'Database unavailable on this server.',
         step: 'db_init'
       }, { status: 503 });
     }
 
     // Step 3: Upsert user
-    let user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as any;
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+    let user = userRes.rows[0];
     if (!user) {
       const newId = uuidv4();
-      db.prepare(`INSERT INTO users (id, name, email, image) VALUES (?, ?, ?, ?)`)
-        .run(newId, session.user.name || '', session.user.email, (session.user as any).image || '');
+      await pool.query(
+        `INSERT INTO users (id, name, email, image) VALUES ($1, $2, $3, $4)`,
+        [newId, session.user.name || '', session.user.email, (session.user as any).image || '']
+      );
       user = { id: newId };
     }
 
     // Step 4: Upsert profile
-    const existing = db.prepare('SELECT id FROM patient_profiles WHERE user_id = ?').get(user.id) as any;
+    const existingRes = await pool.query('SELECT id FROM patient_profiles WHERE user_id = $1', [user.id]);
+    const existing = existingRes.rows[0];
     const profileId = existing?.id || uuidv4();
 
     if (existing) {
-      db.prepare(`
+      await pool.query(`
         UPDATE patient_profiles SET
-          display_name=?, age=?, gender=?, blood_group=?,
-          underlying_diseases=?, allergies=?, current_medications=?,
-          medical_history=?, emergency_contact=?, updated_at=datetime('now')
-        WHERE user_id=?
-      `).run(
+          display_name=$1, age=$2, gender=$3, blood_group=$4,
+          underlying_diseases=$5, allergies=$6, current_medications=$7,
+          medical_history=$8, emergency_contact=$9, updated_at=CURRENT_TIMESTAMP
+        WHERE user_id=$10
+      `, [
         display_name || null, age ? parseInt(age) : null, gender || null, blood_group || null,
         JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []), medical_history || null,
         emergency_contact || null, user.id
-      );
+      ]);
     } else {
-      db.prepare(`
+      await pool.query(`
         INSERT INTO patient_profiles 
           (id, user_id, display_name, age, gender, blood_group,
            underlying_diseases, allergies, current_medications, medical_history, emergency_contact)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `, [
         profileId, user.id, display_name || null, age ? parseInt(age) : null,
         gender || null, blood_group || null,
         JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []), medical_history || null,
         emergency_contact || null
-      );
+      ]);
     }
 
     return NextResponse.json({ success: true });

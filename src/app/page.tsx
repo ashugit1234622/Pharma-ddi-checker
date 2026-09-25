@@ -535,7 +535,27 @@ export default function Home() {
       const json = await res.json();
       if (json.error) setError(json.error);
       else if (json.data?.analysis) {
-        setReport(json.data.analysis);
+        const analysis = json.data.analysis;
+        setReport(analysis);
+        
+        // Auto-save to history with specific formatted summary
+        const score = severityToScore(analysis.severity);
+        const tox = analysis.toxicityScores?.drug1 || {};
+        const organs = Object.entries(tox).filter(([_, v]) => (v as number) > 30).map(([k]) => k).join(', ') || 'None';
+        
+        const summaryText = `${d1.name} with ${d2.name}\nscore-${score}\norgans effected: ${organs}\nshort summary for whether to use it or not: ${analysis.executiveSummary}`;
+        
+        fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            record_type: 'ddi_check',
+            title: `${d1.name} + ${d2.name}`,
+            summary: summaryText,
+            data_json: analysis
+          })
+        }).catch(err => console.error("Auto-save failed", err));
+
         setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
       } else if (json.data?.aiError) setError(json.data.aiError);
     } catch { setError('Failed to reach analysis service.'); }

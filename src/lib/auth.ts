@@ -29,13 +29,15 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google' && user.email) {
         try {
-          const db = tryGetDatabase();
-          if (db) {
-            const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(user.email) as { id: string } | undefined;
-            if (!existingUser) {
+          const pool = tryGetDatabase();
+          if (pool) {
+            const existingRes = await pool.query('SELECT id FROM users WHERE email = $1', [user.email]);
+            if (existingRes.rows.length === 0) {
               const newUserId = uuidv4();
-              db.prepare(`INSERT INTO users (id, name, email, image) VALUES (?, ?, ?, ?)`)
-                .run(newUserId, user.name || '', user.email, user.image || '');
+              await pool.query(
+                `INSERT INTO users (id, name, email, image) VALUES ($1, $2, $3, $4)`,
+                [newUserId, user.name || '', user.email, user.image || '']
+              );
             }
           }
         } catch (e) {
@@ -53,13 +55,14 @@ export const authOptions: NextAuthOptions = {
 
       if (user?.email) {
         try {
-          const db = tryGetDatabase();
-          if (db) {
-            const dbUser = db.prepare('SELECT id FROM users WHERE email = ?').get(user.email) as { id: string } | undefined;
-            if (dbUser) {
+          const pool = tryGetDatabase();
+          if (pool) {
+            const dbUserRes = await pool.query('SELECT id FROM users WHERE email = $1', [user.email]);
+            if (dbUserRes.rows.length > 0) {
+              const dbUser = dbUserRes.rows[0];
               token.userId = dbUser.id;
-              const profile = db.prepare('SELECT id FROM patient_profiles WHERE user_id = ?').get(dbUser.id);
-              token.profileComplete = !!profile;
+              const profileRes = await pool.query('SELECT id FROM patient_profiles WHERE user_id = $1', [dbUser.id]);
+              token.profileComplete = profileRes.rows.length > 0;
             } else {
               token.profileComplete = false;
             }

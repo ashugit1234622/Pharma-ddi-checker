@@ -11,16 +11,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = getDatabase();
+    const pool = getDatabase();
     
-    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as { id: string } | undefined;
-    if (!user) {
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+    if (userRes.rows.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    const user = userRes.rows[0];
 
-    const reminders = db.prepare('SELECT * FROM medication_reminders WHERE user_id = ? ORDER BY created_at DESC').all(user.id);
+    const remindersRes = await pool.query('SELECT * FROM medication_reminders WHERE user_id = $1 ORDER BY created_at DESC', [user.id]);
     
-    return NextResponse.json(reminders);
+    return NextResponse.json(remindersRes.rows);
   } catch (error: any) {
     console.error('Reminders fetch error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -41,17 +42,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const db = getDatabase();
-    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(session.user.email) as { id: string } | undefined;
-    if (!user) {
+    const pool = getDatabase();
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+    if (userRes.rows.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    const user = userRes.rows[0];
 
     const newReminderId = uuidv4();
-    db.prepare(`
+    await pool.query(`
       INSERT INTO medication_reminders (id, user_id, drug_name, dosage, frequency, times_json, instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(newReminderId, user.id, drug_name, dosage, frequency, JSON.stringify(times_json), instructions || '');
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [newReminderId, user.id, drug_name, dosage, frequency, JSON.stringify(times_json), instructions || '']);
 
     return NextResponse.json({ success: true, id: newReminderId });
   } catch (error: any) {

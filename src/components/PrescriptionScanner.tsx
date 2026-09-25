@@ -221,6 +221,21 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
       }
       setResult(data);
       setScanState('result');
+
+      // Auto-save prescription scan to history
+      try {
+        const medsList = data.medicines.map((m: any) => m.rawName).join(', ');
+        fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            record_type: 'prescription_scan',
+            title: 'Prescription Scan',
+            summary: `Extracted medicines: ${medsList}`,
+            data_json: data
+          })
+        }).catch(err => console.error('Failed to auto-save prescription', err));
+      } catch(e) {}
     } catch {
       setScanState('error');
       setErrorMsg('Network error. Please try again.');

@@ -31,70 +31,77 @@ export interface DrugRecord {
   approval_status: string;
 }
 
-export function searchDrugs(query: string): DrugRecord[] {
-  const db = getDatabase();
+export async function searchDrugs(query: string): Promise<DrugRecord[]> {
+  const pool = getDatabase();
   const q = `%${query}%`;
-  return db.prepare(`
-    SELECT * FROM drugs WHERE generic_name LIKE ? OR brand_names LIKE ? OR drug_class LIKE ?
-    ORDER BY CASE WHEN generic_name LIKE ? THEN 0 ELSE 1 END, generic_name
+  const result = await pool.query(`
+    SELECT * FROM drugs WHERE generic_name ILIKE $1 OR brand_names ILIKE $2 OR drug_class ILIKE $3
+    ORDER BY CASE WHEN generic_name ILIKE $4 THEN 0 ELSE 1 END, generic_name
     LIMIT 20
-  `).all(q, q, q, `${query}%`) as DrugRecord[];
+  `, [q, q, q, `${query}%`]);
+  return result.rows as DrugRecord[];
 }
 
-export function getDrugById(id: string): DrugRecord | undefined {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM drugs WHERE id = ?').get(id) as DrugRecord | undefined;
+export async function getDrugById(id: string): Promise<DrugRecord | undefined> {
+  const pool = getDatabase();
+  const result = await pool.query('SELECT * FROM drugs WHERE id = $1', [id]);
+  return result.rows[0] as DrugRecord | undefined;
 }
 
-export function getDrugEnzymes(drugId: string) {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM drug_enzymes WHERE drug_id = ?').all(drugId);
+export async function getDrugEnzymes(drugId: string) {
+  const pool = getDatabase();
+  const result = await pool.query('SELECT * FROM drug_enzymes WHERE drug_id = $1', [drugId]);
+  return result.rows;
 }
 
-export function getDrugTransporters(drugId: string) {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM drug_transporters WHERE drug_id = ?').all(drugId);
+export async function getDrugTransporters(drugId: string) {
+  const pool = getDatabase();
+  const result = await pool.query('SELECT * FROM drug_transporters WHERE drug_id = $1', [drugId]);
+  return result.rows;
 }
 
-export function getInteractions(drug1Id: string, drug2Id: string) {
-  const db = getDatabase();
-  return db.prepare(`
+export async function getInteractions(drug1Id: string, drug2Id: string) {
+  const pool = getDatabase();
+  const result = await pool.query(`
     SELECT i.*, s.title as source_title, s.publisher as source_publisher, s.url as source_url
     FROM interactions i
-    LEFT JOIN sources s ON INSTR(i.source_ids, s.id) > 0
-    WHERE (i.drug1_id = ? AND i.drug2_id = ?) OR (i.drug1_id = ? AND i.drug2_id = ?)
-  `).all(drug1Id, drug2Id, drug2Id, drug1Id);
+    LEFT JOIN sources s ON POSITION(s.id IN i.source_ids) > 0
+    WHERE (i.drug1_id = $1 AND i.drug2_id = $2) OR (i.drug1_id = $3 AND i.drug2_id = $4)
+  `, [drug1Id, drug2Id, drug2Id, drug1Id]);
+  return result.rows;
 }
 
-export function getAlternatives(drugId: string) {
-  const db = getDatabase();
-  return db.prepare(`
+export async function getAlternatives(drugId: string) {
+  const pool = getDatabase();
+  const result = await pool.query(`
     SELECT a.*, d.generic_name as alt_name, d.drug_class as alt_class
     FROM alternatives a
     JOIN drugs d ON a.alternative_drug_id = d.id
-    WHERE a.original_drug_id = ?
-  `).all(drugId);
+    WHERE a.original_drug_id = $1
+  `, [drugId]);
+  return result.rows;
 }
 
-export function getSources(sourceIds: string[]) {
-  const db = getDatabase();
+export async function getSources(sourceIds: string[]) {
   if (sourceIds.length === 0) return [];
-  const placeholders = sourceIds.map(() => '?').join(',');
-  return db.prepare(`SELECT * FROM sources WHERE id IN (${placeholders})`).all(...sourceIds);
+  const pool = getDatabase();
+  const placeholders = sourceIds.map((_, i) => `$${i + 1}`).join(',');
+  const result = await pool.query(`SELECT * FROM sources WHERE id IN (${placeholders})`, sourceIds);
+  return result.rows;
 }
 
-export function buildEvidenceBundle(drug1Id: string, drug2Id: string): any {
-  const drug1 = getDrugById(drug1Id);
-  const drug2 = getDrugById(drug2Id);
+export async function buildEvidenceBundle(drug1Id: string, drug2Id: string): Promise<any> {
+  const drug1 = await getDrugById(drug1Id);
+  const drug2 = await getDrugById(drug2Id);
   if (!drug1 || !drug2) throw new Error('Drug not found');
 
-  const interactions = getInteractions(drug1Id, drug2Id);
-  const drug1Enzymes = getDrugEnzymes(drug1Id);
-  const drug2Enzymes = getDrugEnzymes(drug2Id);
-  const drug1Transporters = getDrugTransporters(drug1Id);
-  const drug2Transporters = getDrugTransporters(drug2Id);
-  const alt1 = getAlternatives(drug1Id);
-  const alt2 = getAlternatives(drug2Id);
+  const interactions = await getInteractions(drug1Id, drug2Id);
+  const drug1Enzymes = await getDrugEnzymes(drug1Id);
+  const drug2Enzymes = await getDrugEnzymes(drug2Id);
+  const drug1Transporters = await getDrugTransporters(drug1Id);
+  const drug2Transporters = await getDrugTransporters(drug2Id);
+  const alt1 = await getAlternatives(drug1Id);
+  const alt2 = await getAlternatives(drug2Id);
 
   // Collect all source IDs
   const sourceIdSet = new Set<string>();
@@ -105,7 +112,7 @@ export function buildEvidenceBundle(drug1Id: string, drug2Id: string): any {
     if (e.source_id) sourceIdSet.add(e.source_id);
   });
 
-  const sources = getSources(Array.from(sourceIdSet));
+  const sources = await getSources(Array.from(sourceIdSet));
 
   return {
     drug1: drug1 as unknown as Record<string, unknown>,
