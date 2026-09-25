@@ -662,7 +662,7 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ position: 'relative', minHeight: !report ? '300vh' : '100vh', background: '#02070b' }}>
+    <div style={{ position: 'relative', minHeight: 'auto', background: '#02070b' }}>
       {/* 1. Fixed WebGL Cinematic Layer — ramps to full screensaver on 10s idle */}
       <CinematicVisualLayer
         isIdle={isIdle}
@@ -692,7 +692,7 @@ export default function Home() {
           zIndex: 10,
           opacity: isIdle ? 0.28 : 1,
           transition: 'opacity 1.2s ease-in-out',
-          minHeight: !report ? '300vh' : '100vh',
+          minHeight: 'auto',
         }}
       >
         <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} currentStepText={steps[stepIndex]} />

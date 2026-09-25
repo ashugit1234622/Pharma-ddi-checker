@@ -19,7 +19,7 @@ function ErrorContent() {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg-main)', fontFamily: 'inherit',
     }}>
       <div style={{
@@ -47,7 +47,7 @@ function ErrorContent() {
 
 export default function AuthErrorPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-main)' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: 'var(--bg-main)' }} />}>
       <ErrorContent />
     </Suspense>
   );
