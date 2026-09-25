@@ -9,7 +9,7 @@ const COMMON_DISEASES = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -59,6 +59,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        await update(); // Refetch session so profileComplete becomes true
         router.push('/?welcome=1');
       } else {
         const errMsg = data.error || 'Unknown error';
