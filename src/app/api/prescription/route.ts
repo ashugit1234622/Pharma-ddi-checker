@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       console.log(`[PRESCRIPTION OCR] Attempting with ${name} (${i + 1}/${ocrKeys.length})`);
       const ai = new GoogleGenAI({ apiKey: key });
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-3.8-flash",
         contents: [{
           role: "user",
           parts: [
