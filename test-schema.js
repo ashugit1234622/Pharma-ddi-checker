@@ -1,35 +1,9 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+const Database = require('better-sqlite3');
+try {
+  const db = new Database('./test.db');
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
 
-let db: Database.Database | null = null;
-
-export function getDatabase(): Database.Database {
-  if (db) return db;
-  
-  const dbPath = process.env.DATABASE_PATH || './data/pharma.db';
-  const fullPath = path.resolve(process.cwd(), dbPath);
-  const dir = path.dirname(fullPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  
-  const tempDb = new Database(fullPath);
-  tempDb.pragma('journal_mode = WAL');
-  tempDb.pragma('foreign_keys = ON');
-  
-  try {
-    initializeSchema(tempDb);
-  } catch (error) {
-    console.error('FATAL SCHEMA ERROR:', error);
-    throw error;
-  }
-  
-  db = tempDb; // Only assign to global singleton after schema initializes successfully
-  return db;
-}
-
-function initializeSchema(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS drugs (
       id TEXT PRIMARY KEY, generic_name TEXT NOT NULL, brand_names TEXT DEFAULT '[]',
@@ -189,4 +163,7 @@ function initializeSchema(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_dose_logs_reminder_user ON dose_logs(reminder_id, user_id);
   `);
+  console.log('SUCCESS');
+} catch (e) {
+  console.error('ERROR:', e);
 }
