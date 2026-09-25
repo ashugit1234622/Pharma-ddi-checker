@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getDatabase } from '@/lib/db';
 
 function tryGetDatabase() {
   try {
-    const { getDatabase } = require('@/lib/db');
     return getDatabase();
   } catch (e: any) {
+    console.error('[DB-Debug API] Database initialization failed:', e.message);
     return { error: e.message };
   }
 }
@@ -12,8 +13,8 @@ function tryGetDatabase() {
 export async function GET() {
   try {
     const db = tryGetDatabase();
-    if (db && !db.error) {
-      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+    if (db && !('error' in db)) {
+      const tables = (db as any).prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       return NextResponse.json({ 
         status: 'connected', 
         tables: tables.map((t: any) => t.name),
@@ -21,7 +22,7 @@ export async function GET() {
         cwd: process.cwd()
       });
     } else {
-      return NextResponse.json({ status: 'error', details: db?.error || 'Unknown' });
+      return NextResponse.json({ status: 'error', details: (db as any)?.error || 'Unknown' });
     }
   } catch (e: any) {
     return NextResponse.json({ status: 'fatal', error: e.message });

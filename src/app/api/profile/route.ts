@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { getDatabase } from '@/lib/db';
 
 function tryGetDatabase() {
   try {
-    const { getDatabase } = require('@/lib/db');
     return getDatabase();
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[Profile API] Database initialization failed:', e.message);
     return null;
   }
 }

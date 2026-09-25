@@ -1,12 +1,13 @@
 import GoogleProvider from "next-auth/providers/google";
 import { v4 as uuidv4 } from 'uuid';
 import type { NextAuthOptions } from "next-auth";
+import { getDatabase } from '@/lib/db';
 
 function tryGetDatabase() {
   try {
-    const { getDatabase } = require('@/lib/db');
     return getDatabase();
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[NextAuth] Database initialization failed:', e.message);
     return null;
   }
 }
