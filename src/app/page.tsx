@@ -591,9 +591,35 @@ export default function Home() {
     return () => window.removeEventListener('pharma-check-interaction', handler);
   }, [runAnalysis]);
 
+  // Restore session from cache
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pharma_ddi_session');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.drug1) setDrug1(parsed.drug1);
+        if (parsed.drug2) setDrug2(parsed.drug2);
+        if (parsed.report) setReport(parsed.report);
+      }
+    } catch (e) {}
+  }, []);
+
+  // Save session to cache
+  useEffect(() => {
+    try {
+      if (drug1 || drug2 || report) {
+        localStorage.setItem('pharma_ddi_session', JSON.stringify({ drug1, drug2, report }));
+      }
+    } catch (e) {}
+  }, [drug1, drug2, report]);
+
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
 
-  const handleReset = () => { setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleReset = () => { 
+    setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); 
+    try { localStorage.removeItem('pharma_ddi_session'); } catch(e) {}
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
 
   const handlePrint = () => window.print();
 

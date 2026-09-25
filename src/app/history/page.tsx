@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { FileText, Clock, ScanBarcode, MessageSquare, AlertCircle, Maximize2, X } from 'lucide-react';
+import { FileText, Clock, ScanBarcode, MessageSquare, AlertCircle, Maximize2, X, Trash2 } from 'lucide-react';
 import CinematicBackground from '@/components/CinematicBackground';
 
 export default function HistoryPage() {
@@ -36,6 +36,22 @@ export default function HistoryPage() {
         });
     }
   }, [status]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this record?')) return;
+    try {
+      const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setRecords(prev => prev.filter(r => r.id !== id));
+      } else {
+        alert('Failed to delete record.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Network error.');
+    }
+  };
+
 
   if (status === 'loading' || loading) {
     return (
@@ -136,8 +152,16 @@ export default function HistoryPage() {
                     </div>
 
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-                        {record.title}
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{record.title}</span>
+                        <button 
+                          className="btn-icon" 
+                          style={{ color: 'var(--danger)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.25rem' }} 
+                          onClick={(e) => { e.stopPropagation(); handleDelete(record.id); }}
+                          title="Delete Record"
+                        >
+                          <Trash2 size={20} />
+                        </button>
                       </h3>
                       <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '0.8rem', whiteSpace: 'pre-wrap' }}>
                         {record.summary || 'No summary available.'}

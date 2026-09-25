@@ -280,10 +280,34 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
     if (file && file.type.startsWith('image/')) handleFileUpload(file);
   };
 
+  // Restore session from cache
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pharma_prescription_session');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.result) {
+          setResult(parsed.result);
+          setScanState('result');
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  // Save session to cache
+  useEffect(() => {
+    try {
+      if (result) {
+        localStorage.setItem('pharma_prescription_session', JSON.stringify({ result }));
+      }
+    } catch (e) {}
+  }, [result]);
+
   const reset = () => {
     stopCamera(); setScanState('idle'); setResult(null); setErrorMsg('');
     setArRect({ top: 0.12, left: 0.08, right: 0.08, bottom: 0.12 }); setSelectedPair(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    try { localStorage.removeItem('pharma_prescription_session'); } catch(e) {}
   };
 
   const handleInteractionCheck = () => {

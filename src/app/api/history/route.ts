@@ -62,3 +62,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing record id' }, { status: 400 });
+    }
+
+    const pool = getDatabase();
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+    if (userRes.rows.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const user = userRes.rows[0];
+
+    const result = await pool.query('DELETE FROM patient_records WHERE id = $1 AND user_id = $2', [id, user.id]);
+    
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Record not found or not authorized' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('History delete error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
