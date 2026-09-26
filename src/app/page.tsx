@@ -519,6 +519,9 @@ export default function Home() {
     setReport(null);
     setError('');
     try {
+      // Intentional 2s delay to allow animations (scanner, flip text) to be clearly visible
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -687,7 +690,7 @@ export default function Home() {
           minHeight: 'auto',
         }}
       >
-        <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} currentStepText={steps[stepIndex]} />
+        <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} steps={steps} />
         <div className="print-hide" style={{
           paddingBottom: '4rem',
           position: !report ? 'sticky' : 'relative',

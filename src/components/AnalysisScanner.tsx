@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import FlipFadeText from './FlipFadeText';
 
 // Assuming DrugSearchResult has `name` property
 interface DrugStub {
@@ -11,7 +12,7 @@ interface AnalysisScannerProps {
   isAnalyzing: boolean;
   drug1: DrugStub | null;
   drug2: DrugStub | null;
-  currentStepText: string;
+  steps: string[];
 }
 
 const CustomPill = ({ color, name, style }: { color: string, name: string, style?: React.CSSProperties }) => (
@@ -41,13 +42,9 @@ const CustomPill = ({ color, name, style }: { color: string, name: string, style
   </div>
 );
 
-export default function AnalysisScanner({ isAnalyzing, drug1, drug2, currentStepText }: AnalysisScannerProps) {
+export default function AnalysisScanner({ isAnalyzing, drug1, drug2, steps }: AnalysisScannerProps) {
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'entering' | 'plus' | 'scanning' | 'completing'>('idle');
-  
-  const [prevText, setPrevText] = useState('');
-  const [text, setText] = useState('');
-  const [morphing, setMorphing] = useState(false);
 
   // Lifecycle
   useEffect(() => {
@@ -66,17 +63,6 @@ export default function AnalysisScanner({ isAnalyzing, drug1, drug2, currentStep
       return () => clearTimeout(t);
     }
   }, [isAnalyzing, mounted]);
-
-  // Text morphing logic
-  useEffect(() => {
-    if (currentStepText !== text && isAnalyzing) {
-      setPrevText(text);
-      setText(currentStepText);
-      setMorphing(true);
-      const t = setTimeout(() => setMorphing(false), 500);
-      return () => clearTimeout(t);
-    }
-  }, [currentStepText, text, isAnalyzing]);
 
   if (!mounted) return null;
 
@@ -215,29 +201,13 @@ export default function AnalysisScanner({ isAnalyzing, drug1, drug2, currentStep
           {/* Morphing Status Text */}
           <div style={{
             position: 'relative',
-            height: '24px',
             width: '100%',
             textAlign: 'center',
             color: 'var(--text-muted)',
-            fontSize: '0.95rem',
-            letterSpacing: '0.02em',
             opacity: isCompleting ? 0 : 1,
             transition: 'opacity 400ms ease'
           }}>
-            {morphing && (
-              <div style={{
-                position: 'absolute', width: '100%',
-                animation: 'textSlideOutUp 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
-              }}>
-                {prevText}
-              </div>
-            )}
-            <div style={{
-              position: 'absolute', width: '100%',
-              animation: morphing ? 'textSlideInUp 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'none'
-            }}>
-              {text || 'Initializing...'}
-            </div>
+            <FlipFadeText words={steps} interval={2500} textClassName="scanner-flip-text" />
           </div>
 
         </div>
