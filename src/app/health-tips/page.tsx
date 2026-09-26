@@ -141,7 +141,7 @@ export default function HealthTipsPage() {
         </div>
         <button
           className="tips-regenerate-btn"
-          onClick={regenerateTips}
+          onClick={() => regenerateTips()}
           disabled={regenerating}
           title="Regenerate tips with AI"
         >
@@ -157,7 +157,7 @@ export default function HealthTipsPage() {
           <p>Your personalized health tips haven&apos;t been generated yet. Click below to create them based on your profile.</p>
           <button
             className="tips-generate-btn"
-            onClick={regenerateTips}
+            onClick={() => regenerateTips()}
             disabled={regenerating}
           >
             {regenerating ? (
