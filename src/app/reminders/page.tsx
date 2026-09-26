@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Bell, Clock, AlertCircle, Plus, Pill, CheckCircle2, X } from 'lucide-react';
+import { Bell, Clock, AlertCircle, Plus, Pill, CheckCircle2, X, Trash2 } from 'lucide-react';
 import CinematicBackground from '@/components/CinematicBackground';
 import CustomDialog from '@/components/CustomDialog';
 
@@ -13,7 +13,7 @@ export default function RemindersPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
+  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert' | 'confirm', confirmText?: string, onConfirm: () => void}>({
     isOpen: false, message: '', type: 'alert', onConfirm: () => {}
   });
   const closeDialog = () => setDialogConfig(prev => ({ ...prev, isOpen: false }));
@@ -115,6 +115,52 @@ export default function RemindersPage() {
     }
   };
 
+  const handleDeleteReminder = async (id: string) => {
+    try {
+      const res = await fetch(`/api/reminders?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDialogConfig({
+          isOpen: true,
+          title: 'Could Not Delete',
+          message: data.error || 'Something went wrong while deleting this reminder.',
+          type: 'alert',
+          onConfirm: closeDialog
+        });
+        return;
+      }
+
+      // Drop it locally so the list updates immediately.
+      setReminders(prev => prev.filter(r => r.id !== id));
+    } catch (e) {
+      console.error(e);
+      setDialogConfig({
+        isOpen: true,
+        title: 'Network Error',
+        message: 'Could not reach the server. Please check your connection and try again.',
+        type: 'alert',
+        onConfirm: closeDialog
+      });
+    }
+  };
+
+  const confirmDeleteReminder = (reminder: any) => {
+    setDialogConfig({
+      isOpen: true,
+      title: 'Delete Reminder',
+      message: `Remove the ${reminder.drug_name} ${reminder.dosage} reminder? This cannot be undone.`,
+      type: 'confirm',
+      confirmText: 'Delete',
+      onConfirm: () => {
+        closeDialog();
+        handleDeleteReminder(reminder.id);
+      }
+    });
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>
@@ -144,6 +190,7 @@ export default function RemindersPage() {
         title={dialogConfig.title}
         message={dialogConfig.message}
         type={dialogConfig.type}
+        confirmText={dialogConfig.confirmText}
         onConfirm={dialogConfig.onConfirm}
         onCancel={closeDialog}
       />
@@ -278,23 +325,48 @@ export default function RemindersPage() {
                     </div>
                   </div>
 
-                  <button style={{
-                    background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-main)',
-                    padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(76, 175, 80, 0.1)';
-                    e.currentTarget.style.borderColor = '#4caf50';
-                    e.currentTarget.style.color = '#4caf50';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.color = 'var(--text-main)';
-                  }}
-                  >
-                    <CheckCircle2 size={18} /> Take Now
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                    <button style={{
+                      background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-main)',
+                      padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(76, 175, 80, 0.1)';
+                      e.currentTarget.style.borderColor = '#4caf50';
+                      e.currentTarget.style.color = '#4caf50';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                      e.currentTarget.style.color = 'var(--text-main)';
+                    }}
+                    >
+                      <CheckCircle2 size={18} /> Take Now
+                    </button>
+
+                    <button
+                      onClick={() => confirmDeleteReminder(r)}
+                      aria-label={`Delete ${r.drug_name} reminder`}
+                      title="Delete reminder"
+                      style={{
+                        background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-dim)',
+                        padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(244, 67, 54, 0.12)';
+                        e.currentTarget.style.borderColor = '#f44336';
+                        e.currentTarget.style.color = '#f44336';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.color = 'var(--text-dim)';
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
