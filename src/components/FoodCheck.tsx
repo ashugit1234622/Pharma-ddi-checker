@@ -11,6 +11,85 @@ interface FoodCheckResult {
   confidence: 'high' | 'moderate' | 'low';
 }
 
+function SearchInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  apiEndpoint
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  apiEndpoint: string;
+}) {
+  const [query, setQuery] = React.useState(value);
+  const [results, setResults] = React.useState<any[]>([]);
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  React.useEffect(() => { setQuery(value); }, [value]);
+
+  const search = async (q: string) => {
+    if (q.length < 1) { setResults([]); return; }
+    try {
+      const res = await fetch(`${apiEndpoint}?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setResults(data.data || []);
+    } catch { /* ignore */ }
+  };
+
+  const handleSelect = (name: string) => {
+    setQuery(name);
+    onChange(name);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="input-group" style={{ marginBottom: '16px', position: 'relative' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{label}</label>
+      <input 
+        type="text" 
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          onChange(e.target.value);
+          setIsOpen(true);
+          search(e.target.value);
+        }}
+        onFocus={() => {
+          setIsOpen(true);
+          if (query) search(query);
+        }}
+        placeholder={placeholder}
+        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-primary)', outline: 'none' }}
+      />
+      
+      {isOpen && query.trim().length > 0 && results.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
+          backgroundColor: 'var(--bg-card)', marginTop: '0.4rem',
+          border: '1px solid var(--border)', borderRadius: '10px',
+          maxHeight: '200px', overflowY: 'auto',
+          boxShadow: '0 12px 28px rgba(0,0,0,0.5)'
+        }}>
+          {results.map(d => (
+            <div key={d.id || d.name}
+              style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={() => handleSelect(d.name)}>
+              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{d.name}</div>
+              {d.drugClass && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{d.drugClass.join(' · ')}</div>}
+              {d.category && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{d.category}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FoodCheck({ onClose }: { onClose: () => void }) {
   const [drugName, setDrugName] = useState('');
   const [foodName, setFoodName] = useState('');
@@ -96,27 +175,21 @@ export default function FoodCheck({ onClose }: { onClose: () => void }) {
                 Check if your medicine interacts with specific foods, beverages, or herbal supplements.
               </p>
 
-              <div className="input-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Medicine Name</label>
-                <input 
-                  type="text" 
-                  value={drugName}
-                  onChange={(e) => setDrugName(e.target.value)}
-                  placeholder="e.g. Atorvastatin, Metformin, Synthroid"
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-primary)', outline: 'none' }}
-                />
-              </div>
+              <SearchInput 
+                label="Medicine Name"
+                value={drugName}
+                onChange={setDrugName}
+                placeholder="e.g. Atorvastatin, Metformin, Synthroid"
+                apiEndpoint="/api/drugs"
+              />
 
-              <div className="input-group" style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Food or Supplement</label>
-                <input 
-                  type="text" 
-                  value={foodName}
-                  onChange={(e) => setFoodName(e.target.value)}
-                  placeholder="e.g. Grapefruit juice, Dairy, St. John's Wort"
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-primary)', outline: 'none' }}
-                />
-              </div>
+              <SearchInput 
+                label="Food or Supplement"
+                value={foodName}
+                onChange={setFoodName}
+                placeholder="e.g. Grapefruit juice, Dairy, St. John's Wort"
+                apiEndpoint="/api/foods"
+              />
 
               {errorMsg && (
                 <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '0.9rem', textAlign: 'center' }}>
