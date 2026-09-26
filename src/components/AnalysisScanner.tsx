@@ -13,6 +13,7 @@ interface AnalysisScannerProps {
   drug1: DrugStub | null;
   drug2: DrugStub | null;
   steps: string[];
+  onStop?: () => void;
 }
 
 const CustomPill = ({ color, name, style }: { color: string, name: string, style?: React.CSSProperties }) => (
@@ -42,7 +43,7 @@ const CustomPill = ({ color, name, style }: { color: string, name: string, style
   </div>
 );
 
-export default function AnalysisScanner({ isAnalyzing, drug1, drug2, steps }: AnalysisScannerProps) {
+export default function AnalysisScanner({ isAnalyzing, drug1, drug2, steps, onStop }: AnalysisScannerProps) {
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'entering' | 'plus' | 'scanning' | 'completing'>('idle');
 
@@ -209,6 +210,37 @@ export default function AnalysisScanner({ isAnalyzing, drug1, drug2, steps }: An
           }}>
             <FlipFadeText words={steps} interval={4000} staggerDelay={0.04} exitStaggerDelay={0.02} textClassName="scanner-flip-text" />
           </div>
+
+          {/* Stop Button */}
+          {onStop && (
+            <div style={{
+              marginTop: '3rem',
+              opacity: isCompleting ? 0 : 1,
+              transition: 'opacity 400ms ease',
+              animation: 'fadeIn 1s ease 1.5s both'
+            }}>
+              <button 
+                className="btn btn-outline" 
+                style={{ 
+                  borderColor: 'var(--danger)', 
+                  color: 'var(--danger)', 
+                  fontSize: '0.85rem',
+                  background: 'rgba(239, 68, 68, 0.05)',
+                  backdropFilter: 'blur(4px)',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '24px'
+                }} 
+                onClick={onStop}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.5rem', verticalAlign: 'text-bottom' }}>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                Stop Generation
+              </button>
+            </div>
+          )}
 
         </div>
       </div>

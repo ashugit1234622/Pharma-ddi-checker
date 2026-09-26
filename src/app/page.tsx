@@ -721,7 +721,7 @@ export default function Home() {
           minHeight: 'auto',
         }}
       >
-        <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} steps={steps} />
+        <AnalysisScanner isAnalyzing={analyzing} drug1={drug1} drug2={drug2} steps={steps} onStop={handleStopAnalysis} />
         <div className="print-hide" style={{
           paddingBottom: '4rem',
           position: !report ? 'sticky' : 'relative',
@@ -775,26 +775,6 @@ export default function Home() {
         <div className="card fade-in" style={{ marginTop: '1.5rem', textAlign: 'center', borderColor: 'var(--danger)', background: 'rgba(239,68,68,0.06)' }}>
           <strong style={{ color: 'var(--danger)' }}>Error:</strong>{' '}
           <span style={{ color: 'var(--text-muted)' }}>{error}</span>
-        </div>
-      )}
-
-      {/* Loading Stepper */}
-      {analyzing && (
-        <div className="card fade-in" style={{ marginTop: '1.5rem', maxWidth: '500px', margin: '1.5rem auto' }}>
-          <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1rem' }}>Analyzing Interaction...</h3>
-          <div className="stepper">
-            {steps.map((s, i) => (
-              <div key={i} className={`step ${i <= stepIndex ? 'active' : ''}`}>
-                {i < stepIndex ? <span style={{ color: 'var(--success)' }}>✓</span> : i === stepIndex ? <div className="spinner" /> : <span style={{ width: 16 }}>○</span>}
-                {s}
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <button className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', fontSize: '0.85rem' }} onClick={handleStopAnalysis}>
-              <XCircle className="icon" size={16} /> Stop Generation
-            </button>
-          </div>
         </div>
       )}
 
