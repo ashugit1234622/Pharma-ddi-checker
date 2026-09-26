@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     const { analysis, fromCache, model } = await runDDIAnalysis(drug1Id, drug2Id, bundle, {
       forceRefresh,
+      signal: req.signal
     });
 
     return NextResponse.json({

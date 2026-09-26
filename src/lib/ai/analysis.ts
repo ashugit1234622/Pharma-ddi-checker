@@ -20,7 +20,7 @@ export async function runDDIAnalysis(
   drug1Id: string,
   drug2Id: string,
   bundle: any,
-  options?: { forceRefresh?: boolean }
+  options?: { forceRefresh?: boolean, signal?: AbortSignal }
 ): Promise<{ analysis: DDIAnalysis; fromCache: boolean; model: string }> {
   // We are currently not utilizing a database cache to strictly mock the backend.
   // fromCache will always be false.
@@ -28,7 +28,7 @@ export async function runDDIAnalysis(
   const provider = getAIProvider();
   let raw: string;
   try {
-    raw = await provider.complete(ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt(bundle));
+    raw = await provider.complete(ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt(bundle), false, options?.signal);
   } catch (error) {
     throw new AIUnavailableError(`Failed to fetch from AI provider: ${error}`);
   }

@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export interface AIProvider {
   /** Sends a system + user prompt pair, expects back a raw JSON string. */
-  complete(system: string, user: string, useSearch?: boolean): Promise<string>;
+  complete(system: string, user: string, useSearch?: boolean, signal?: AbortSignal): Promise<string>;
   readonly modelId: string;
 }
 
@@ -26,7 +26,7 @@ export class GeminiProvider implements AIProvider {
     this.modelId = `${modelName} (${envVarName})`;
   }
 
-  async complete(system: string, user: string, useSearch: boolean = false): Promise<string> {
+  async complete(system: string, user: string, useSearch: boolean = false, signal?: AbortSignal): Promise<string> {
     const config: any = {
       systemInstruction: system,
       temperature: 0,
@@ -42,13 +42,22 @@ export class GeminiProvider implements AIProvider {
     const generatePromise = this.ai.models.generateContent({
       model: this.modelName,
       contents: user,
-      config
+      config: {
+        ...config,
+        ...(signal && { abortSignal: signal })
+      }
     });
 
     // Hard 35-second timeout to prevent the SDK from hanging endlessly on internal retries,
     // but large enough to allow DDI analysis (which takes ~15-25s) to complete.
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (35s).")), 35000);
+      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (35s).")), 35000);
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error("AbortError: AI request was cancelled by the user."));
+        });
+      }
     });
 
     const response = await Promise.race([generatePromise, timeoutPromise]) as any;
@@ -77,7 +86,7 @@ export class FallbackProvider implements AIProvider {
     return `Fallback Chain (Primary: ${this.providers[0].modelId})`;
   }
 
-  async complete(system: string, user: string, useSearch: boolean = false): Promise<string> {
+  async complete(system: string, user: string, useSearch: boolean = false, signal?: AbortSignal): Promise<string> {
     const allErrors: string[] = [];
 
     for (let i = 0; i < this.providers.length; i++) {
@@ -89,14 +98,21 @@ export class FallbackProvider implements AIProvider {
 
       // Retry up to 3 times for 503/Busy errors before burning the key
       for (let attempt = 1; attempt <= 3; attempt++) {
+        if (signal?.aborted) {
+          throw new Error("AbortError: AI request was cancelled by the user.");
+        }
         try {
-          result = await provider.complete(system, user, useSearch);
+          result = await provider.complete(system, user, useSearch, signal);
           success = true;
           break;
         } catch (err: any) {
           const errMsg = err instanceof Error ? err.message : String(err);
           const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
           
+          if (errMsg.includes("AbortError")) {
+            throw err;
+          }
+
           if (attempt === 3 || !isBusy) {
             allErrors.push(`[${provider.modelId}]: ${errMsg}`);
             break; // Break the retry loop, move to next provider

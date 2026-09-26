@@ -475,6 +475,7 @@ export default function Home() {
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
   const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'alternatives'>('overview');
   const reportRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   // Ref-based in-flight guard — prevents duplicate API calls from rapid clicks,
   // prescription scanner events, or swap triggers firing before React re-renders.
   const isRunningRef = useRef(false);
@@ -509,6 +510,16 @@ export default function Home() {
   }, [analyzing]);
 
 
+  const handleStopAnalysis = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setAnalyzing(false);
+    isRunningRef.current = false;
+    setError('Analysis cancelled by user.');
+  }, []);
+
   const runAnalysis = useCallback(async (d1: DrugSearchResult, d2: DrugSearchResult) => {
     if (isRunningRef.current) {
       console.log('[PHARMA] Analysis already in flight — skipping duplicate call');
@@ -518,14 +529,23 @@ export default function Home() {
     setAnalyzing(true);
     setReport(null);
     setError('');
+
+    // Create a new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       // Intentional 2s delay to allow animations (scanner, flip text) to be clearly visible
       await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (abortControllerRef.current?.signal.aborted) {
+        throw new Error('AbortError');
+      }
 
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drug1Id: d1.id, drug2Id: d2.id })
+        body: JSON.stringify({ drug1Id: d1.id, drug2Id: d2.id }),
+        signal: abortControllerRef.current.signal
       });
       const json = await res.json();
       if (json.error) setError(json.error);
@@ -553,10 +573,21 @@ export default function Home() {
 
         setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
       } else if (json.data?.aiError) setError(json.data.aiError);
-    } catch { setError('Failed to reach analysis service.'); }
+    } catch (err: any) { 
+      if (err.name === 'AbortError' || err.message === 'AbortError') {
+        console.log('[PHARMA] Analysis request aborted.');
+        // Handled in handleStopAnalysis
+      } else {
+        setError('Failed to reach analysis service.'); 
+      }
+    }
     finally {
-      setAnalyzing(false);
-      isRunningRef.current = false;
+      // Only clear analyzing state if we didn't just abort (abort handles it manually to prevent race conditions)
+      if (abortControllerRef.current) {
+        setAnalyzing(false);
+        isRunningRef.current = false;
+        abortControllerRef.current = null;
+      }
     }
   }, []);
 
@@ -758,6 +789,11 @@ export default function Home() {
                 {s}
               </div>
             ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <button className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', fontSize: '0.85rem' }} onClick={handleStopAnalysis}>
+              <XCircle className="icon" size={16} /> Stop Generation
+            </button>
           </div>
         </div>
       )}
