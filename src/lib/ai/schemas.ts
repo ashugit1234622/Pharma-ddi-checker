@@ -137,3 +137,21 @@ export const AasthaResponseSchema = z.object({
 
 export type AasthaResponse = z.infer<typeof AasthaResponseSchema>;
 
+// ─── Health Tips Generation Schema ─────────────────────────────────────────────
+export const TipItemSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+  category: z.string().optional(),
+  priority: z.number().optional(),
+});
+
+export const TipsGenerationSchema = z.object({
+  randomTips: z.array(TipItemSchema).catch([]),
+  dietPlan: z.array(TipItemSchema).catch([]),
+  dietRestrictions: z.array(TipItemSchema).catch([]),
+  medicalTips: z.array(TipItemSchema).catch([]),
+});
+
+export type TipItem = z.infer<typeof TipItemSchema>;
+export type TipsGeneration = z.infer<typeof TipsGenerationSchema>;
+

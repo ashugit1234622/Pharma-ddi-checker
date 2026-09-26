@@ -5,6 +5,7 @@ import './pwa.css';
 import Script from 'next/script';
 import Header from '@/components/Header';
 import GlobalReminder from '@/components/GlobalReminder';
+import TipOfTheDay from '@/components/TipOfTheDay';
 import NextAuthProvider from '@/components/NextAuthProvider';
 
 export const viewport: Viewport = {
@@ -69,6 +70,7 @@ export default function RootLayout({
           />
           <Header />
           <GlobalReminder />
+          <TipOfTheDay />
           <main className="container">{children}</main>
         </NextAuthProvider>
       </body>

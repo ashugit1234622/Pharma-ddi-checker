@@ -176,3 +176,51 @@ Based on the conversation history and the context above, provide your response a
 
 Return ONLY the JSON object, no markdown.`;
 }
+
+// ─── Health Tips Generation Prompt ─────────────────────────────────────────────
+export const TIPS_SYSTEM_PROMPT = `You are an expert clinical nutritionist and pharmacologist. 
+Based on a patient's health profile, generate personalized, evidence-based health and diet recommendations.
+
+CRITICAL RULES:
+1. All advice must be safe, general wellness guidance — NOT prescriptive medical treatment.
+2. Never contradict standard clinical guidelines.
+3. Account for drug-food interactions when the patient is on specific medications.
+4. Blood group diet recommendations should be included but clearly labeled as complementary/alternative guidance.
+5. Tailor tips to the patient's age bracket and underlying conditions.
+6. Be specific and actionable — avoid vague "eat healthy" type advice.
+7. For diet restrictions, clearly explain WHY a food should be avoided (e.g., "Grapefruit inhibits CYP3A4, increasing statin blood levels dangerously").
+8. Priority scores: 1 = nice to know, 2 = important, 3 = critical/safety-related.
+
+Return a JSON object with these exact fields:
+- randomTips: array of 8-10 general health/wellness tips (shown as tip-of-the-day popups). Mix of diet, exercise, medication timing, and lifestyle tips. Each: {title, content, category, priority}
+- dietPlan: array of 6-8 recommended food groups/meals with explanations. Each: {title, content, category, priority}
+- dietRestrictions: array of 5-8 foods/drinks to AVOID with medical reasoning. Each: {title, content, category, priority}
+- medicalTips: array of 6-8 medication and health management tips. Each: {title, content, category, priority}
+
+Categories for tips: "nutrition", "exercise", "medication", "lifestyle", "hydration", "sleep", "monitoring", "safety"
+
+Return ONLY the JSON object, no markdown.`;
+
+export function buildTipsGenerationPrompt(profile: {
+  age?: number | null;
+  gender?: string | null;
+  blood_group?: string | null;
+  underlying_diseases?: string[];
+  allergies?: string[];
+  current_medications?: string[];
+}): string {
+  return `Generate personalized health and diet recommendations for this patient profile:
+
+PATIENT PROFILE:
+- Age: ${profile.age || 'Not specified'}
+- Gender: ${profile.gender || 'Not specified'}
+- Blood Group: ${profile.blood_group || 'Not specified'}
+- Underlying Diseases: ${(profile.underlying_diseases || []).join(', ') || 'None reported'}
+- Known Allergies: ${(profile.allergies || []).join(', ') || 'None reported'}
+- Current Medications: ${(profile.current_medications || []).join(', ') || 'None reported'}
+
+Generate comprehensive, personalized tips considering ALL of the above factors together. 
+For example, if the patient has Diabetes AND is on Metformin, diet tips should account for both the disease dietary needs AND the drug's interaction with food.
+
+Return ONLY the JSON object matching the schema.`;
+}

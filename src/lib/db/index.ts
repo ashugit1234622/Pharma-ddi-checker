@@ -178,5 +178,19 @@ async function initializeSchema(db: Pool) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_dose_logs_reminder_user ON dose_logs(reminder_id, user_id);
+
+    CREATE TABLE IF NOT EXISTS user_tips (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      tip_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      category TEXT,
+      priority INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_tips_user_id ON user_tips(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_tips_type ON user_tips(user_id, tip_type);
   `);
 }

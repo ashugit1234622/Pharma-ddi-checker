@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -108,6 +108,10 @@ export default function Header() {
                   <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
                   Food & Supplements
                 </button>
+                <Link href="/health-tips" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                  <Heart size={18} style={{ color: 'var(--accent-primary)' }} />
+                  Health Tips
+                </Link>
               </div>
             )}
           </div>
@@ -181,6 +185,9 @@ export default function Header() {
             <button onClick={openFoodCheck} className="mobile-menu-item">
               <Apple size={18} style={{ color: 'var(--accent-primary)' }} /> Food & Supplements
             </button>
+            <Link href="/health-tips" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+              <Heart size={18} style={{ color: 'var(--accent-primary)' }} /> Health Tips
+            </Link>
 
             <div className="mobile-pwa-row">
               <PWAInstallButton />
