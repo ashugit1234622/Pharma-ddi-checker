@@ -207,7 +207,7 @@ export default function AnalysisScanner({ isAnalyzing, drug1, drug2, steps }: An
             opacity: isCompleting ? 0 : 1,
             transition: 'opacity 400ms ease'
           }}>
-            <FlipFadeText words={steps} interval={2500} textClassName="scanner-flip-text" />
+            <FlipFadeText words={steps} interval={4000} staggerDelay={0.04} exitStaggerDelay={0.02} textClassName="scanner-flip-text" />
           </div>
 
         </div>
