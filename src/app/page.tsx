@@ -368,7 +368,7 @@ function DrugSearchBox({ id, label, drug, onSelect, onClear, accentColor }: {
   };
 
   return (
-    <div id={id} className="card" style={{ flex: '1 1 auto', minWidth: '280px', zIndex: isOpen ? 50 : 1, position: 'relative' }}>
+    <div id={id} className="card" style={{ flex: '1 1 auto', minWidth: '280px', zIndex: isOpen ? 50 : 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 500 }}>{label}</h3>
       {!drug ? (
         <div style={{ position: 'relative' }}>
@@ -446,13 +446,13 @@ function DrugSearchBox({ id, label, drug, onSelect, onClear, accentColor }: {
           )}
         </div>
       ) : (
-        <div>
-          <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--bg-hover)', borderRadius: '10px', marginBottom: '0.75rem', borderLeft: `3px solid ${accentColor}` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--bg-hover)', borderRadius: '10px', marginBottom: '0.75rem', borderLeft: `3px solid ${accentColor}`, flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: '1.1rem', color: accentColor }}>{drug.name}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{drug.genericName}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.3rem' }}>{drug.drugClass.join(' · ')}</div>
           </div>
-          <button className="btn btn-outline" style={{ width: '100%', fontSize: '0.85rem', padding: '0.5rem' }} onClick={onClear}>
+          <button className="btn btn-outline" style={{ width: '100%', fontSize: '0.85rem', padding: '0.5rem', marginTop: 'auto' }} onClick={onClear}>
             Change
           </button>
         </div>

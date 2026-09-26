@@ -261,10 +261,15 @@ a:hover { color: var(--accent-hover); }
 .hamburger-btn:hover { background: var(--bg-hover); }
 
 /* ── Desktop dropdown (small) ── */
-.dropdown-menu {
+/* NOTE: deliberately namespaced as .header-dropdown-*, NOT .dropdown-menu.
+   The search boxes also use .dropdown-menu (defined later, ~line 2023) with
+   `left: 0; right: 0`. Sharing the class name made the header menu inherit
+   that stretch, pushing it off the right edge of the viewport on desktop. */
+.header-dropdown-menu {
   position: absolute;
   top: 120%;
-  right: 0;
+  right: 0 !important;
+  left: auto !important;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -274,7 +279,7 @@ a:hover { color: var(--accent-hover); }
   z-index: 200;
   animation: fadeIn 0.15s ease;
 }
-.dropdown-item {
+.header-dropdown-item {
   width: 100%;
   display: flex;
   align-items: center;
@@ -287,9 +292,10 @@ a:hover { color: var(--accent-hover); }
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
+  text-align: left;
   transition: background 0.2s;
 }
-.dropdown-item:hover { background: var(--bg-hover); }
+.header-dropdown-item:hover { background: var(--bg-hover); }
 
 /* ── Mobile full-width dropdown ── */
 .mobile-dropdown {
@@ -1994,7 +2000,11 @@ a:hover { color: var(--accent-hover); }
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: nowrap;
-  align-items: flex-start;
+  /* stretch (not flex-start) so the Drug 1 / Drug 2 cards stay the same
+     height even when one is showing the "selected drug" panel and the
+     other is still showing the search input — those states have very
+     different natural heights. */
+  align-items: stretch;
   flex-direction: row;
 }
 

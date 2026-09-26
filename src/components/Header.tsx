@@ -99,12 +99,12 @@ export default function Header() {
               {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             {isMenuOpen && (
-              <div className="dropdown-menu">
-                <button onClick={openMedCheck} className="dropdown-item">
+              <div className="header-dropdown-menu">
+                <button onClick={openMedCheck} className="header-dropdown-item">
                   <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
                   MedCheck
                 </button>
-                <button onClick={openFoodCheck} className="dropdown-item">
+                <button onClick={openFoodCheck} className="header-dropdown-item">
                   <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
                   Food & Supplements
                 </button>
