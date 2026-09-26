@@ -104,18 +104,10 @@ function AutocompleteSearchBox({
           </div>
 
           {isOpen && query.trim().length > 0 && (
-            <div style={{
-              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
-              backgroundColor: 'var(--bg-card)', marginTop: '0.4rem',
-              border: '1px solid var(--border)', borderRadius: '10px',
-              maxHeight: '280px', overflowY: 'auto',
-              boxShadow: '0 12px 28px rgba(0,0,0,0.5)'
-            }}>
+            <div className="dropdown-menu">
               {results.map(d => (
                 <div key={d.id || d.name}
-                  style={{ padding: '0.7rem 1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  className="dropdown-item"
                   onClick={() => { onSelect(d); setQuery(''); setResults([]); setIsOpen(false); }}>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{d.name}</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>

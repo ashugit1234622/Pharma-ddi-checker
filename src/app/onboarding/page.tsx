@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { User, Calendar, Heart, AlertTriangle, Pill, FileText, Phone, ChevronRight, Check, Plus, X } from 'lucide-react';
+import CustomDialog from '@/components/CustomDialog';
 
 const COMMON_DISEASES = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'COPD', 'Thyroid', 'Kidney Disease', 'Liver Disease', 'Epilepsy', 'Arthritis'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -29,6 +30,12 @@ export default function OnboardingPage() {
     medical_history: '',
     emergency_contact: '',
   });
+
+  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
+    isOpen: false, message: '', type: 'alert', onConfirm: () => {}
+  });
+
+  const closeDialog = () => setDialogConfig(prev => ({ ...prev, isOpen: false }));
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/');
@@ -64,10 +71,10 @@ export default function OnboardingPage() {
       } else {
         const errMsg = data.error || 'Unknown error';
         const step = data.step ? ` [${data.step}]` : '';
-        alert(`Failed to save profile${step}: ${errMsg}`);
+        setDialogConfig({ isOpen: true, title: 'Profile Error', message: `Failed to save profile${step}: ${errMsg}`, type: 'alert', onConfirm: closeDialog });
       }
     } catch (err: any) {
-      alert(`Network error: ${err.message}`);
+      setDialogConfig({ isOpen: true, title: 'Network Error', message: `Network error: ${err.message}`, type: 'alert', onConfirm: closeDialog });
     } finally {
       setSaving(false);
     }
@@ -86,6 +93,14 @@ export default function OnboardingPage() {
 
   return (
     <div className="onboarding-root">
+      <CustomDialog 
+        isOpen={dialogConfig.isOpen}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        type={dialogConfig.type}
+        onConfirm={dialogConfig.onConfirm}
+        onCancel={closeDialog}
+      />
       {/* Background glow */}
       <div className="onboarding-glow" />
 

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Bell, Clock, AlertCircle, Plus, Pill, CheckCircle2, X } from 'lucide-react';
 import CinematicBackground from '@/components/CinematicBackground';
+import CustomDialog from '@/components/CustomDialog';
 
 export default function RemindersPage() {
   const { data: session, status } = useSession();
@@ -11,6 +12,11 @@ export default function RemindersPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
+    isOpen: false, message: '', type: 'alert', onConfirm: () => {}
+  });
+  const closeDialog = () => setDialogConfig(prev => ({ ...prev, isOpen: false }));
 
   // Form State
   const [drugName, setDrugName] = useState('');
@@ -42,7 +48,13 @@ export default function RemindersPage() {
 
   const requestNotifications = async () => {
     if (!('Notification' in window)) {
-      alert("Your browser doesn't support notifications.");
+      setDialogConfig({
+        isOpen: true,
+        title: 'Unsupported Browser',
+        message: "Your browser doesn't support notifications.",
+        type: 'alert',
+        onConfirm: closeDialog
+      });
       return;
     }
     const permission = await Notification.requestPermission();
@@ -127,6 +139,14 @@ export default function RemindersPage() {
   return (
     <>
       <CinematicBackground />
+      <CustomDialog 
+        isOpen={dialogConfig.isOpen}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        type={dialogConfig.type}
+        onConfirm={dialogConfig.onConfirm}
+        onCancel={closeDialog}
+      />
       <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

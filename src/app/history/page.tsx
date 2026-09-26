@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { FileText, Clock, ScanBarcode, MessageSquare, AlertCircle, Maximize2, X, Trash2 } from 'lucide-react';
 import CinematicBackground from '@/components/CinematicBackground';
+import CustomDialog from '@/components/CustomDialog';
 
 export default function HistoryPage() {
   const { data: session, status } = useSession();
@@ -12,6 +13,13 @@ export default function HistoryPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'interactions' | 'prescriptions'>('interactions');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  
+  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert' | 'confirm', onConfirm: () => void}>({
+    isOpen: false, message: '', type: 'alert', onConfirm: () => {}
+  });
+
+  const closeDialog = () => setDialogConfig(prev => ({ ...prev, isOpen: false }));
+
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -37,19 +45,27 @@ export default function HistoryPage() {
     }
   }, [status]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this record?')) return;
-    try {
-      const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setRecords(prev => prev.filter(r => r.id !== id));
-      } else {
-        alert('Failed to delete record.');
+  const handleDelete = (id: string) => {
+    setDialogConfig({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      message: 'Are you sure you want to delete this record? This action cannot be undone.',
+      type: 'confirm',
+      onConfirm: async () => {
+        closeDialog();
+        try {
+          const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            setRecords(prev => prev.filter(r => r.id !== id));
+          } else {
+            setTimeout(() => setDialogConfig({ isOpen: true, title: 'Error', message: 'Failed to delete record.', type: 'alert', onConfirm: closeDialog }), 100);
+          }
+        } catch (e) {
+          console.error(e);
+          setTimeout(() => setDialogConfig({ isOpen: true, title: 'Error', message: 'Network error.', type: 'alert', onConfirm: closeDialog }), 100);
+        }
       }
-    } catch (e) {
-      console.error(e);
-      alert('Network error.');
-    }
+    });
   };
 
 
@@ -82,6 +98,14 @@ export default function HistoryPage() {
   return (
     <>
       <CinematicBackground />
+      <CustomDialog 
+        isOpen={dialogConfig.isOpen}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        type={dialogConfig.type}
+        onConfirm={dialogConfig.onConfirm}
+        onCancel={closeDialog}
+      />
       <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '2rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Clock size={32} style={{ color: 'var(--accent-primary)' }} />
