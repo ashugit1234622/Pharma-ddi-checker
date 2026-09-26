@@ -43,7 +43,11 @@ export default function TipOfTheDay() {
         if (!res.ok) return;
         const data = await res.json();
         const tips = data.tips?.random_tip;
-        if (!tips || tips.length === 0) return;
+        if (!tips || tips.length === 0) {
+          // For existing users: auto-trigger background generation if no tips exist
+          fetch('/api/tips/generate', { method: 'POST' }).catch(() => {});
+          return;
+        }
 
         // Pick a random tip
         const randomIndex = Math.floor(Math.random() * tips.length);

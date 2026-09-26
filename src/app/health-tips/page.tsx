@@ -51,26 +51,42 @@ export default function HealthTipsPage() {
     }
   }, [status]);
 
-  const fetchTips = async () => {
+  const fetchTips = async (isRetry = false) => {
     try {
-      setLoading(true);
+      if (!isRetry) setLoading(true);
       const res = await fetch('/api/tips');
       if (!res.ok) throw new Error('Failed to fetch tips');
       const data = await res.json();
-      setTips(data.tips);
+      
+      const hasAnyTips = data.tips && (
+        (data.tips.diet_plan?.length > 0) || 
+        (data.tips.diet_restriction?.length > 0) || 
+        (data.tips.medical_tip?.length > 0)
+      );
+
+      if (!hasAnyTips && !isRetry) {
+        // Auto-generate for existing users who haven't got tips yet
+        await regenerateTips(true);
+      } else {
+        setTips(data.tips);
+      }
     } catch (e) {
       console.error('Error fetching tips:', e);
     } finally {
-      setLoading(false);
+      if (!isRetry) setLoading(false);
     }
   };
 
-  const regenerateTips = async () => {
+  const regenerateTips = async (isAuto = false) => {
     try {
       setRegenerating(true);
       const res = await fetch('/api/tips/generate', { method: 'POST' });
       if (!res.ok) throw new Error('Failed to regenerate');
-      await fetchTips();
+      if (isAuto) {
+        await fetchTips(true);
+      } else {
+        await fetchTips();
+      }
     } catch (e) {
       console.error('Error regenerating tips:', e);
     } finally {
