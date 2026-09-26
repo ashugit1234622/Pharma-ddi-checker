@@ -2061,4 +2061,16 @@ a:hover { color: var(--accent-hover); }
   background-color: var(--bg-hover) !important;
 }
 
- 
+/* ── Scanner Flip Text ── */
+.scanner-flip-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .scanner-flip-text {
+    font-size: 0.85rem;
+    letter-spacing: 0;
+  }
+}
