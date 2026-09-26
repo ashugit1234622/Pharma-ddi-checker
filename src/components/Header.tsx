@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import MedCheck from './MedCheck';
+import FoodCheck from './FoodCheck';
 import PWAInstallButton from './PWAInstallButton';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMedCheckOpen, setIsMedCheckOpen] = useState(false);
+  const [isFoodCheckOpen, setIsFoodCheckOpen] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -35,6 +37,13 @@ export default function Header() {
   };
 
   const closeMedCheck = () => setIsMedCheckOpen(false);
+
+  const openFoodCheck = () => {
+    setIsFoodCheckOpen(true);
+    setIsMenuOpen(false);
+  };
+
+  const closeFoodCheck = () => setIsFoodCheckOpen(false);
 
   return (
     <>
@@ -94,6 +103,10 @@ export default function Header() {
                 <button onClick={openMedCheck} className="dropdown-item">
                   <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
                   MedCheck
+                </button>
+                <button onClick={openFoodCheck} className="dropdown-item">
+                  <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
+                  Food & Supplements
                 </button>
               </div>
             )}
@@ -165,6 +178,9 @@ export default function Header() {
             <button onClick={openMedCheck} className="mobile-menu-item">
               <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} /> MedCheck
             </button>
+            <button onClick={openFoodCheck} className="mobile-menu-item">
+              <Apple size={18} style={{ color: 'var(--accent-primary)' }} /> Food & Supplements
+            </button>
 
             <div className="mobile-pwa-row">
               <PWAInstallButton />
@@ -174,6 +190,7 @@ export default function Header() {
       </header>
 
       {isMedCheckOpen && <MedCheck onClose={closeMedCheck} />}
+      {isFoodCheckOpen && <FoodCheck onClose={closeFoodCheck} />}
     </>
   );
 }
