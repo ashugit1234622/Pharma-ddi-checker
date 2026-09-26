@@ -58,13 +58,15 @@ export async function GET(req: NextRequest) {
 
     for (const row of result.rows) {
       if (grouped[row.tip_type]) {
-        grouped[row.tip_type].push({
-          id: row.id,
-          title: row.title,
-          content: row.content,
-          category: row.category,
-          priority: row.priority,
-        });
+        if (grouped[row.tip_type].length < 7) {
+          grouped[row.tip_type].push({
+            id: row.id,
+            title: row.title,
+            content: row.content,
+            category: row.category,
+            priority: row.priority,
+          });
+        }
       }
     }
 

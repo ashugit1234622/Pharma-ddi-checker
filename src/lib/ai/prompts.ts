@@ -188,16 +188,17 @@ CRITICAL RULES:
 4. Blood group diet recommendations should be included but clearly labeled as complementary/alternative guidance.
 5. Tailor tips to the patient's age bracket and underlying conditions.
 6. Be specific and actionable — avoid vague "eat healthy" type advice.
-7. For diet restrictions, clearly explain WHY a food should be avoided (e.g., "Grapefruit inhibits CYP3A4, increasing statin blood levels dangerously").
+7. For diet restrictions, clearly explain WHY a food should be avoided.
 8. Priority scores: 1 = nice to know, 2 = important, 3 = critical/safety-related.
+9. If the user has NO underlying diseases and NO current medications, generate high-quality, general all-purpose healthy living, preventive care, and balanced diet tips.
 
-Return a JSON object with these exact fields:
-- randomTips: array of 8-10 general health/wellness tips (shown as tip-of-the-day popups). Mix of diet, exercise, medication timing, and lifestyle tips. Each: {title, content, category, priority}
-- dietPlan: array of 6-8 recommended food groups/meals with explanations. Each: {title, content, category, priority}
-- dietRestrictions: array of 5-8 foods/drinks to AVOID with medical reasoning. Each: {title, content, category, priority}
-- medicalTips: array of 6-8 medication and health management tips. Each: {title, content, category, priority}
+Return a JSON object with these exact fields (generate approx 20 tips in total across all categories):
+- randomTips: array of 5-6 general health/wellness tips (shown as tip-of-the-day popups). Mix of diet, exercise, and lifestyle tips. Each: {title, content, category, priority}
+- dietPlan: array of 5-6 recommended food groups/meals with explanations. Each: {title, content, category, priority}
+- dietRestrictions: array of 4-5 foods/drinks to AVOID (or general unhealthy foods to avoid if healthy). Each: {title, content, category, priority}
+- medicalTips: array of 4-5 health management and preventive care tips. Each: {title, content, category, priority}
 
-Categories for tips: "nutrition", "exercise", "medication", "lifestyle", "hydration", "sleep", "monitoring", "safety"
+Categories for tips: "nutrition", "exercise", "medication", "lifestyle", "hydration", "sleep", "monitoring", "safety", "general"
 
 Return ONLY the JSON object, no markdown.`;
 
@@ -209,6 +210,16 @@ export function buildTipsGenerationPrompt(profile: {
   allergies?: string[];
   current_medications?: string[];
 }): string {
+  const hasDiseases = profile.underlying_diseases && profile.underlying_diseases.length > 0;
+  const hasMeds = profile.current_medications && profile.current_medications.length > 0;
+  
+  let conditionalInstruction = `Generate comprehensive, personalized tips considering ALL of the above factors together.`;
+  if (!hasDiseases && !hasMeds) {
+    conditionalInstruction = `The user has not provided any underlying diseases or current medications. Therefore, you MUST generate highly useful, general all-purpose tips for healthy living, balanced nutrition, preventive health, and common wellness strategies tailored to their age and blood group.`;
+  } else {
+    conditionalInstruction += ` For example, if the patient has Diabetes AND is on Metformin, diet tips should account for both the disease dietary needs AND the drug's interaction with food.`;
+  }
+
   return `Generate personalized health and diet recommendations for this patient profile:
 
 PATIENT PROFILE:
@@ -219,8 +230,7 @@ PATIENT PROFILE:
 - Known Allergies: ${(profile.allergies || []).join(', ') || 'None reported'}
 - Current Medications: ${(profile.current_medications || []).join(', ') || 'None reported'}
 
-Generate comprehensive, personalized tips considering ALL of the above factors together. 
-For example, if the patient has Diabetes AND is on Metformin, diet tips should account for both the disease dietary needs AND the drug's interaction with food.
+${conditionalInstruction}
 
 Return ONLY the JSON object matching the schema.`;
 }
