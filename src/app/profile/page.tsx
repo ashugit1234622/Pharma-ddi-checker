@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { User, Activity, AlertTriangle, Droplets, Calendar, ShieldAlert, FileText, Phone, Mic } from 'lucide-react';
-import { LANGUAGES } from '../lib/voice';
-import { useVoiceLanguage } from '../hooks/useVoiceLanguage';
+import { LANGUAGES } from '../../lib/voice';
+import { useVoiceLanguage } from '../../hooks/useVoiceLanguage';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
