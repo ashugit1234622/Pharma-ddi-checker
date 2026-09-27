@@ -47,7 +47,17 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
 
   // ── Existing chat state (unchanged) ─────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('aastha_chat_history');
+      if (stored) return JSON.parse(stored);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('aastha_chat_history', JSON.stringify(messages));
+  }, [messages]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

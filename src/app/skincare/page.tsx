@@ -38,7 +38,17 @@ export default function SkincareChatPage() {
     };
   }, []);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('skincare_chat_history');
+      if (stored) return JSON.parse(stored);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('skincare_chat_history', JSON.stringify(messages));
+  }, [messages]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
