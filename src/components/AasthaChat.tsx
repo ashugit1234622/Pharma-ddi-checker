@@ -147,12 +147,12 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
 
     // ─── Phase 4 Token Optimization: Client-Side Heuristics ───
     // Intercept trivial greetings to save API tokens
-    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    const greetingRegex = /^(hi|hello|hey|how are you|good morning|good evening)[.!?]?\s*$/i;
     if (greetingRegex.test(trimmed)) {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "Hello! How can I help you with your pharmacological or health inquiries today?"
+          content: "Hello! How can I help you today?"
         }]);
       }, 500); // Small delay to feel natural
       return;
@@ -204,9 +204,9 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     setMessages(newMessages);
 
     // Intercept trivial greetings to save API tokens
-    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    const greetingRegex = /^(hi|hello|hey|how are you|good morning|good evening)[.!?]?\s*$/i;
     if (greetingRegex.test(transcript.trim())) {
-      const answer = "Hello! How can I help you with your pharmacological or health inquiries today?";
+      const answer = "Hello! How can I help you today?";
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
       }, 500);

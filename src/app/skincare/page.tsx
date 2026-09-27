@@ -104,11 +104,11 @@ export default function SkincareChatPage() {
     const history = messages.slice(-5).map(m => ({ role: m.role, content: m.content }));
     
     // ─── Phase 4 Token Optimization: Client-Side Heuristics ───
-    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    const greetingRegex = /^(hi|hello|hey|how are you|good morning|good evening)[.!?]?\s*$/i;
     if (greetingRegex.test(trimmed)) {
       setMessages(prev => [...prev, userMsg]);
       setInput('');
-      const answer = "Hello! How can I assist you with your skincare routine or concerns today?";
+      const answer = "Hello! How can I assist you with your skincare today?";
       setTimeout(() => {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
