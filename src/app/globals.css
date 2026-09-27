@@ -2016,11 +2016,7 @@ a:hover { color: var(--accent-hover); }
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: nowrap;
-  /* stretch (not flex-start) so the Drug 1 / Drug 2 cards stay the same
-     height even when one is showing the "selected drug" panel and the
-     other is still showing the search input — those states have very
-     different natural heights. */
-  align-items: stretch;
+  align-items: flex-start;
   flex-direction: row;
 }
 
@@ -2028,8 +2024,9 @@ a:hover { color: var(--accent-hover); }
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
-  padding-top: 1.5rem;
+  align-self: flex-start;
+  margin-top: 3.2rem;
+  padding-top: 0;
 }
 
 @media (max-width: 768px) {
