@@ -663,11 +663,13 @@ export default function Home() {
   }, [runAnalysis]);
 
 
-  // Save session to cache
+  // Save session to cache only if report is generated
   useEffect(() => {
     try {
-      if (drug1 || drug2 || report) {
+      if (report) {
         localStorage.setItem('pharma_ddi_session', JSON.stringify({ drug1, drug2, report }));
+      } else {
+        localStorage.removeItem('pharma_ddi_session');
       }
     } catch (e) {}
   }, [drug1, drug2, report]);
