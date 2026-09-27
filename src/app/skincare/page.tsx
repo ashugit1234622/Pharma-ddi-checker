@@ -22,6 +22,16 @@ export default function SkincareChatPage() {
   const router = useRouter();
   const viewportHeight = useVisualViewport();
   
+  // Lock body scroll for the entire skincare chat route
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehaviorY = 'none';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehaviorY = '';
+    };
+  }, []);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

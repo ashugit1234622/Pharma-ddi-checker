@@ -146,6 +146,23 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Lock body scroll when chat is open ───────────────────────────────────
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent background scrolling on mobile
+      document.body.style.overflow = 'hidden';
+      // Prevent pull-to-refresh / rubber banding
+      document.body.style.overscrollBehaviorY = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehaviorY = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehaviorY = '';
+    };
+  }, [isOpen]);
+
   // ── Welcome message on open ──────────────────────────────────────────────
   useEffect(() => {
     setMessages([]);
