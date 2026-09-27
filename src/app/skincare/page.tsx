@@ -229,6 +229,7 @@ export default function SkincareChatPage() {
     recognition.maxAlternatives = 1;
     recognition.onstart = () => setVoiceMode('listening');
     recognition.onresult = (e: SpeechRecognitionEvent) => {
+      if (recognitionRef.current !== recognition) return;
       const transcript = e.results[0]?.[0]?.transcript || '';
       if (transcript.trim()) {
         setVoiceMode('processing');
@@ -239,6 +240,7 @@ export default function SkincareChatPage() {
       }
     };
     recognition.onnomatch = () => {
+      if (recognitionRef.current !== recognition) return;
       setVoiceError("I couldn't understand that. Please try again.");
       setVoiceMode('error');
       setTimeout(() => {
@@ -248,6 +250,7 @@ export default function SkincareChatPage() {
       }, 2000);
     };
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      if (recognitionRef.current !== recognition) return;
       if (e.error === 'no-speech') {
         setVoiceMode('listening');
         startListening(lang);
@@ -263,6 +266,7 @@ export default function SkincareChatPage() {
       }, 2500);
     };
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
       if (voiceMode === 'listening' && !isSpeakingRef.current) {
         startListening(lang);
       }

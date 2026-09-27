@@ -359,6 +359,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     recognition.onstart = () => setVoiceMode('listening');
 
     recognition.onresult = (e: SpeechRecognitionEvent) => {
+      if (recognitionRef.current !== recognition) return;
       const transcript = e.results[0]?.[0]?.transcript || '';
       if (transcript.trim()) {
         setVoiceMode('processing');
@@ -371,6 +372,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     };
 
     recognition.onnomatch = () => {
+      if (recognitionRef.current !== recognition) return;
       setVoiceError("I couldn't understand that. Please try again.");
       setVoiceMode('error');
       setTimeout(() => {
@@ -381,6 +383,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     };
 
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      if (recognitionRef.current !== recognition) return;
       if (e.error === 'no-speech') {
         // User just didn't speak — silently restart
         setVoiceMode('listening');
@@ -398,6 +401,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
       // If still listening state, it ended without a result — restart
       if (voiceMode === 'listening' && !isSpeakingRef.current) {
         startListening(lang);
