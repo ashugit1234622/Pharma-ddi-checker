@@ -1065,6 +1065,7 @@ a:hover { color: var(--accent-hover); }
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .aastha-header-info {
@@ -1101,6 +1102,7 @@ a:hover { color: var(--accent-hover); }
 
 .aastha-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
@@ -1162,6 +1164,7 @@ a:hover { color: var(--accent-hover); }
   background: var(--bg-card);
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .aastha-input {
@@ -2810,4 +2813,24 @@ a:hover { color: var(--accent-hover); }
 @keyframes pulse {
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.2); }
+}
+
+.derma-voice-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 12, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.3s ease;
+}
+
+.derma-voice-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem;
 }

@@ -399,35 +399,83 @@ export default function SkincareChatPage() {
       </div>
 
       {voiceMode !== 'off' && (
-        <div className="aastha-voice-overlay" style={{ bottom: `calc(100vh - ${viewportHeight}px)` }}>
-          <div className="aastha-voice-content">
-            <button className="aastha-voice-close-btn" onClick={closeVoiceMode} aria-label="Close voice chat">×</button>
-            <div className="aastha-voice-visualizer">
-              <OrbitalAnimation state={getOrbitalState()} amplitude={speakingAmplitude} />
+        <div className="derma-voice-fullscreen">
+          <div className="aastha-voice-container">
+            {/* Header / close button for the overlay */}
+            <div className="derma-voice-header">
+              <button className="aastha-voice-exit-btn" onClick={closeVoiceMode} aria-label="Close voice chat" style={{ margin: '1rem' }}>
+                × Close
+              </button>
             </div>
-            <div className="aastha-voice-status">{getStatusLabel(voiceMode, voiceError)}</div>
 
+            {/* Language Selection */}
             {voiceMode === 'language_selection' && (
-              <div className="aastha-language-selector">
-                {LANGUAGES.map(lang => (
-                  <button key={lang.code} className="aastha-lang-btn" onClick={() => handleLanguageSelect(lang)}>
-                    <span className="lang-native">{lang.nativeLabel}</span>
-                    <span className="lang-en">{lang.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            {voiceMode === 'permission_required' && (
-              <div className="aastha-permission-prompt">
-                <p>Please click "Allow" when your browser asks for microphone permissions.</p>
-                <button className="aastha-voice-exit-btn" onClick={closeVoiceMode}>Cancel</button>
+              <div className="aastha-lang-select" role="dialog" aria-label="Choose voice language">
+                <div className="aastha-lang-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                  Choose your language
+                </div>
+                <p className="aastha-lang-subtitle">Select once for this session</p>
+                <div className="aastha-lang-grid" role="radiogroup" aria-label="Language options">
+                  {LANGUAGES.map(lang => (
+                    <button
+                      key={lang.code}
+                      className="aastha-lang-btn"
+                      onClick={() => handleLanguageSelect(lang)}
+                      aria-label={`Select ${lang.label}`}
+                      role="radio"
+                      aria-checked="false"
+                    >
+                      <span className="lang-native">{lang.nativeLabel}</span>
+                      <span className="lang-en">{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="aastha-voice-exit-btn" onClick={closeVoiceMode} aria-label="Close voice mode">
+                  Back to text chat
+                </button>
               </div>
             )}
 
-            {(voiceMode === 'listening' || voiceMode === 'processing' || voiceMode === 'speaking' || voiceMode === 'error') && (
-              <div className="aastha-voice-controls">
-                <button className="aastha-voice-exit-btn" onClick={closeVoiceMode}>Back to text chat</button>
+            {/* Permission Request */}
+            {voiceMode === 'permission_required' && (
+              <div className="aastha-voice-status-center">
+                <div className="aastha-voice-permission-icon">🎙</div>
+                <p className="aastha-voice-status-text">Requesting microphone access...</p>
+              </div>
+            )}
+
+            {/* Orbital Animation + Status (active voice states) */}
+            {(voiceMode === 'listening' || voiceMode === 'processing' || voiceMode === 'speaking') && (
+              <div className="aastha-voice-orbital-area">
+                <div className="aastha-orbital-wrap" aria-hidden="true">
+                  <OrbitalAnimation state={getOrbitalState()} amplitude={speakingAmplitude} />
+                </div>
+
+                <div className="aastha-voice-state-label" role="status" aria-live="polite">
+                  {getStatusLabel(voiceMode, voiceError)}
+                </div>
+
+                {voiceError && (
+                  <div className="aastha-voice-error-inline" role="alert">
+                    {voiceError}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Error State */}
+            {voiceMode === 'error' && (
+              <div className="aastha-voice-status-center">
+                <div className="aastha-voice-error-icon">⚠</div>
+                <p className="aastha-voice-status-text" role="alert">{voiceError}</p>
+                <button className="aastha-voice-retry-btn" onClick={() => openVoiceMode()} aria-label="Try again">
+                  Try Again
+                </button>
               </div>
             )}
           </div>
