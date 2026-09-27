@@ -13,6 +13,7 @@ export default function HistoryPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'interactions' | 'prescriptions'>('interactions');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedPrescriptionDrugs, setSelectedPrescriptionDrugs] = useState<string[]>([]);
   
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert' | 'confirm', onConfirm: () => void}>({
     isOpen: false, message: '', type: 'alert', onConfirm: () => {}
@@ -213,14 +214,41 @@ export default function HistoryPage() {
                     <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-hover)', borderRadius: '12px' }}>
                       <h4 style={{ color: 'var(--accent-primary)', marginBottom: '0.75rem', fontSize: '1rem' }}>Extracted Medicines & Doses</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                        {dataJson.medicines.map((med: any, idx: number) => (
-                          <div key={idx} style={{ background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{med.rawName}</div>
-                            {med.strength && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Strength: {med.strength}</div>}
-                            {med.dosageForm && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Form: {med.dosageForm}</div>}
-                            {med.frequency && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Freq: {med.frequency}</div>}
-                          </div>
-                        ))}
+                        {dataJson.medicines.map((med: any, idx: number) => {
+                          const isSelected = selectedPrescriptionDrugs.includes(med.rawName);
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPrescriptionDrugs(prev => {
+                                  if (prev.includes(med.rawName)) return prev.filter(n => n !== med.rawName);
+                                  if (prev.length >= 2) return [prev[1], med.rawName];
+                                  return [...prev, med.rawName];
+                                });
+                              }}
+                              style={{ 
+                                background: isSelected ? 'rgba(92, 107, 192, 0.15)' : 'var(--bg-card)', 
+                                padding: '0.75rem', 
+                                borderRadius: '8px', 
+                                border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border)'}`,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                position: 'relative'
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{med.rawName}</div>
+                              {med.strength && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Strength: {med.strength}</div>}
+                              {med.dosageForm && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Form: {med.dosageForm}</div>}
+                              {med.frequency && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Freq: {med.frequency}</div>}
+                              {isSelected && (
+                                <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--accent-primary)', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Render Highly Compressed Image if available */}
@@ -268,6 +296,45 @@ export default function HistoryPage() {
             <X size={32} />
           </button>
           <img src={selectedImage} alt="Prescription Scan Full" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px' }} onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Floating Check Interaction Button */}
+      {selectedPrescriptionDrugs.length === 2 && (
+        <div 
+          className="fade-in"
+          style={{ 
+            position: 'fixed', 
+            bottom: '2rem', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 100, 
+            background: 'var(--bg-card)', 
+            padding: '1rem 1.5rem', 
+            borderRadius: '100px', 
+            border: '1px solid var(--accent-primary)', 
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '1.5rem' 
+          }}
+        >
+          <div style={{ color: 'var(--text-main)', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
+            Check <strong>{selectedPrescriptionDrugs[0]}</strong> + <strong>{selectedPrescriptionDrugs[1]}</strong>
+          </div>
+          <button 
+            className="btn btn-primary" 
+            style={{ borderRadius: '100px', padding: '0.6rem 1.2rem', whiteSpace: 'nowrap' }}
+            onClick={() => {
+              sessionStorage.setItem('pending_prescription_check', JSON.stringify({
+                drug1: selectedPrescriptionDrugs[0], 
+                drug2: selectedPrescriptionDrugs[1]
+              }));
+              window.location.href = '/';
+            }}
+          >
+            Check Interaction
+          </button>
         </div>
       )}
     </>

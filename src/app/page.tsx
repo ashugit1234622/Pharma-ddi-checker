@@ -480,7 +480,7 @@ export default function Home() {
   // prescription scanner events, or swap triggers firing before React re-renders.
   const isRunningRef = useRef(false);
 
-  // Load history report if coming from History page
+  // Load history report or pending prescription check
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = sessionStorage.getItem('history_report');
@@ -497,6 +497,20 @@ export default function Home() {
           console.error('Failed to parse history report', e);
         }
         sessionStorage.removeItem('history_report');
+      }
+
+      const pendingCheck = sessionStorage.getItem('pending_prescription_check');
+      if (pendingCheck) {
+        try {
+          const { drug1, drug2 } = JSON.parse(pendingCheck);
+          if (drug1 && drug2) {
+            // Slight delay ensures the listener is attached
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('run-prescription-check', { detail: { drug1, drug2 } }));
+            }, 300);
+          }
+        } catch (e) {}
+        sessionStorage.removeItem('pending_prescription_check');
       }
     }
   }, []);
