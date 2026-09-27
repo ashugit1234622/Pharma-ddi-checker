@@ -210,10 +210,25 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: text.trim() };
+    const trimmed = text.trim();
+    const userMessage: Message = { role: 'user', content: trimmed };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
+
+    // ─── Phase 4 Token Optimization: Client-Side Heuristics ───
+    // Intercept trivial greetings to save API tokens
+    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    if (greetingRegex.test(trimmed)) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Hello! How can I help you with your pharmacological or health inquiries today?"
+        }]);
+      }, 500); // Small delay to feel natural
+      return;
+    }
+
     setIsLoading(true);
 
     try {

@@ -58,10 +58,26 @@ export default function SkincareChatPage() {
   const handleSend = async (text: string = input) => {
     if (!text.trim() || loading) return;
 
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: text };
+    const trimmed = text.trim();
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: trimmed };
     // Sliding window: keep only the last 5 messages to prevent exponential token cost
     const history = messages.slice(-5).map(m => ({ role: m.role, content: m.content }));
     
+    // ─── Phase 4 Token Optimization: Client-Side Heuristics ───
+    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    if (greetingRegex.test(trimmed)) {
+      setMessages(prev => [...prev, userMsg]);
+      setInput('');
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: "Hello! How can I assist you with your skincare routine or concerns today?"
+        }]);
+      }, 500);
+      return;
+    }
+
     setMessages(prev => [...prev, userMsg, { id: 'temp', role: 'assistant', content: '', isThinking: true }]);
     setInput('');
     setLoading(true);
