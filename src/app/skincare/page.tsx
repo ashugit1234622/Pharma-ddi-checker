@@ -102,14 +102,15 @@ export default function SkincareChatPage() {
     if (greetingRegex.test(trimmed)) {
       setMessages(prev => [...prev, userMsg]);
       setInput('');
+      const answer = "Hello! How can I assist you with your skincare routine or concerns today?";
       setTimeout(() => {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Hello! How can I assist you with your skincare routine or concerns today?"
+          content: answer
         }]);
       }, 500);
-      return;
+      return answer;
     }
 
     setMessages(prev => [...prev, userMsg, { id: 'temp', role: 'assistant', content: '', isThinking: true }]);

@@ -196,6 +196,18 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     const userMsg: Message = { role: 'user', content: transcript.trim() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
+
+    // Intercept trivial greetings to save API tokens
+    const greetingRegex = /^(hi|hello|hey|how are you\??|good morning|good evening)$/i;
+    if (greetingRegex.test(transcript.trim())) {
+      const answer = "Hello! How can I help you with your pharmacological or health inquiries today?";
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+      }, 500);
+      await speakText(answer, lang);
+      return;
+    }
+
     setVoiceMode('processing');
 
     try {
