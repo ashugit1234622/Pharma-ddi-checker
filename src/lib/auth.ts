@@ -1,5 +1,9 @@
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 import type { NextAuthOptions } from "next-auth";
 import { getDatabase } from '@/lib/db';
 
@@ -18,6 +22,33 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID as string || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string || "",
     }),
+    CredentialsProvider({
+      name: 'Google Native',
+      credentials: {
+        idToken: { label: "ID Token", type: "text" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.idToken) return null;
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken: credentials.idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
+          if (!payload || !payload.email) return null;
+          
+          return {
+            id: payload.sub,
+            email: payload.email,
+            name: payload.name,
+            image: payload.picture
+          };
+        } catch (e) {
+          console.error("Native Google verification failed:", e);
+          return null;
+        }
+      }
+    }),
   ],
   session: {
     strategy: "jwt",
@@ -26,8 +57,9 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === 'google' && user.email) {
+    async signIn({ user, account, credentials }) {
+      // Allow both normal Google OAuth and Native Google credentials
+      if ((account?.provider === 'google' || account?.provider === 'credentials') && user.email) {
         try {
           const pool = tryGetDatabase();
           if (pool) {

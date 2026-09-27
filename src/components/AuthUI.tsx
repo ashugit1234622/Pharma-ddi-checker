@@ -4,11 +4,21 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { User, LogOut, Clock, Bell } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export default function AuthUI() {
   const { data: session, status } = useSession();
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      GoogleAuth.initialize({
+        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '659970984850-2j84u2v7l47087s2iif7dhlhh804s9k9.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+    }
+
     if (status === 'authenticated') {
       if (!sessionStorage.getItem('post_signin_reload')) {
         sessionStorage.setItem('post_signin_reload', 'true');
@@ -20,6 +30,21 @@ export default function AuthUI() {
       sessionStorage.removeItem('post_signin_reload');
     }
   }, [status]);
+
+  const handleSignIn = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const user = await GoogleAuth.signIn();
+        if (user.authentication.idToken) {
+          await signIn('credentials', { idToken: user.authentication.idToken, redirect: true, callbackUrl: '/' });
+        }
+      } catch (error) {
+        console.error('Native Google Sign-In Error:', error);
+      }
+    } else {
+      signIn('google');
+    }
+  };
 
   if (status === 'loading') {
     return <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-hover)' }} className="pulse" />;
@@ -82,7 +107,7 @@ export default function AuthUI() {
 
   return (
     <button
-      onClick={() => signIn('google')}
+      onClick={handleSignIn}
       style={{
         background: 'var(--accent-primary)',
         color: '#fff',

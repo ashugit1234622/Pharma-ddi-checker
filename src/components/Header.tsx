@@ -8,6 +8,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import MedCheck from './MedCheck';
 import FoodCheck from './FoodCheck';
 import PWAInstallButton from './PWAInstallButton';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,6 +18,31 @@ export default function Header() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      GoogleAuth.initialize({
+        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '659970984850-2j84u2v7l47087s2iif7dhlhh804s9k9.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+    }
+  }, []);
+
+  const handleSignIn = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const user = await GoogleAuth.signIn();
+        if (user.authentication.idToken) {
+          await signIn('credentials', { idToken: user.authentication.idToken, redirect: true, callbackUrl: '/' });
+        }
+      } catch (error) {
+        console.error('Native Google Sign-In Error:', error);
+      }
+    } else {
+      signIn('google');
+    }
+  };
 
   // Redirect new users (no profile yet) to onboarding
   useEffect(() => {
@@ -86,7 +113,7 @@ export default function Header() {
               </button>
             </>
           ) : (
-            <button onClick={() => signIn('google')} className="btn-signin">
+            <button onClick={handleSignIn} className="btn-signin">
               <User size={16} /> Sign In
             </button>
           )}
@@ -135,7 +162,7 @@ export default function Header() {
               />
             </Link>
           ) : (
-            <button onClick={() => signIn('google')} className="btn-signin btn-signin-mobile">
+            <button onClick={handleSignIn} className="btn-signin btn-signin-mobile">
               <User size={14} /> Sign In
             </button>
           )}
@@ -176,7 +203,7 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <button onClick={() => { signIn('google'); setIsMenuOpen(false); }} className="mobile-menu-item mobile-signin-full">
+              <button onClick={() => { handleSignIn(); setIsMenuOpen(false); }} className="mobile-menu-item mobile-signin-full">
                 <User size={18} /> Sign In with Google
               </button>
             )}
