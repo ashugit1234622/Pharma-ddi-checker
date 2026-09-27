@@ -105,7 +105,7 @@ const Word = memo(function Word({
     return (
         <motion.div
             className={textClassName}
-            style={{ display: 'flex', gap: '0.05em', fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-main)' }}
+            style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.05em', color: 'var(--text-main)' }}
             initial="initial"
             animate="animate"
             exit="exit"

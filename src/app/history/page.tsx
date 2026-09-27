@@ -277,6 +277,32 @@ export default function HistoryPage() {
                           </div>
                         </div>
                       )}
+                      
+                      {/* Check Interaction Button Inline */}
+                      {selectedPrescriptionDrugs.length === 2 && dataJson.medicines.some((m: any) => selectedPrescriptionDrugs.includes(m.rawName)) && (
+                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                          <button 
+                            className="btn btn-primary fade-in"
+                            style={{ 
+                              borderRadius: '100px', 
+                              padding: '0.8rem 2.5rem', 
+                              whiteSpace: 'nowrap',
+                              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+                              fontSize: '1.05rem',
+                              fontWeight: 600
+                            }}
+                            onClick={() => {
+                              sessionStorage.setItem('pending_prescription_check', JSON.stringify({
+                                drug1: selectedPrescriptionDrugs[0], 
+                                drug2: selectedPrescriptionDrugs[1]
+                              }));
+                              window.location.href = '/';
+                            }}
+                          >
+                            Check Interaction
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -297,39 +323,6 @@ export default function HistoryPage() {
           </button>
           <img src={selectedImage} alt="Prescription Scan Full" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px' }} onClick={e => e.stopPropagation()} />
         </div>
-      )}
-
-      {/* Floating Check Interaction Button */}
-      {selectedPrescriptionDrugs.length === 2 && (
-        <button 
-          className="btn btn-primary fade-in" 
-          style={{ 
-            position: 'fixed', 
-            bottom: '3rem', 
-            left: '50%', 
-            transform: 'translateX(-50%)', 
-            zIndex: 100, 
-            borderRadius: '100px', 
-            padding: '1rem 2rem', 
-            whiteSpace: 'nowrap',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-          onClick={() => {
-            sessionStorage.setItem('pending_prescription_check', JSON.stringify({
-              drug1: selectedPrescriptionDrugs[0], 
-              drug2: selectedPrescriptionDrugs[1]
-            }));
-            window.location.href = '/';
-          }}
-        >
-          Check Interaction
-        </button>
-      )}
     </>
   );
 }
