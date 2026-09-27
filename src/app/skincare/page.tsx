@@ -42,6 +42,7 @@ export default function SkincareChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // ── Voice state ──────────────────────────────────────────────────────────
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
@@ -82,7 +83,12 @@ export default function SkincareChatPage() {
   }, [status]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
@@ -337,7 +343,7 @@ export default function SkincareChatPage() {
         </div>
       </div>
 
-      <div className="derma-chat-container">
+      <div className="derma-chat-container" ref={chatContainerRef}>
         {messages.length === 0 ? (
           <div className="derma-welcome">
             <div className="derma-welcome-icon">

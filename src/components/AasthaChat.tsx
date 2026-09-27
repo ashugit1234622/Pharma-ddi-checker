@@ -51,6 +51,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // ── Voice state ──────────────────────────────────────────────────────────
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
@@ -66,7 +67,12 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
 
   // ── Scroll on new messages ───────────────────────────────────────────────
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages]);
 
   // ── Lock body scroll when chat is open ───────────────────────────────────
@@ -658,7 +664,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
           ) : (
             /* ── NORMAL TEXT CHAT UI (100% unchanged) ───────── */
             <>
-              <div className="aastha-messages">
+              <div className="aastha-messages" ref={chatContainerRef}>
                 {messages.map((m, i) => (
                   <div key={i} className={`aastha-message ${m.role}`}>
                     {m.content}

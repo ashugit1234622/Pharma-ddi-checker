@@ -126,6 +126,7 @@ a:hover { color: var(--accent-hover); }
   /* allow mobile dropdown to overlap below */
   flex-wrap: wrap;
   gap: 0;
+  flex-shrink: 0;
 }
 
 /* ── Logo ── */
