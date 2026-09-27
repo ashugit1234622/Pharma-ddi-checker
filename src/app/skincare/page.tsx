@@ -25,10 +25,14 @@ export default function SkincareChatPage() {
   // Lock body scroll for the entire skincare chat route
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overscrollBehaviorY = 'none';
+    document.documentElement.style.overscrollBehaviorY = 'none';
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
       document.body.style.overscrollBehaviorY = '';
+      document.documentElement.style.overscrollBehaviorY = '';
     };
   }, []);
 

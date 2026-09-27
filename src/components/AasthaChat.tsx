@@ -151,15 +151,21 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     if (isOpen) {
       // Prevent background scrolling on mobile
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
       // Prevent pull-to-refresh / rubber banding
       document.body.style.overscrollBehaviorY = 'none';
+      document.documentElement.style.overscrollBehaviorY = 'none';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
       document.body.style.overscrollBehaviorY = '';
+      document.documentElement.style.overscrollBehaviorY = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
       document.body.style.overscrollBehaviorY = '';
+      document.documentElement.style.overscrollBehaviorY = '';
     };
   }, [isOpen]);
 
