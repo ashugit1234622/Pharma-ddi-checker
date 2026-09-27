@@ -3,13 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { User, Activity, AlertTriangle, Droplets, Calendar, ShieldAlert, FileText, Phone } from 'lucide-react';
+import { User, Activity, AlertTriangle, Droplets, Calendar, ShieldAlert, FileText, Phone, Mic } from 'lucide-react';
+import { LANGUAGES } from '../lib/voice';
+import { useVoiceLanguage } from '../hooks/useVoiceLanguage';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { selectedLang, saveLanguage, isLoadingLang } = useVoiceLanguage();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -114,6 +117,46 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '1.5rem' }} className="card">
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', color: 'var(--accent-primary)' }}>
+          <Mic size={20} /> App Preferences
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Aastha & Skincare Voice Language</span>
+          {isLoadingLang ? (
+            <span style={{ color: 'var(--text-muted)' }}>Loading...</span>
+          ) : (
+            <select 
+              value={selectedLang?.code || ''}
+              onChange={(e) => {
+                const lang = LANGUAGES.find(l => l.code === e.target.value);
+                if (lang) saveLanguage(lang);
+              }}
+              style={{
+                padding: '0.75rem',
+                borderRadius: '8px',
+                background: 'var(--bg-hover)',
+                color: 'white',
+                border: '1px solid var(--border)',
+                outline: 'none',
+                maxWidth: '300px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="" disabled>Select a language</option>
+              {LANGUAGES.map(lang => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.nativeLabel} ({lang.label})
+                </option>
+              ))}
+            </select>
+          )}
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+            This language will be used when you speak to Aastha or the Skincare AI.
+          </p>
         </div>
       </div>
       
