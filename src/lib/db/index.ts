@@ -192,5 +192,14 @@ async function initializeSchema(db: Pool) {
     );
     CREATE INDEX IF NOT EXISTS idx_user_tips_user_id ON user_tips(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_tips_type ON user_tips(user_id, tip_type);
+
+    CREATE TABLE IF NOT EXISTS ddi_cache (
+      id TEXT PRIMARY KEY,
+      drug1_id TEXT NOT NULL,
+      drug2_id TEXT NOT NULL,
+      result_json TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(drug1_id, drug2_id)
+    );
   `);
 }

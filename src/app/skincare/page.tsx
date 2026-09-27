@@ -59,7 +59,8 @@ export default function SkincareChatPage() {
     if (!text.trim() || loading) return;
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: text };
-    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    // Sliding window: keep only the last 5 messages to prevent exponential token cost
+    const history = messages.slice(-5).map(m => ({ role: m.role, content: m.content }));
     
     setMessages(prev => [...prev, userMsg, { id: 'temp', role: 'assistant', content: '', isThinking: true }]);
     setInput('');
