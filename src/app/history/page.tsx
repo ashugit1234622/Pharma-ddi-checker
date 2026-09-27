@@ -311,20 +311,24 @@ export default function HistoryPage() {
             zIndex: 100, 
             background: 'var(--bg-card)', 
             padding: '1rem 1.5rem', 
-            borderRadius: '100px', 
+            borderRadius: '16px', 
             border: '1px solid var(--accent-primary)', 
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)', 
             display: 'flex', 
-            alignItems: 'center', 
-            gap: '1.5rem' 
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            width: 'calc(100vw - 2rem)',
+            maxWidth: '600px',
+            flexWrap: 'wrap'
           }}
         >
-          <div style={{ color: 'var(--text-main)', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
-            Check <strong>{selectedPrescriptionDrugs[0]}</strong> + <strong>{selectedPrescriptionDrugs[1]}</strong>
+          <div style={{ color: 'var(--text-main)', fontSize: '0.95rem', flex: '1 1 200px', wordBreak: 'break-word', lineHeight: 1.4 }}>
+            Check <strong style={{ color: 'var(--accent-primary)' }}>{selectedPrescriptionDrugs[0]}</strong> + <strong style={{ color: 'var(--accent-primary)' }}>{selectedPrescriptionDrugs[1]}</strong>
           </div>
           <button 
             className="btn btn-primary" 
-            style={{ borderRadius: '100px', padding: '0.6rem 1.2rem', whiteSpace: 'nowrap' }}
+            style={{ borderRadius: '100px', padding: '0.7rem 1.4rem', whiteSpace: 'nowrap', flexShrink: 0 }}
             onClick={() => {
               sessionStorage.setItem('pending_prescription_check', JSON.stringify({
                 drug1: selectedPrescriptionDrugs[0], 
