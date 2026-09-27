@@ -64,8 +64,8 @@ export default function HealthTipsPage() {
         (data.tips.medical_tip?.length > 0)
       );
 
-      if (!hasAnyTips && !isRetry) {
-        // Auto-generate for existing users who haven't got tips yet
+      if ((!hasAnyTips || data.needsRegeneration) && !isRetry) {
+        // Auto-generate for existing users who haven't got tips yet, or if tips are > 48h old
         await regenerateTips(true);
       } else {
         setTips(data.tips);

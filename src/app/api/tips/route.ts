@@ -56,7 +56,16 @@ export async function GET(req: NextRequest) {
       medical_tip: [],
     };
 
+    let needsRegeneration = false;
+    let newestDate: Date | null = null;
+
     for (const row of result.rows) {
+      // Find the most recent tip date
+      const tipDate = new Date(row.created_at);
+      if (!newestDate || tipDate > newestDate) {
+        newestDate = tipDate;
+      }
+
       if (grouped[row.tip_type]) {
         if (grouped[row.tip_type].length < 7) {
           grouped[row.tip_type].push({
@@ -70,9 +79,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (result.rows.length === 0) {
+      needsRegeneration = true;
+    } else if (newestDate) {
+      const now = new Date();
+      const diffMs = now.getTime() - newestDate.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      if (diffHours >= 48) {
+        needsRegeneration = true;
+      }
+    }
+
     return NextResponse.json({
       tips: grouped,
       count: result.rows.length,
+      needsRegeneration,
     });
   } catch (e: any) {
     console.error('[Tips API] Error:', e.message);
