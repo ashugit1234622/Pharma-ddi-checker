@@ -323,6 +323,7 @@ export default function HistoryPage() {
           </button>
           <img src={selectedImage} alt="Prescription Scan Full" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px' }} onClick={e => e.stopPropagation()} />
         </div>
+      )}
     </>
   );
 }
