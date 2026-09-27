@@ -152,6 +152,7 @@ const GEMINI_KEY_CONFIGS = [
   { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.8-flash" },
   { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.8-flash" },
   { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.8-flash" },
+  { envVar: "GEMINI_API_KEY_7",              model: "gemini-3.8-flash" },
 ] as const;
 
 function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {

@@ -56,6 +56,7 @@ function getOcrApiKeys(): Array<{ name: string; key: string }> {
     { name: "GEMINI_API_KEY",                  val: process.env.GEMINI_API_KEY },
     { name: "GEMINI_API_KEY_5",               val: process.env.GEMINI_API_KEY_5 },
     { name: "GEMINI_API_KEY_6",               val: process.env.GEMINI_API_KEY_6 },
+    { name: "GEMINI_API_KEY_7",               val: process.env.GEMINI_API_KEY_7 },
   ];
   return candidates
     .filter(c => c.val && !c.val.startsWith("your-"))
