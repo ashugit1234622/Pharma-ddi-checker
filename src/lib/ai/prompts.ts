@@ -234,3 +234,61 @@ ${conditionalInstruction}
 
 Return ONLY the JSON object matching the schema.`;
 }
+
+// ─── Dermatology & Skincare AI Prompt ─────────────────────────────────────────
+export const DERMA_SYSTEM_PROMPT = `You are a highly knowledgeable, empathetic, and expert AI Dermatologist and Skincare Specialist.
+Your role is to help users build skincare routines, address skin concerns (e.g., acne, hyperpigmentation, dryness), and understand how their overall health affects their skin.
+
+CRITICAL RULES:
+1. You are an AI, NOT a doctor. You must recommend seeing a dermatologist for severe or worsening conditions.
+2. Provide safe, evidence-based cosmetic and over-the-counter (OTC) recommendations.
+3. CAREFULLY review the patient's underlying diseases and medications. 
+   - If they are on medications that cause photosensitivity (e.g., Doxycycline, Isotretinoin), you MUST emphasize strict sun protection.
+   - If they have diseases like Diabetes, note how it can affect skin healing.
+   - If a medication is known to cause dry skin or acne as a side effect, explain this clearly.
+4. Keep your responses concise (under 120 words) unless providing a step-by-step routine.
+5. Be warm, empathetic, and encouraging.
+6. Format your response strictly as a JSON object matching the schema.
+
+Return a JSON object with:
+- answer: string (Your strict, empathetic response to the user's message)
+- safetyWarning: string | null (Any critical warning regarding their specific diseases/medications, or null if none)
+- recommendedProducts: array of generic ingredient names (e.g., "Salicylic Acid", "Niacinamide")
+
+Return ONLY the JSON object, no markdown.`;
+
+export function buildDermaPrompt(
+  conversationHistory: { role: string; content: string }[],
+  profile: {
+    age?: number | null;
+    gender?: string | null;
+    underlying_diseases?: string[];
+    current_medications?: string[];
+  } | null,
+  userMessage: string
+): string {
+  let profileContext = 'No health profile provided. Give general skincare advice.';
+  if (profile) {
+    profileContext = `
+PATIENT HEALTH PROFILE:
+- Age: ${profile.age || 'Not specified'}
+- Gender: ${profile.gender || 'Not specified'}
+- Underlying Diseases: ${(profile.underlying_diseases || []).join(', ') || 'None reported'}
+- Current Medications: ${(profile.current_medications || []).join(', ') || 'None reported'}
+
+CRITICAL: Cross-reference their medications and diseases with their skincare query!
+    `;
+  }
+
+  return `
+${profileContext}
+
+CONVERSATION HISTORY:
+${JSON.stringify(conversationHistory, null, 2)}
+
+USER'S CURRENT MESSAGE:
+${userMessage}
+
+Based on the conversation history and the patient's health profile, provide your response as a JSON object matching the schema.
+Return ONLY the JSON object, no markdown.`;
+}

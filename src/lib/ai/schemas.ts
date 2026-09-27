@@ -155,3 +155,12 @@ export const TipsGenerationSchema = z.object({
 export type TipItem = z.infer<typeof TipItemSchema>;
 export type TipsGeneration = z.infer<typeof TipsGenerationSchema>;
 
+// ─── Dermatology & Skincare AI Schema ─────────────────────────────────────────
+export const DermaChatSchema = z.object({
+  answer: z.string(),
+  safetyWarning: z.string().nullable(),
+  recommendedProducts: z.array(z.string()),
+});
+
+export type DermaChatResponse = z.infer<typeof DermaChatSchema>;
+

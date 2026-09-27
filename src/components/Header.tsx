@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -112,6 +112,10 @@ export default function Header() {
                   <Heart size={18} style={{ color: 'var(--accent-primary)' }} />
                   Health Tips
                 </Link>
+                <Link href="/skincare" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                  <Droplet size={18} style={{ color: '#ec4899' }} />
+                  Skincare AI
+                </Link>
               </div>
             )}
           </div>
@@ -187,6 +191,9 @@ export default function Header() {
             </button>
             <Link href="/health-tips" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
               <Heart size={18} style={{ color: 'var(--accent-primary)' }} /> Health Tips
+            </Link>
+            <Link href="/skincare" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+              <Droplet size={18} style={{ color: '#ec4899' }} /> Skincare AI
             </Link>
 
             <div className="mobile-pwa-row">

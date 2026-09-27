@@ -2533,3 +2533,268 @@ a:hover { color: var(--accent-hover); }
   .tips-tab { justify-content: center; }
   .tips-back-btn { position: relative; margin-bottom: 1rem; }
 }
+
+/* ══════════════════════════════════════════════════════
+   DERMA / SKINCARE AI CHAT
+══════════════════════════════════════════════════════ */
+.derma-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.derma-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.derma-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.derma-back-btn:hover { color: var(--text-main); }
+
+.derma-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.derma-title h1 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.derma-icon-pink {
+  color: #ec4899; /* Pink-500 */
+}
+
+.derma-chat-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbar for chat */
+.derma-chat-container::-webkit-scrollbar { width: 6px; }
+.derma-chat-container::-webkit-scrollbar-track { background: transparent; }
+.derma-chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.derma-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-muted);
+  animation: fadeUp 0.5s ease;
+}
+
+.derma-welcome-icon {
+  background: rgba(236, 72, 153, 0.1);
+  padding: 1rem;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.derma-welcome h2 {
+  font-size: 1.5rem;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.derma-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  max-width: 500px;
+}
+
+.derma-suggestion-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0.6rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.derma-suggestion-btn:hover {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.05);
+}
+
+.derma-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.derma-msg-wrapper {
+  display: flex;
+  gap: 12px;
+  max-width: 90%;
+  animation: fadeUp 0.3s ease;
+}
+
+.msg-user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-ai { align-self: flex-start; }
+
+.derma-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.msg-ai .derma-avatar { background: rgba(236, 72, 153, 0.1); border-color: rgba(236, 72, 153, 0.2); }
+
+.derma-msg-bubble {
+  background: var(--bg-card);
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.msg-user .derma-msg-bubble {
+  background: #ec4899;
+  color: white;
+  border-color: #ec4899;
+  border-top-right-radius: 4px;
+}
+
+.msg-ai .derma-msg-bubble {
+  border-top-left-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.derma-markdown p { margin-bottom: 0.75rem; }
+.derma-markdown p:last-child { margin-bottom: 0; }
+.derma-markdown strong { color: var(--text-main); }
+.msg-user .derma-markdown strong { color: white; }
+
+.derma-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+.derma-products {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.derma-products strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.derma-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.derma-tag {
+  background: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.derma-input-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  background: var(--bg-card);
+  padding: 0.5rem;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+}
+
+.derma-input-container input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1rem;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.derma-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ec4899;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.derma-send-btn:hover:not(:disabled) { opacity: 0.9; transform: scale(1.05); }
+.derma-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.derma-thinking {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 24px;
+}
+
+.derma-thinking .dot {
+  width: 6px; height: 6px;
+  background: #ec4899;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+.derma-thinking .dot:nth-child(2) { animation-delay: 0.2s; }
+.derma-thinking .dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
