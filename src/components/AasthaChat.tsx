@@ -114,8 +114,12 @@ function getStatusLabel(mode: VoiceMode, errorMsg: string): string {
   }
 }
 
+import { useVisualViewport } from '../hooks/useVisualViewport';
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: AasthaChatProps) {
+  const viewportHeight = useVisualViewport();
+
   // ── Existing chat state (unchanged) ─────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);

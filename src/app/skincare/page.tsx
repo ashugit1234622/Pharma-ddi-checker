@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Send, Sparkles, Loader2, User as UserIcon, ShieldAlert, ArrowLeft, Droplet } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+import { useVisualViewport } from '@/hooks/useVisualViewport';
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -18,6 +20,7 @@ interface ChatMessage {
 export default function SkincareChatPage() {
   const { status } = useSession();
   const router = useRouter();
+  const viewportHeight = useVisualViewport();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
