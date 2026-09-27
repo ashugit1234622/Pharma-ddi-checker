@@ -506,7 +506,7 @@ export default function Home() {
           if (drug1 && drug2) {
             // Slight delay ensures the listener is attached
             setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('run-prescription-check', { detail: { drug1, drug2 } }));
+              window.dispatchEvent(new CustomEvent('pharma-check-interaction', { detail: { drug1, drug2 } }));
             }, 300);
           }
         } catch (e) {}
