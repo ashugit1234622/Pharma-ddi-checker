@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DDIAnalysis } from '../lib/ai/schemas';
 import OrbitalAnimation, { VoiceState } from './OrbitalAnimation';
+import { LanguageOption, LANGUAGES, VoiceMode, ISpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../lib/voice';
+import { useVoiceLanguage } from '../hooks/useVoiceLanguage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -15,83 +17,6 @@ interface AasthaChatProps {
   drug1: any | null;
   drug2: any | null;
   report: DDIAnalysis | null;
-}
-
-// ─── Language Configuration (easily expandable) ───────────────────────────────
-interface LanguageOption {
-  code: string;        // BCP-47 for SpeechRecognition
-  voice: string;       // Edge TTS voice name
-  label: string;       // Display label
-  nativeLabel: string; // Native script label
-}
-
-const LANGUAGES: LanguageOption[] = [
-  { code: 'hi-IN', voice: 'hi-IN-SwaraNeural',     label: 'Hindi',     nativeLabel: 'हिंदी' },
-  { code: 'mr-IN', voice: 'mr-IN-AarohiNeural',    label: 'Marathi',   nativeLabel: 'मराठी' },
-  { code: 'ta-IN', voice: 'ta-IN-PallaviNeural',   label: 'Tamil',     nativeLabel: 'தமிழ்' },
-  { code: 'te-IN', voice: 'te-IN-ShrutiNeural',    label: 'Telugu',    nativeLabel: 'తెలుగు' },
-  { code: 'bn-IN', voice: 'bn-IN-TanishaaNeural',  label: 'Bengali',   nativeLabel: 'বাংলা' },
-  { code: 'gu-IN', voice: 'gu-IN-DhwaniNeural',    label: 'Gujarati',  nativeLabel: 'ગુજરાતી' },
-  { code: 'kn-IN', voice: 'kn-IN-SapnaNeural',     label: 'Kannada',   nativeLabel: 'ಕನ್ನಡ' },
-  { code: 'ml-IN', voice: 'ml-IN-SobhanaNeural',   label: 'Malayalam', nativeLabel: 'മലയാളം' },
-  { code: 'pa-IN', voice: 'pa-IN-OjasNeural',      label: 'Punjabi',   nativeLabel: 'ਪੰਜਾਬੀ' },
-  { code: 'en-IN', voice: 'en-IN-NeerjaNeural',    label: 'English',   nativeLabel: 'English' },
-];
-
-// ─── Voice State Machine ──────────────────────────────────────────────────────
-type VoiceMode =
-  | 'off'                    // voice mode not active
-  | 'permission_required'    // waiting for mic permission
-  | 'language_selection'     // choosing language (once per session)
-  | 'listening'              // mic active, waiting for speech
-  | 'processing'             // transcript sent to Aastha API
-  | 'speaking'               // Edge TTS playing
-  | 'error';                 // error state
-
-// ─── Web Speech API Type Declarations ───────────────────────────────────────
-// These are not always included in TypeScript's lib.dom.d.ts.
-interface SpeechRecognitionAlternative {
-  readonly transcript: string;
-  readonly confidence: number;
-}
-interface SpeechRecognitionResult {
-  readonly length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-  readonly isFinal: boolean;
-}
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-interface SpeechRecognitionEvent extends Event {
-  readonly results: SpeechRecognitionResultList;
-  readonly resultIndex: number;
-}
-interface SpeechRecognitionErrorEvent extends Event {
-  readonly error: string;
-  readonly message: string;
-}
-interface ISpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onstart: ((this: ISpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: ISpeechRecognition, ev: Event) => any) | null;
-  onresult: ((this: ISpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onnomatch: ((this: ISpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: ISpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-}
-declare global {
-  interface Window {
-    SpeechRecognition: new () => ISpeechRecognition;
-    webkitSpeechRecognition: new () => ISpeechRecognition;
-  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -132,9 +57,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
   const [voiceError, setVoiceError] = useState('');
   const [speakingAmplitude, setSpeakingAmplitude] = useState(0);
 
-  // Session-persistent language selection (survive open/close, reset on page refresh)
-  const sessionLangRef = useRef<LanguageOption | null>(null);
-  const [selectedLang, setSelectedLang] = useState<LanguageOption | null>(null);
+  const { selectedLang, saveLanguage, setSelectedLang } = useVoiceLanguage();
 
   // Refs for cleanup
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
@@ -368,10 +291,9 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
         // Return to listening mode if we are still active
         setVoiceMode(currentMode => {
           if (currentMode !== 'off' && currentMode !== 'error') {
-             const currentLang = sessionLangRef.current;
-             if (currentLang) {
+             if (selectedLang) {
                 // Must start listening asynchronously after state update
-                setTimeout(() => startListening(currentLang), 50);
+                setTimeout(() => startListening(selectedLang), 50);
                 return 'listening';
              }
           }
@@ -491,22 +413,20 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     }
 
     // Language already selected this session? Skip selection
-    if (sessionLangRef.current) {
-      setSelectedLang(sessionLangRef.current);
+    if (selectedLang) {
       setVoiceMode('listening');
-      startListening(sessionLangRef.current);
+      startListening(selectedLang);
     } else {
       setVoiceMode('language_selection');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startListening]);
+  }, [startListening, selectedLang]);
 
   const handleLanguageSelect = useCallback((lang: LanguageOption) => {
-    sessionLangRef.current = lang;
-    setSelectedLang(lang);
+    saveLanguage(lang);
     setVoiceMode('listening');
     startListening(lang);
-  }, [startListening]);
+  }, [startListening, saveLanguage]);
 
   const closeVoiceMode = useCallback(() => {
     cleanupVoice();
@@ -584,7 +504,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
                   className="aastha-voice-change-lang"
                   onClick={() => {
                     cleanupVoice();
-                    sessionLangRef.current = null;
+                    // @ts-ignore
                     setSelectedLang(null);
                     setVoiceMode('language_selection');
                   }}

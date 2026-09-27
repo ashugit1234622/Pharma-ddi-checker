@@ -89,8 +89,19 @@ async function initializeSchema(db: Pool) {
       email TEXT UNIQUE,
       emailVerified TEXT,
       image TEXT,
+      preferred_voice_language TEXT DEFAULT 'en-US',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='users' AND column_name='preferred_voice_language'
+      ) THEN 
+        ALTER TABLE users ADD COLUMN preferred_voice_language TEXT DEFAULT 'en-US';
+      END IF; 
+    END $$;
 
     CREATE TABLE IF NOT EXISTS patient_profiles (
       id TEXT PRIMARY KEY,

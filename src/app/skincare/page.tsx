@@ -5,7 +5,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Send, Sparkles, Loader2, User as UserIcon, ShieldAlert, ArrowLeft, Droplet } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-
+import OrbitalAnimation, { VoiceState } from '@/components/OrbitalAnimation';
+import { LanguageOption, LANGUAGES, VoiceMode, ISpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '@/lib/voice';
+import { useVoiceLanguage } from '@/hooks/useVoiceLanguage';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 interface ChatMessage {
@@ -40,6 +42,38 @@ export default function SkincareChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ── Voice state ──────────────────────────────────────────────────────────
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
+  const [voiceError, setVoiceError] = useState('');
+  const [speakingAmplitude, setSpeakingAmplitude] = useState(0);
+
+  const { selectedLang, saveLanguage } = useVoiceLanguage();
+
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const isSpeakingRef = useRef(false);
+
+  const cleanupVoice = React.useCallback(() => {
+    cancelAnimationFrame(animFrameRef.current);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    isSpeakingRef.current = false;
+    setSpeakingAmplitude(0);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+    return () => cleanupVoice();
+  }, [cleanupVoice]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -102,15 +136,184 @@ export default function SkincareChatPage() {
           recommendedProducts: data.recommendedProducts
         }
       ]);
+      return data.answer;
     } catch (e) {
       setMessages(prev => [
         ...prev.filter(m => m.id !== 'temp'),
         { id: Date.now().toString() + 1, role: 'assistant', content: "I'm having trouble connecting to the network. Please try again." }
       ]);
+      return null;
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVoiceSend = React.useCallback(async (transcript: string, lang: LanguageOption) => {
+    if (!transcript.trim()) {
+      setVoiceMode('listening');
+      return;
+    }
+    const answerText = await handleSend(transcript);
+    
+    if (answerText) {
+      setVoiceMode('speaking');
+      isSpeakingRef.current = true;
+      const utterance = new SpeechSynthesisUtterance(answerText);
+      const voices = window.speechSynthesis.getVoices();
+      const selectedVoice = voices.find(v => v.name === lang.voice) || voices.find(v => v.lang === lang.code);
+      if (selectedVoice) utterance.voice = selectedVoice;
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+
+      const updateAmplitude = () => {
+        if (!isSpeakingRef.current) return;
+        setSpeakingAmplitude(0.3 + Math.random() * 0.7);
+        animFrameRef.current = requestAnimationFrame(updateAmplitude);
+      };
+      updateAmplitude();
+
+      return new Promise<void>((resolve) => {
+        utterance.onend = () => {
+          isSpeakingRef.current = false;
+          cancelAnimationFrame(animFrameRef.current);
+          setSpeakingAmplitude(0);
+          setVoiceMode(currentMode => {
+            if (currentMode !== 'off' && currentMode !== 'error') {
+               if (selectedLang) {
+                  setTimeout(() => startListening(selectedLang), 50);
+                  return 'listening';
+               }
+            }
+            return currentMode;
+          });
+          resolve();
+        };
+        utterance.onerror = (e) => {
+          if (e.error !== 'canceled' && e.error !== 'interrupted') {
+            console.error('[TTS] Error:', e);
+            setVoiceError('Voice playback interrupted.');
+            setTimeout(() => setVoiceError(''), 3000);
+          }
+          isSpeakingRef.current = false;
+          cancelAnimationFrame(animFrameRef.current);
+          setSpeakingAmplitude(0);
+          resolve();
+        };
+        window.speechSynthesis.speak(utterance);
+      });
+    } else {
+      setVoiceMode('listening');
+      startListening(lang);
+    }
+  }, [handleSend, selectedLang]);
+
+  const startListening = React.useCallback((lang: LanguageOption) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceMode('error');
+      setVoiceError('Speech recognition is not supported in this browser.');
+      return;
+    }
+    const recognition = new SR();
+    recognitionRef.current = recognition;
+    recognition.lang = lang.code;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setVoiceMode('listening');
+    recognition.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0]?.[0]?.transcript || '';
+      if (transcript.trim()) {
+        setVoiceMode('processing');
+        handleVoiceSend(transcript, lang);
+      } else {
+        setVoiceMode('listening');
+        startListening(lang);
+      }
+    };
+    recognition.onnomatch = () => {
+      setVoiceError("I couldn't understand that. Please try again.");
+      setVoiceMode('error');
+      setTimeout(() => {
+        setVoiceError('');
+        setVoiceMode('listening');
+        startListening(lang);
+      }, 2000);
+    };
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      if (e.error === 'no-speech') {
+        setVoiceMode('listening');
+        startListening(lang);
+        return;
+      }
+      if (e.error === 'aborted') return;
+      setVoiceError(`Recognition error: ${e.error}`);
+      setVoiceMode('error');
+      setTimeout(() => {
+        setVoiceError('');
+        setVoiceMode('listening');
+        startListening(lang);
+      }, 2500);
+    };
+    recognition.onend = () => {
+      if (voiceMode === 'listening' && !isSpeakingRef.current) {
+        startListening(lang);
+      }
+    };
+    try { recognition.start(); } catch (err) {}
+  }, [handleVoiceSend, voiceMode]);
+
+  const openVoiceMode = React.useCallback(async () => {
+    setVoiceMode('permission_required');
+    setVoiceError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err: any) {
+      setVoiceMode('error');
+      setVoiceError('Microphone access is required.');
+      return;
+    }
+    if (selectedLang) {
+      setVoiceMode('listening');
+      startListening(selectedLang);
+    } else {
+      setVoiceMode('language_selection');
+    }
+  }, [startListening, selectedLang]);
+
+  const handleLanguageSelect = React.useCallback((lang: LanguageOption) => {
+    saveLanguage(lang);
+    setVoiceMode('listening');
+    startListening(lang);
+  }, [startListening, saveLanguage]);
+
+  const closeVoiceMode = React.useCallback(() => {
+    cleanupVoice();
+    setVoiceMode('off');
+    setVoiceError('');
+  }, [cleanupVoice]);
+
+  function getOrbitalState(): VoiceState {
+    if (voiceMode === 'permission_required' || voiceMode === 'language_selection') return 'ready';
+    if (voiceMode === 'error') return 'ready';
+    if (voiceMode === 'processing') return 'processing';
+    if (voiceMode === 'speaking') return 'speaking';
+    if (voiceMode === 'listening') return 'listening';
+    return 'ready';
+  }
+
+  function getStatusLabel(mode: VoiceMode, errorMsg: string): string {
+    switch (mode) {
+      case 'permission_required': return 'Microphone access required';
+      case 'language_selection': return 'Choose your language';
+      case 'listening': return 'Listening...';
+      case 'processing': return 'Thinking...';
+      case 'speaking': return 'Speaking...';
+      case 'error': return errorMsg || 'Something went wrong';
+      default: return '';
+    }
+  }
 
   const suggestions = [
     "Build a morning routine for my skin type",
@@ -195,6 +398,42 @@ export default function SkincareChatPage() {
         )}
       </div>
 
+      {voiceMode !== 'off' && (
+        <div className="aastha-voice-overlay" style={{ bottom: `calc(100vh - ${viewportHeight}px)` }}>
+          <div className="aastha-voice-content">
+            <button className="aastha-voice-close-btn" onClick={closeVoiceMode} aria-label="Close voice chat">×</button>
+            <div className="aastha-voice-visualizer">
+              <OrbitalAnimation state={getOrbitalState()} amplitude={speakingAmplitude} />
+            </div>
+            <div className="aastha-voice-status">{getStatusLabel(voiceMode, voiceError)}</div>
+
+            {voiceMode === 'language_selection' && (
+              <div className="aastha-language-selector">
+                {LANGUAGES.map(lang => (
+                  <button key={lang.code} className="aastha-lang-btn" onClick={() => handleLanguageSelect(lang)}>
+                    <span className="lang-native">{lang.nativeLabel}</span>
+                    <span className="lang-en">{lang.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {voiceMode === 'permission_required' && (
+              <div className="aastha-permission-prompt">
+                <p>Please click "Allow" when your browser asks for microphone permissions.</p>
+                <button className="aastha-voice-exit-btn" onClick={closeVoiceMode}>Cancel</button>
+              </div>
+            )}
+
+            {(voiceMode === 'listening' || voiceMode === 'processing' || voiceMode === 'speaking' || voiceMode === 'error') && (
+              <div className="aastha-voice-controls">
+                <button className="aastha-voice-exit-btn" onClick={closeVoiceMode}>Back to text chat</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="derma-input-container">
         <input 
           type="text" 
@@ -202,10 +441,25 @@ export default function SkincareChatPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask about your skin..."
-          disabled={loading}
+          disabled={loading || voiceMode !== 'off'}
         />
         <button onClick={() => handleSend()} disabled={!input.trim() || loading} className="derma-send-btn">
           {loading ? <Loader2 size={18} className="spinner" /> : <Send size={18} />}
+        </button>
+        <button 
+          className="derma-voice-btn"
+          onClick={openVoiceMode}
+          disabled={loading}
+          title="Talk to Skincare AI"
+          aria-label="Talk to Skincare AI using voice"
+          style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', marginLeft: '8px', padding: '8px' }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
         </button>
       </div>
     </div>
