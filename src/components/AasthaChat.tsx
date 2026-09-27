@@ -219,7 +219,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     try {
       // Send to EXISTING Aastha API — identical to text chat
       // Append conciseness hint inline so backend prompt is never altered
-      const voiceText = `${transcript.trim()} (Please keep your response to around 100 words.)`;
+      const voiceText = `${transcript.trim()} (Please keep your response concise. If this is a greeting, reply in 1 sentence.)`;
       const historyToSend = newMessages.slice(-6);
 
       const res = await fetch('/api/ai/aastha', {

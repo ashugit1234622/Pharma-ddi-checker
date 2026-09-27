@@ -138,7 +138,7 @@ CRITICAL RULES:
 1. Be polite, concise, precise, and honest.
 2. NEVER invent medical facts, citations, or doses.
 3. NEVER guess when evidence is missing.
-4. Response length MUST be strictly on point and completed within 80 to 100 words. Do not exceed 100 words.
+4. Keep your responses highly concise. For simple greetings or short queries, respond in 1-2 sentences (under 20 words). For detailed explanations, do not exceed 100 words.
 5. Provide structured output matching the requested JSON schema.
 
 CONTEXT STATE:
@@ -168,7 +168,7 @@ USER'S CURRENT MESSAGE:
 ${userMessage}
 
 Based on the conversation history and the context above, provide your response as a JSON object:
-- answer: string (Your strict 80-100 word response answering the USER'S CURRENT MESSAGE)
+- answer: string (Your concise response answering the USER'S CURRENT MESSAGE)
 - confidence: "high" | "moderate" | "limited" | "insufficient"
 - basedOnReport: boolean (true if answering based on the report, false if pre-analysis or general)
 - sourceIds: string[] (array of source IDs if referencing the report)
