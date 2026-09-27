@@ -512,6 +512,19 @@ export default function Home() {
         } catch (e) {}
         sessionStorage.removeItem('pending_prescription_check');
       }
+
+      // If we didn't load from history and didn't trigger a new check, restore the last session
+      if (!stored && !pendingCheck) {
+        try {
+          const sessionStored = localStorage.getItem('pharma_ddi_session');
+          if (sessionStored) {
+            const parsed = JSON.parse(sessionStored);
+            if (parsed.drug1) setDrug1(parsed.drug1);
+            if (parsed.drug2) setDrug2(parsed.drug2);
+            if (parsed.report) setReport(parsed.report);
+          }
+        } catch (e) {}
+      }
     }
   }, []);
 
@@ -569,9 +582,6 @@ export default function Home() {
     abortControllerRef.current = new AbortController();
 
     try {
-      // Intentional 2s delay to allow animations (scanner, flip text) to be clearly visible
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       if (abortControllerRef.current?.signal.aborted) {
         throw new Error('AbortError');
       }
@@ -652,18 +662,6 @@ export default function Home() {
     return () => window.removeEventListener('pharma-check-interaction', handler);
   }, [runAnalysis]);
 
-  // Restore session from cache
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('pharma_ddi_session');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.drug1) setDrug1(parsed.drug1);
-        if (parsed.drug2) setDrug2(parsed.drug2);
-        if (parsed.report) setReport(parsed.report);
-      }
-    } catch (e) {}
-  }, []);
 
   // Save session to cache
   useEffect(() => {
