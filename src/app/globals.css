@@ -1219,12 +1219,13 @@ a:hover { color: var(--accent-hover); }
 @media (max-width: 600px) {
   .aastha-panel {
     top: auto;
-    bottom: 0;
+    /* Push bottom up by the keyboard height (layout viewport minus visual viewport) */
+    bottom: calc(100vh - var(--vv-height, 100vh));
     right: 0;
     width: 100%;
-    /* Use visual viewport height if available to respect keyboard height, otherwise default to 85vh */
-    height: calc(var(--vv-height, 100vh) * 0.85);
-    max-height: calc(var(--vv-height, 100vh) - 60px);
+    /* Make it take the full available visual height minus some padding for the top */
+    height: calc(var(--vv-height, 100vh) * 0.9);
+    max-height: none;
     border-radius: 24px 24px 0 0;
     border-right: none;
     border-bottom: none;
