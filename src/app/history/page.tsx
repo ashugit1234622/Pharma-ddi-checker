@@ -145,6 +145,27 @@ export default function HistoryPage() {
               return (
                 <div 
                   key={record.id} 
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.2)';
+                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                  }}
+                  onClick={() => {
+                    if (record.record_type === 'ddi_check' && dataJson) {
+                      const drugNames = record.title.split(' + ');
+                      sessionStorage.setItem('history_report', JSON.stringify({
+                        drug1: { id: drugNames[0], name: drugNames[0], genericName: '', drugClass: [], synonyms: [], indications: [] },
+                        drug2: { id: drugNames[1], name: drugNames[1], genericName: '', drugClass: [], synonyms: [], indications: [] },
+                        report: dataJson
+                      }));
+                      window.location.href = '/';
+                    }
+                  }}
                   style={{
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border)',
@@ -154,16 +175,7 @@ export default function HistoryPage() {
                     flexDirection: 'column',
                     gap: '1rem',
                     transition: 'transform 0.2s, box-shadow 0.2s',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.2)';
-                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.borderColor = 'var(--border)';
+                    cursor: record.record_type === 'ddi_check' ? 'pointer' : 'default'
                   }}
                 >
                   <div style={{ display: 'flex', gap: '1.5rem' }}>

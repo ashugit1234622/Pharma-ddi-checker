@@ -480,6 +480,27 @@ export default function Home() {
   // prescription scanner events, or swap triggers firing before React re-renders.
   const isRunningRef = useRef(false);
 
+  // Load history report if coming from History page
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('history_report');
+      if (stored) {
+        try {
+          const { drug1: d1, drug2: d2, report: rep } = JSON.parse(stored);
+          if (d1 && d2 && rep) {
+            setDrug1(d1);
+            setDrug2(d2);
+            setReport(rep);
+            setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 500);
+          }
+        } catch (e) {
+          console.error('Failed to parse history report', e);
+        }
+        sessionStorage.removeItem('history_report');
+      }
+    }
+  }, []);
+
   useEffect(() => {
     let idleTimer: NodeJS.Timeout;
 
@@ -804,8 +825,15 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              {/* Print button & Save Button */}
+              {/* Print button, Save Button, Clear Button */}
               <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                <button 
+                  className="btn btn-outline print-hide" 
+                  style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                  onClick={() => { setDrug1(null); setDrug2(null); setReport(null); }}
+                >
+                  <XCircle className="icon" size={16} /> Clear
+                </button>
                 <button className="btn btn-outline print-hide" style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }} onClick={handlePrint}>
                   <FileText className="icon" size={16} /> Print Summary
                 </button>
