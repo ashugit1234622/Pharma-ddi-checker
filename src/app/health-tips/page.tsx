@@ -190,7 +190,7 @@ export default function HealthTipsPage() {
             {currentTips.map((tip, idx) => {
               const emoji = CATEGORY_EMOJI[tip.category] || '💡';
               const isExpanded = expandedCards.has(tip.id);
-              const isLong = tip.content.length > 150;
+              const isLong = tip.content.length > 250;
 
               return (
                 <div
