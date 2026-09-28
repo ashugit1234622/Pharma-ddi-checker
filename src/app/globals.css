@@ -914,56 +914,91 @@ a:hover { color: var(--accent-hover); }
 }
 
 /* ── Print Styles ── */
+/* ══════════════════════════════════════════════
+   PRINT — isolate only PrintSummary
+   Triggered via body.is-printing class so that
+   the browser @media print query AND the JS-based
+   class both produce the same output.
+══════════════════════════════════════════════ */
 @media print {
-  .print-hide { display: none !important; }
-
-  body {
+  /* 1. Clean page, remove dark backgrounds */
+  html, body, main {
     background: white !important;
-    color: #111 !important;
-    font-size: 11pt;
-  }
-
-  .header {
-    position: static !important;
-    background: white !important;
-    border-bottom: 2px solid #333 !important;
-    backdrop-filter: none !important;
+    background-image: none !important;
+    background-color: white !important;
     color: #111 !important;
   }
-
-  .logo, .logo span, h1, h2, h3, h4 { color: #111 !important; }
-  .card, .chart-container, .mechanism-card, .monitoring-card, .alt-card {
-    background: white !important;
-    border: 1px solid #ccc !important;
+  
+  /* Remove effects globally but DO NOT force white backgrounds on everything */
+  *, *::before, *::after {
     box-shadow: none !important;
-    break-inside: avoid;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  p, div, span, li { color: #333 !important; }
+  /* 2. Hide everything that is NOT the print summary */
+  body > *:not(main),
+  .header,
+  .cinematic-layer,
+  canvas,
+  .print-hide,
+  .tabs-container,
+  .tab-content,
+  .interaction-indicator,
+  .drug-search-box,
+  .btn,
+  nav,
+  footer,
+  .aastha-chat-wrapper,
+  .report-header-actions {
+    display: none !important;
+  }
 
-  .status-badge { border: 1px solid #888 !important; color: #111 !important; background: #eee !important; }
+  /* 3. Show the print summary */
+  .print-only,
+  .print-summary-container {
+    display: block !important;
+  }
 
-  .chart-bar-track { background: #eee !important; }
-  .chart-bar-fill { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* 4. Page layout */
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: 11pt;
+    font-family: Arial, sans-serif;
+  }
 
-  /* Gauge SVG colors won't print well, hide the SVG circle color tweaks */
-  .gauge-svg circle { stroke: #888 !important; filter: none !important; }
-  .gauge-label { color: #111 !important; }
-
-  .report-section > h3 { color: #333 !important; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
-
-  /* Footer disclaimer */
-  body::after {
-    content: 'CLINICAL DISCLAIMER: This report is AI-generated for informational and educational purposes only. It does not constitute medical advice and must not replace professional clinical judgment. Always consult a licensed pharmacist or physician before making prescribing decisions.';
-    display: block;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #999;
-    font-size: 8pt;
-    color: #555;
-    font-style: italic;
+  /* 5. Force bar colors through */
+  .static-bar-fill.d1 {
+    background: #6366f1 !important;
+  }
+  .static-bar-fill.d2 {
+    background: #06b6d4 !important;
+  }
+  .static-bar-track {
+    background: #eee !important;
+    border-radius: 6px;
   }
 }
+
+/* Also apply when the JS sentinel class is active (pre-print state) */
+body.is-printing > *:not(main) {
+  display: none !important;
+}
+body.is-printing .print-summary-container {
+  display: block !important;
+  color: black;
+  background: white;
+  padding: 20px;
+}
+
+
 
 .tabs-container {
   display: flex;

@@ -320,8 +320,19 @@ function DosageToxicityChart({ report, drug1Name, drug2Name, multiplier }: {
 /* ══════════════════════════════════════════════════════
    PRINT CLINICAL SUMMARY
 ══════════════════════════════════════════════════════ */
-function handlePrint() {
-  window.print();
+function triggerPrint() {
+  // Add a sentinel class that CSS uses to hide everything except PrintSummary
+  document.body.classList.add('is-printing');
+
+  const cleanup = () => {
+    document.body.classList.remove('is-printing');
+    window.removeEventListener('afterprint', cleanup);
+  };
+
+  window.addEventListener('afterprint', cleanup);
+
+  // Small delay so React can flush and the class is painted before the dialog opens
+  setTimeout(() => window.print(), 50);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -753,7 +764,7 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = triggerPrint;
 
   // Quick-Swap alternative into Drug2
   const handleSwap = async (altName: string) => {
@@ -819,6 +830,7 @@ export default function Home() {
 
       {/* 3. Interactive Page Content — dims gracefully on 10s idle */}
       <div
+        className="print-hide"
         style={{
           position: 'relative',
           zIndex: 10,
