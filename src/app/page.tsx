@@ -798,7 +798,7 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ position: 'relative', minHeight: 'auto', background: '#02070b' }}>
+    <div className="print-white-bg" style={{ position: 'relative', minHeight: 'auto', background: '#02070b' }}>
       {/* 1. Fixed WebGL Cinematic Layer — ramps to full screensaver on 10s idle */}
       <CinematicVisualLayer
         isIdle={isIdle}
@@ -809,6 +809,7 @@ export default function Home() {
 
       {/* 2. Idle vignette overlay — fades in to make the 3D layer pop */}
       <div
+        className="print-hide"
         aria-hidden="true"
         style={{
           position: 'fixed',

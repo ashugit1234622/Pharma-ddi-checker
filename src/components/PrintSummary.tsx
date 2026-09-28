@@ -191,7 +191,7 @@ export default function PrintSummary({ report, drug1, drug2 }: PrintSummaryProps
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
           {['absorption', 'distribution', 'metabolism', 'excretion'].map(p => (
             <div key={p} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ width: '80px', textTransform: 'capitalize', fontSize: '10pt', fontWeight: 'bold' }}>{p}</div>
+              <div style={{ width: '85px', flexShrink: 0, textTransform: 'capitalize', fontSize: '10pt', fontWeight: 'bold', color: 'black' }}>{p}</div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div className="static-bar-track">
                   <div className="static-bar-fill d1" style={{ width: `${report.admeScores.drug1[p as keyof typeof report.admeScores.drug1]}%` }} />
@@ -223,7 +223,7 @@ export default function PrintSummary({ report, drug1, drug2 }: PrintSummaryProps
               const v2 = report.toxicityScores.drug2[p as keyof typeof report.toxicityScores.drug2];
               return (
                 <div key={p} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <div style={{ width: '60px', textTransform: 'capitalize', fontSize: '10pt', fontWeight: 'bold' }}>{p}</div>
+                  <div style={{ width: '65px', flexShrink: 0, textTransform: 'capitalize', fontSize: '10pt', fontWeight: 'bold', color: 'black' }}>{p}</div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div className="static-bar-track">
                       <div className="static-bar-fill" style={{ width: `${v1}%`, background: scoreToColor(v1) }} />

@@ -922,7 +922,7 @@ a:hover { color: var(--accent-hover); }
 ══════════════════════════════════════════════ */
 @media print {
   /* 1. Clean page, remove dark backgrounds */
-  html, body, main {
+  html, body, main, .print-white-bg {
     background: white !important;
     background-image: none !important;
     background-color: white !important;
@@ -944,7 +944,8 @@ a:hover { color: var(--accent-hover); }
   /* 2. Hide everything that is NOT the print summary */
   body > *:not(main),
   .header,
-  .cinematic-layer,
+  .cinematic-visual-layer,
+  #cinematic-visual-canvas,
   canvas,
   .print-hide,
   .tabs-container,
