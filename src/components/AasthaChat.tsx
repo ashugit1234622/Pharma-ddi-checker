@@ -63,6 +63,19 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (isOpen && !userProfile) {
+      fetch('/api/user/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile) setUserProfile(data.profile);
+        })
+        .catch(err => console.error("Failed to load profile for Aastha", err));
+    }
+  }, [isOpen, userProfile]);
+
   // ── Voice state ──────────────────────────────────────────────────────────
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
   const [voiceError, setVoiceError] = useState('');
@@ -179,7 +192,8 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
           message: text.trim(),
           conversationHistory: historyToSend,
           drugContext: drug1 && drug2 ? { drug1: drug1.name, drug2: drug2.name } : null,
-          reportContext: report
+          reportContext: report,
+          userProfile: userProfile
         })
       });
 
@@ -239,7 +253,8 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
           message: voiceText,
           conversationHistory: historyToSend,
           drugContext: drug1 && drug2 ? { drug1: drug1.name, drug2: drug2.name } : null,
-          reportContext: report
+          reportContext: report,
+          userProfile: userProfile
         })
       });
 

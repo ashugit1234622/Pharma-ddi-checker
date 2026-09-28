@@ -14,7 +14,8 @@ const AasthaRequestSchema = z.object({
     drug1: z.string(),
     drug2: z.string()
   }).nullable().optional(),
-  reportContext: z.record(z.string(), z.unknown()).nullable().optional()
+  reportContext: z.record(z.string(), z.unknown()).nullable().optional(),
+  userProfile: z.record(z.string(), z.unknown()).nullable().optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { message, conversationHistory, drugContext, reportContext } = parsed.data;
+  const { message, conversationHistory, drugContext, reportContext, userProfile } = parsed.data;
 
   let rawResponse: string | null = null;
   try {
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       conversationHistory,
       drugContext || null,
       reportContext || null,
-      message
+      message,
+      userProfile || null
     );
 
     // Call the provider

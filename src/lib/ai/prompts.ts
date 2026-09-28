@@ -151,7 +151,8 @@ export function buildAasthaPrompt(
   conversationHistory: { role: string; content: string }[],
   drugContext: { drug1: string; drug2: string } | null,
   reportContext: Record<string, unknown> | null,
-  userMessage: string
+  userMessage: string,
+  userProfile?: Record<string, unknown> | null
 ): string {
   const isPostAnalysis = !!reportContext;
   
@@ -170,18 +171,21 @@ Currently, the user is in the **${isPostAnalysis ? 'Post-Analysis Report' : 'Pre
 
 ${drugContext ? `Selected Drugs: Drug 1 (${drugContext.drug1}) and Drug 2 (${drugContext.drug2}).` : 'No drugs selected yet.'}
 
+USER PROFILE CONTEXT:
+${userProfile ? Object.entries(userProfile).map(([k, v]) => `- ${k.replace(/_/g, ' ')}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n') : 'No user profile provided.'}
+You MUST reference the user's onboarding profile (age, conditions, allergies) when answering their questions to provide highly personalized advice.
+
 ${isPostAnalysis ? `
-REPORT CONTEXT (Source of Truth):
+REPORT CONTEXT (Source of Truth for Interactions):
 ${JSON.stringify(reportContext, null, 2)}
 
 POST-ANALYSIS RULES:
-- You MUST answer questions using ONLY the provided Report Context.
-- Do NOT guess interactions or make unsupported treatment decisions.
-- If the question is outside the Report Context, say: "I don't have verified information for that in the current Pharma DDI Checker report."
+- For questions specifically about the interaction between the selected drugs, you MUST answer using ONLY the provided Report Context. Do NOT guess interactions.
+- For general pharmacology, medical, or drug usage questions (e.g., "what is this drug used for?"), you may use your general medical knowledge to answer, while tailoring the advice to the User Profile.
 ` : `
 PRE-ANALYSIS RULES:
 - The user has NOT run an analysis yet. There is no interaction report.
-- You may generate responses explaining general medical information, pharmacology concepts (like what ADME is), and how the Pharma DDI platform works.
+- You may generate responses explaining general medical information, pharmacology concepts (like what ADME is), and how the Pharma DDI platform works. Tailor advice to the User Profile.
 - If the user asks if their selected drugs interact, DO NOT guess. Tell them to run the analysis to generate the report.
 `}
 
