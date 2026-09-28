@@ -7,7 +7,6 @@ import Header from '@/components/Header';
 import GlobalReminder from '@/components/GlobalReminder';
 import TipOfTheDay from '@/components/TipOfTheDay';
 import NextAuthProvider from '@/components/NextAuthProvider';
-import NativeAppInitializer from '@/components/NativeAppInitializer';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -59,7 +58,6 @@ export default async function RootLayout({
       </head>
       <body className={themeClass}>
         <NextAuthProvider>
-          <NativeAppInitializer />
           {/* Service Worker Registration */}
           <Script
             id="sw-register"

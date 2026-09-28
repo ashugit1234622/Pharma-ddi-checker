@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getAIProvider, extractJson } from "../../../lib/ai/provider";
 import { getRoleInstruction, UserRole } from "../../../lib/ai/roleContext";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../lib/auth";
 import { z } from "zod";
 
 const RequestSchema = z.object({ barcode: z.string().min(1) });
@@ -475,10 +475,13 @@ async function generateAISummary(medicine: MedicineData, userRole: UserRole = 'u
     return buildFallbackSummary(medicine);
   }
   try {
-    const roleInstruction = getRoleInstruction(userRole);
     const provider = getAIProvider();
+    const roleInstruction = getRoleInstruction(userRole);
+    const systemPrompt = userRole === 'pharmacologist'
+      ? `You are MedCheck AI for Pharma DDI Checker (professional mode). Write a 1-2 sentence factual clinical summary of the verified medicine record below. Include the drug class, route of administration, and primary indication if known. Use standard INN nomenclature. Max 80 words. End with the data source. Return ONLY JSON: {"summary": "..."}`
+      : `You are MedCheck AI for Pharma DDI Checker. Write a 1-2 sentence simple, easy-to-understand summary of the medicine below — what it is and what it's generally used for, in plain everyday language. Max 60 words. End with the data source. Return ONLY JSON: {"summary": "..."}`;
     const raw = await provider.complete(
-      `${roleInstruction}\nYou are MedCheck AI for Pharma DDI Checker. Write a 1-2 sentence factual summary of the verified medicine record below. Max 65 words. Do NOT add dosing advice, warnings, or side effects not in the data. End with the data source. Return ONLY JSON: {"summary": "..."}`,
+      systemPrompt,
       `Summarize:\n${JSON.stringify(medicine, null, 2)}`
     );
     const parsed = JSON.parse(extractJson(raw));
@@ -610,12 +613,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
+  // Read role from session (graceful fallback to 'user')
+  let userRole: UserRole = 'user';
+  try {
+    const session = await getServerSession(authOptions);
+    userRole = (session?.user as any)?.userRole || 'user';
+  } catch (_) {}
+
   const rawScan = parsed.data.barcode.trim();
   const cacheKey = rawScan.toLowerCase();
-  console.log(`[MedCheck] Lookup: ${rawScan}`);
-
-  const session = await getServerSession(authOptions);
-  const userRole: UserRole = (session?.user as any)?.userRole ?? 'user';
+  console.log(`[MedCheck] Lookup: ${rawScan} (role: ${userRole})`);
 
   // Cache hit
   if (barcodeCache.has(cacheKey)) {

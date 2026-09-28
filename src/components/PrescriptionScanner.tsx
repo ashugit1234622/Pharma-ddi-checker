@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Camera, Loader2, X, FileText, CheckCircle2, AlertTriangle, Zap, Info, ChevronsDown } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Capacitor } from '@capacitor/core';
-import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 type PrescScanState = 'idle' | 'camera_active' | 'processing' | 'result' | 'error';
 
@@ -75,19 +73,6 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
 
   const startCamera = async () => {
     try {
-      if (Capacitor.isNativePlatform()) {
-        const image = await CapCamera.getPhoto({
-          quality: 90,
-          allowEditing: false,
-          resultType: CameraResultType.Base64,
-          source: CameraSource.Camera
-        });
-        if (image.base64String) {
-          await sendToApi(image.base64String);
-        }
-        return;
-      }
-      
       setScanState('camera_active');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }

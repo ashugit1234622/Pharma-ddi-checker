@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -21,20 +21,43 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
+  // ── Role from session (zero extra network call) ──
+  const userRole = (session?.user as any)?.userRole || 'user';
+  const isPharmacologist = userRole === 'pharmacologist';
+
+  // ── Profile: try localStorage first (instant), refresh silently ──
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetch('/api/profile')
-        .then(res => res.json())
-        .then(data => {
-          if (data.profile?.gender) {
+    if (status !== 'authenticated') return;
+
+    // Instant load from cache
+    try {
+      const cached = localStorage.getItem('pharma_profile_cache');
+      if (cached) {
+        const prof = JSON.parse(cached);
+        if (prof.gender) {
+          setUserGender(prof.gender);
+          if (prof.gender === 'female' && !prof.last_menstruation_date) {
+            setShowCyclePrompt(true);
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Background refresh
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.profile) {
+          localStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
+          if (data.profile.gender) {
             setUserGender(data.profile.gender);
             if (data.profile.gender === 'female' && !data.profile.last_menstruation_date) {
               setShowCyclePrompt(true);
             }
           }
-        })
-        .catch(console.error);
-    }
+        }
+      })
+      .catch(console.error);
   }, [status]);
 
   useEffect(() => {
@@ -90,6 +113,52 @@ export default function Header() {
 
   const closeFoodCheck = () => setIsFoodCheckOpen(false);
 
+  // ── Shared menu item builders ──
+  const commonMenuItems = (closeMenu: () => void) => (
+    <>
+      <button onClick={() => { openMedCheck(); closeMenu(); }} className="header-dropdown-item">
+        <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
+        MedCheck
+      </button>
+      <button onClick={() => { openFoodCheck(); closeMenu(); }} className="header-dropdown-item">
+        <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
+        Food & Supplements
+      </button>
+      <Link href="/health-tips" className="header-dropdown-item" onClick={closeMenu}>
+        <Heart size={18} style={{ color: 'var(--accent-primary)' }} />
+        Health Tips
+      </Link>
+      <Link href="/skincare" className="header-dropdown-item" onClick={closeMenu}>
+        <Droplet size={18} style={{ color: '#ec4899' }} />
+        Skincare AI
+      </Link>
+      {userGender === 'female' && (
+        <Link href="/cycle-tracker" className="header-dropdown-item" onClick={closeMenu}>
+          <CalendarDays size={18} style={{ color: '#d946ef' }} />
+          Menstruation Cycle
+        </Link>
+      )}
+    </>
+  );
+
+  const roleMenuItems = (closeMenu: () => void) => (
+    <>
+      {isPharmacologist ? (
+        <>
+          <Link href="/" className="header-dropdown-item" onClick={closeMenu}>
+            <Microscope size={18} style={{ color: 'var(--pharmacologist-accent)' }} />
+            DDI Checker
+          </Link>
+        </>
+      ) : (
+        <Link href="/" className="header-dropdown-item" onClick={closeMenu}>
+          <MessageCircle size={18} style={{ color: 'var(--primary-accent)' }} />
+          Chat with Aastha
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <>
       <header className="header">
@@ -102,7 +171,12 @@ export default function Header() {
 
         {/* ── Desktop nav (hidden on mobile) ── */}
         <nav className="header-nav-desktop">
-          <span className="powered-badge">Powered by Gemini AI</span>
+          {/* Role badge */}
+          {isPharmacologist ? (
+            <span className="pro-badge">PRO</span>
+          ) : (
+            <span className="powered-badge">Powered by Gemini AI</span>
+          )}
 
           {status === 'loading' ? (
             <div className="avatar-skeleton pulse" />
@@ -138,35 +212,16 @@ export default function Header() {
 
           <PWAInstallButton />
 
-          {/* Hamburger */}
+          {/* Hamburger Desktop */}
           <div className="hamburger-container">
             <button onClick={toggleMenu} className="hamburger-btn" aria-label="Menu">
               {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             {isMenuOpen && (
               <div className="header-dropdown-menu">
-                <button onClick={openMedCheck} className="header-dropdown-item">
-                  <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
-                  MedCheck
-                </button>
-                <button onClick={openFoodCheck} className="header-dropdown-item">
-                  <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
-                  Food & Supplements
-                </button>
-                <Link href="/health-tips" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                  <Heart size={18} style={{ color: 'var(--accent-primary)' }} />
-                  Health Tips
-                </Link>
-                <Link href="/skincare" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                  <Droplet size={18} style={{ color: '#ec4899' }} />
-                  Skincare AI
-                </Link>
-                {userGender === 'female' && (
-                  <Link href="/cycle-tracker" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                    <CalendarDays size={18} style={{ color: '#d946ef' }} />
-                    Menstruation Cycle
-                  </Link>
-                )}
+                {roleMenuItems(() => setIsMenuOpen(false))}
+                <div className="dropdown-divider" />
+                {commonMenuItems(() => setIsMenuOpen(false))}
               </div>
             )}
           </div>
@@ -200,7 +255,11 @@ export default function Header() {
         {isMenuOpen && (
           <div className="mobile-dropdown">
             <div className="mobile-dropdown-header">
-              <span className="powered-badge">Powered by Gemini AI</span>
+              {isPharmacologist ? (
+                <span className="pro-badge">PRO — Pharmacologist Mode</span>
+              ) : (
+                <span className="powered-badge">Powered by Gemini AI</span>
+              )}
             </div>
 
             {session?.user ? (
@@ -210,6 +269,7 @@ export default function Header() {
                     <img src={session.user.image} alt={session.user.name || ''} className="user-avatar" />
                   )}
                   <span className="mobile-user-name">{session.user.name || session.user.email}</span>
+                  {isPharmacologist && <span className="pro-badge-sm">PRO</span>}
                 </div>
                 {pathname !== '/' && (
                   <Link href="/" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
@@ -234,6 +294,21 @@ export default function Header() {
 
             <div className="mobile-menu-divider" />
 
+            {/* Role-specific entry point */}
+            {isPharmacologist ? (
+              <Link href="/" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}
+                style={{ color: 'var(--pharmacologist-accent)' }}>
+                <Microscope size={18} style={{ color: 'var(--pharmacologist-accent)' }} /> DDI Checker
+              </Link>
+            ) : (
+              <Link href="/" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                <MessageCircle size={18} style={{ color: 'var(--primary-accent)' }} /> Chat with Aastha
+              </Link>
+            )}
+
+            <div className="mobile-menu-divider" />
+
+            {/* Common features */}
             <button onClick={openMedCheck} className="mobile-menu-item">
               <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} /> MedCheck
             </button>
@@ -259,15 +334,15 @@ export default function Header() {
         )}
       </header>
 
-      {/* ── Cycle Tracker Prompt ── */}
-      {showCyclePrompt && (
+      {/* ── Cycle Tracker Prompt (only for users, not pharmacologists) ── */}
+      {showCyclePrompt && !isPharmacologist && (
         <div style={{
           position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
           background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '12px',
           boxShadow: '0 8px 30px rgba(0,0,0,0.4)', border: '1px solid #d946ef',
           maxWidth: '320px', animation: 'slideUp 0.5s ease-out forwards'
         }}>
-          <button 
+          <button
             onClick={() => setShowCyclePrompt(false)}
             style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
           >
@@ -278,11 +353,11 @@ export default function Header() {
             <h4 style={{ margin: 0, color: '#d946ef', fontWeight: 600 }}>New Feature</h4>
           </div>
           <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
-            <strong>Menstrual Cycle Tracker</strong><br/>
+            <strong>Menstrual Cycle Tracker</strong><br />
             Add your last menstruation date to benefit from this feature.
           </p>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             style={{ width: '100%', fontSize: '0.85rem', padding: '0.6rem', background: '#d946ef', color: '#fff', border: 'none' }}
             onClick={() => {
               setShowCyclePrompt(false);
