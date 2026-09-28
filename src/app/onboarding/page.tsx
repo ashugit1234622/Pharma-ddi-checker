@@ -19,6 +19,7 @@ function OnboardingContent() {
     const s = searchParams.get('step');
     return s ? parseInt(s, 10) : 0; // Starts at 0 for role selection
   });
+  const [isFetching, setIsFetching] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [allergyInput, setAllergyInput] = useState('');
@@ -41,6 +42,7 @@ function OnboardingContent() {
   });
 
   const [showMenstruationModal, setShowMenstruationModal] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
     isOpen: false, message: '', type: 'alert', onConfirm: () => {}
@@ -80,6 +82,7 @@ function OnboardingContent() {
             if (data.profile.user_role && step === 0 && !searchParams.has('step')) {
                setStep(1);
             }
+            setIsFetching(false);
             return;
           }
         }
@@ -91,6 +94,7 @@ function OnboardingContent() {
       if (session?.user?.name) {
         setForm(f => ({ ...f, display_name: f.display_name || session.user!.name! }));
       }
+      setIsFetching(false);
     };
     
     if (status === 'authenticated') {
@@ -118,6 +122,10 @@ function OnboardingContent() {
   };
 
   const handleSubmit = async () => {
+    if (form.user_role === 'pharmacologist' && !form.consent_accepted) {
+      setShowConsentModal(true);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/profile', {
@@ -147,7 +155,7 @@ function OnboardingContent() {
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || (status === 'authenticated' && isFetching)) {
     return (
       <div className="onboarding-loading">
         <div className="onboarding-spinner" />
@@ -156,7 +164,7 @@ function OnboardingContent() {
   }
 
   const isPharmacologist = form.user_role === 'pharmacologist';
-  const totalSteps = isPharmacologist ? (form.gender === 'female' ? 2 : 1) : 3;
+  const totalSteps = isPharmacologist ? (form.gender?.toLowerCase() === 'female' ? 2 : 1) : 3;
   const progress = step === 0 ? 0 : (step / totalSteps) * 100;
 
   return (
@@ -275,43 +283,15 @@ function OnboardingContent() {
               </div>
             </div>
 
-            {/* If Pharmacologist, show consent here as this is their last step */}
-            {isPharmacologist && (
-              <div className="ob-consent-box">
-                <label className="ob-consent-label">
-                  <input 
-                    type="checkbox" 
-                    checked={form.consent_accepted} 
-                    onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
-                  />
-                  <span>
-                    <strong>Professional Consent:</strong> I confirm I am a licensed healthcare professional. I understand this tool provides supplementary analysis and does not replace clinical judgment.
-                  </span>
-                </label>
-              </div>
-            )}
           </div>
         )}
 
         {/* ── Step 2: Pharmacologist Menstruation Details ── */}
-        {step === 2 && isPharmacologist && form.gender === 'female' && (
+        {step === 2 && isPharmacologist && form.gender?.toLowerCase() === 'female' && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><Calendar size={20} /> Menstruation Details</div>
             <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <MenstruationDetailsForm form={form} setForm={setForm} />
-            </div>
-            
-            <div className="ob-consent-box" style={{ marginTop: '1.5rem' }}>
-              <label className="ob-consent-label">
-                <input 
-                  type="checkbox" 
-                  checked={form.consent_accepted} 
-                  onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
-                />
-                <span>
-                  <strong>Data Consent:</strong> I agree to allow Pharma DDI to use my health profile for personalized insights. This data is kept private and local.
-                </span>
-              </label>
             </div>
           </div>
         )}
@@ -408,7 +388,7 @@ function OnboardingContent() {
               />
             </div>
 
-            {form.gender === 'female' && (
+            {form.gender?.toLowerCase() === 'female' && (
               <div className="ob-field">
                 <label className="ob-label"><Calendar size={14} /> Menstruation Details</label>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
@@ -474,7 +454,7 @@ function OnboardingContent() {
           )}
 
           {step === totalSteps && (
-            <button className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} onClick={handleSubmit} disabled={saving || !form.consent_accepted}>
+            <button className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} onClick={handleSubmit} disabled={saving || (!isPharmacologist && !form.consent_accepted)}>
               {saving ? 'Saving...' : <>Save Profile & Enter <Check size={18} /></>}
             </button>
           )}
@@ -509,6 +489,37 @@ function OnboardingContent() {
             <button className="btn btn-primary" style={{ width: '100%', marginTop: '2rem' }} onClick={() => setShowMenstruationModal(false)}>
               Done
             </button>
+          </div>
+        </div>
+      )}
+
+      {showConsentModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 9999, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'var(--bg-main)', border: '1px solid var(--border)',
+            borderRadius: '16px', padding: '2rem', maxWidth: '500px', width: '100%',
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-main)' }}>Professional Consent</h3>
+            <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              I confirm I am a licensed healthcare professional. I understand this tool provides supplementary analysis and does not replace clinical judgment.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={() => setShowConsentModal(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-primary btn-pharm" onClick={() => {
+                setForm(f => ({ ...f, consent_accepted: true }));
+                setShowConsentModal(false);
+                setTimeout(handleSubmit, 100);
+              }}>
+                Accept & Continue
+              </button>
+            </div>
           </div>
         </div>
       )}
