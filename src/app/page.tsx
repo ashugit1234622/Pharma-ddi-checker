@@ -846,8 +846,14 @@ export default function Home() {
           top: !report ? '70px' : 'auto',
           zIndex: 20
         }}>
-        {/* Hero */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem', paddingTop: '1.5rem' }}>
+        {sessionStatus === 'loading' ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <div className="pulse" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-primary)' }} />
+          </div>
+        ) : (
+          <>
+            {/* Hero */}
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem', paddingTop: '1.5rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
             <Pill size={48} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 12px var(--accent-glow))' }} />
           </div>
@@ -1176,6 +1182,8 @@ export default function Home() {
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
       </>
       )}
