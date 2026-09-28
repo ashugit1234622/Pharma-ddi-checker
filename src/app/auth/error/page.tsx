@@ -31,7 +31,7 @@ function ErrorContent() {
         <h2 style={{ color: 'var(--text-main)', marginBottom: '0.75rem' }}>Sign-in Error</h2>
         <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>{msg}</p>
         <button
-          onClick={() => signIn('google')}
+          onClick={() => signIn('google', { prompt: 'select_account' })}
           style={{
             background: 'var(--accent-primary)', color: '#fff', border: 'none',
             padding: '0.65rem 1.5rem', borderRadius: '8px', cursor: 'pointer',

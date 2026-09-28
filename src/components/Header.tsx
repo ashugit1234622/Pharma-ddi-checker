@@ -58,7 +58,7 @@ export default function Header() {
       .catch(console.error);
   }, [status]);
 
-  const handleSignIn = () => signIn('google');
+  const handleSignIn = () => signIn('google', { prompt: 'select_account' });
 
   // Redirect new users (no profile yet) to onboarding
   useEffect(() => {

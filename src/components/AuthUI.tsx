@@ -54,7 +54,7 @@ export default function AuthUI() {
 
   return (
     <button
-      onClick={() => signIn('google')}
+      onClick={() => signIn('google', { prompt: 'select_account' })}
       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-main)', borderRadius: '10px', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.9rem' }}
     >
       <User size={16} /> Sign In
