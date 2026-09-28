@@ -121,6 +121,16 @@ async function initializeSchema(db: Pool) {
     );
     CREATE INDEX IF NOT EXISTS idx_patient_profiles_user_id ON patient_profiles(user_id);
     
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='patient_profiles' AND column_name='last_menstruation_date'
+      ) THEN 
+        ALTER TABLE patient_profiles ADD COLUMN last_menstruation_date TEXT;
+      END IF; 
+    END $$;
+    
     CREATE TABLE IF NOT EXISTS accounts (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,

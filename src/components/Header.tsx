@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -16,8 +16,26 @@ export default function Header() {
   const [isMedCheckOpen, setIsMedCheckOpen] = useState(false);
   const [isFoodCheckOpen, setIsFoodCheckOpen] = useState(false);
   const { data: session, status } = useSession();
+  const [userGender, setUserGender] = useState<string | null>(null);
+  const [showCyclePrompt, setShowCyclePrompt] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile?.gender) {
+            setUserGender(data.profile.gender);
+            if (data.profile.gender === 'female' && !data.profile.last_menstruation_date) {
+              setShowCyclePrompt(true);
+            }
+          }
+        })
+        .catch(console.error);
+    }
+  }, [status]);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -143,6 +161,12 @@ export default function Header() {
                   <Droplet size={18} style={{ color: '#ec4899' }} />
                   Skincare AI
                 </Link>
+                {userGender === 'female' && (
+                  <Link href="/cycle-tracker" className="header-dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                    <CalendarDays size={18} style={{ color: '#d946ef' }} />
+                    Menstruation Cycle
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -222,6 +246,11 @@ export default function Header() {
             <Link href="/skincare" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
               <Droplet size={18} style={{ color: '#ec4899' }} /> Skincare AI
             </Link>
+            {userGender === 'female' && (
+              <Link href="/cycle-tracker" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                <CalendarDays size={18} style={{ color: '#d946ef' }} /> Menstruation Cycle
+              </Link>
+            )}
 
             <div className="mobile-pwa-row">
               <PWAInstallButton />
@@ -229,6 +258,41 @@ export default function Header() {
           </div>
         )}
       </header>
+
+      {/* ── Cycle Tracker Prompt ── */}
+      {showCyclePrompt && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+          background: 'var(--bg-card)', padding: '1.25rem', borderRadius: '12px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.4)', border: '1px solid #d946ef',
+          maxWidth: '320px', animation: 'slideUp 0.5s ease-out forwards'
+        }}>
+          <button 
+            onClick={() => setShowCyclePrompt(false)}
+            style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+          >
+            <X size={16} />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <CalendarDays size={20} style={{ color: '#d946ef' }} />
+            <h4 style={{ margin: 0, color: '#d946ef', fontWeight: 600 }}>New Feature</h4>
+          </div>
+          <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+            <strong>Menstrual Cycle Tracker</strong><br/>
+            Add your last menstruation date to benefit from this feature.
+          </p>
+          <button 
+            className="btn btn-primary" 
+            style={{ width: '100%', fontSize: '0.85rem', padding: '0.6rem', background: '#d946ef', color: '#fff', border: 'none' }}
+            onClick={() => {
+              setShowCyclePrompt(false);
+              router.push('/onboarding?step=3');
+            }}
+          >
+            Update Profile
+          </button>
+        </div>
+      )}
 
       {isMedCheckOpen && <MedCheck onClose={closeMedCheck} />}
       {isFoodCheckOpen && <FoodCheck onClose={closeFoodCheck} />}

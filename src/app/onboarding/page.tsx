@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Calendar, Heart, AlertTriangle, Pill, FileText, Phone, ChevronRight, Check, Plus, X } from 'lucide-react';
 import CustomDialog from '@/components/CustomDialog';
 
@@ -12,8 +12,12 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 export default function OnboardingPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const s = searchParams.get('step');
+    return s ? parseInt(s, 10) : 1;
+  });
   const [saving, setSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [allergyInput, setAllergyInput] = useState('');
@@ -29,6 +33,7 @@ export default function OnboardingPage() {
     current_medications: [] as string[],
     medical_history: '',
     emergency_contact: '',
+    last_menstruation_date: '',
   });
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
@@ -60,6 +65,7 @@ export default function OnboardingPage() {
               current_medications: data.profile.current_medications || [],
               medical_history: data.profile.medical_history || '',
               emergency_contact: data.profile.emergency_contact || '',
+              last_menstruation_date: data.profile.last_menstruation_date || '',
             });
             return;
           }
@@ -315,6 +321,18 @@ export default function OnboardingPage() {
                 rows={4}
               />
             </div>
+
+            {form.gender === 'female' && (
+              <div className="ob-field">
+                <label className="ob-label"><Calendar size={14} /> Date of Last Menstruation</label>
+                <input
+                  className="ob-input"
+                  type="date"
+                  value={form.last_menstruation_date}
+                  onChange={e => setForm(f => ({ ...f, last_menstruation_date: e.target.value }))}
+                />
+              </div>
+            )}
 
             <div className="ob-field">
               <label className="ob-label"><Phone size={14} /> Emergency Contact (optional)</label>

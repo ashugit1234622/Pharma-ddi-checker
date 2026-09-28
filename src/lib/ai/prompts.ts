@@ -245,6 +245,10 @@ export function buildTipsGenerationPrompt(profile: {
     conditionalInstruction += ` For example, if the patient has Diabetes AND is on Metformin, diet tips should account for both the disease dietary needs AND the drug's interaction with food.`;
   }
 
+  if (profile.gender?.toLowerCase() === 'female') {
+    conditionalInstruction += ` CRITICAL: Since the user is female, you MUST include specific dietary and medical tips related to menstrual health, cycle tracking (e.g. iron-rich foods during menstruation, managing PMS symptoms) tailored to her age and profile.`;
+  }
+
   return `Generate personalized health and diet recommendations for this patient profile:
 
 PATIENT PROFILE:
