@@ -164,7 +164,7 @@ export class AdaptiveProvider implements AIProvider {
         success = true;
       } catch (err: any) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
+        const isTimeout = errMsg.includes("Timeout");
 
         if (errMsg.includes("AbortError")) {
           throw err;
@@ -174,10 +174,11 @@ export class AdaptiveProvider implements AIProvider {
         allErrors.push(`[${provider.modelId}]: ${errMsg}`);
         console.warn(`[AI ROUTER] Provider ${displayIndex} failed (${errMsg.slice(0, 80)}).`);
         
-        // If 2 keys in a row fail with 503/timeout, assume a global API outage and stop trying 
-        // the remaining keys to prevent the user from waiting for minutes.
-        if (isBusy && allErrors.filter(e => e.includes("503") || e.includes("Timeout") || e.includes("High demand")).length >= 2) {
-          console.warn("[AI ROUTER] Detected global API outage (multiple 503s). Aborting router to fail fast.");
+        // If 2 keys fail due to a strict 15s Timeout (which means 30s have elapsed), 
+        // abort to prevent the user from waiting endlessly. 
+        // We DO NOT abort on instant 503s or 429s, so we can reach the Pro keys at the end.
+        if (isTimeout && allErrors.filter(e => e.includes("Timeout")).length >= 2) {
+          console.warn("[AI ROUTER] Detected global API network timeout. Aborting router to fail fast.");
           break;
         }
       }
