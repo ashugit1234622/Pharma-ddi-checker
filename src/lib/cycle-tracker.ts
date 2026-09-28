@@ -10,6 +10,11 @@ export interface PhasePrediction {
   startDate: Date;
   endDate: Date;
   description: string;
+  detailedInfo: {
+    hormones: string;
+    symptoms: string;
+    recommendation: string;
+  };
 }
 
 export interface CyclePrediction {
@@ -101,25 +106,45 @@ export function calculateCycle(data: CycleData): CyclePrediction {
       name: "Menstruation",
       startDate: lastPeriod,
       endDate: menstruationEnd,
-      description: "Shedding of the uterine lining."
+      description: "Shedding of the uterine lining.",
+      detailedInfo: {
+        hormones: "Estrogen and progesterone levels are at their lowest.",
+        symptoms: "Cramps, fatigue, lower back pain, and potential mood shifts.",
+        recommendation: "Focus on rest, hydration, and iron-rich foods (like spinach or red meat). Light stretching or yoga can help alleviate cramps."
+      }
     },
     {
       name: "Follicular Phase",
       startDate: follicularStart,
       endDate: follicularEnd,
-      description: "Body prepares for ovulation. Energy levels usually rise."
+      description: "Body prepares for ovulation. Energy levels usually rise.",
+      detailedInfo: {
+        hormones: "FSH (Follicle Stimulating Hormone) increases slightly, and estrogen levels begin a steady rise.",
+        symptoms: "Increased energy, clearer skin, and improved mood. You may feel more social and motivated.",
+        recommendation: "This is a great time for high-intensity workouts and starting new projects. Eat light, fresh foods and stay hydrated."
+      }
     },
     {
       name: "Fertile Window",
       startDate: fertileStart,
       endDate: fertileEnd,
-      description: "Highest chance of conception. Ovulation occurs during this window."
+      description: "Highest chance of conception. Ovulation occurs during this window.",
+      detailedInfo: {
+        hormones: "Luteinizing Hormone (LH) surges rapidly, causing the release of an egg. Estrogen peaks.",
+        symptoms: "Slight body temperature increase, mild pelvic twinges (mittelschmerz), and increased libido.",
+        recommendation: "If not trying to conceive, use extra precautions. High energy continues, making it a good time for communication and social activities."
+      }
     },
     {
       name: "Luteal Phase",
       startDate: lutealStart,
       endDate: lutealEnd,
-      description: "Body prepares for possible pregnancy. PMS symptoms may occur."
+      description: "Body prepares for possible pregnancy. PMS symptoms may occur.",
+      detailedInfo: {
+        hormones: "Progesterone peaks to support a potential pregnancy. If no pregnancy occurs, both estrogen and progesterone drop.",
+        symptoms: "Bloating, breast tenderness, food cravings, fatigue, and mood swings (PMS).",
+        recommendation: "Reduce sodium and caffeine to manage bloating and anxiety. Focus on complex carbohydrates, magnesium-rich foods, and gentle exercises."
+      }
     }
   ];
 

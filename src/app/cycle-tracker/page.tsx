@@ -269,8 +269,21 @@ export default function CycleTrackerPage() {
                 <X size={24} />
               </button>
             </div>
-            <div style={{ padding: '24px', fontSize: '1rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>
-              {selectedPhase.description}
+            <div style={{ padding: '24px', fontSize: '0.95rem', color: 'var(--text-dim)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d946ef', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Hormonal Changes</h3>
+                <p style={{ margin: 0, color: 'var(--text-main)' }}>{selectedPhase.detailedInfo?.hormones || selectedPhase.description}</p>
+              </div>
+              
+              <div>
+                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#3b82f6', margin: '0 0 0.5rem 0', fontWeight: 600 }}>What You Might Feel</h3>
+                <p style={{ margin: 0, color: 'var(--text-main)' }}>{selectedPhase.detailedInfo?.symptoms || 'No specific symptoms noted.'}</p>
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Recommendation</h3>
+                <p style={{ margin: 0, color: 'var(--text-main)' }}>{selectedPhase.detailedInfo?.recommendation || 'Listen to your body and rest when needed.'}</p>
+              </div>
             </div>
           </div>
         </div>
