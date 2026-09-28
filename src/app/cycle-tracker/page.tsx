@@ -57,16 +57,29 @@ export default function CycleTrackerPage() {
 
   const generateInsight = async (prof: any, pred: CyclePrediction) => {
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const cacheKey = `cycle_insight_${todayStr}`;
+      
+      const cachedInsight = localStorage.getItem(cacheKey);
+      if (cachedInsight) {
+        setInsight(cachedInsight);
+        return;
+      }
+
       const res = await fetch('/api/cycle/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: prof, prediction: pred })
       });
       const data = await res.json();
+      
+      if (data.insight && !data.insight.includes('Stay hydrated')) {
+        localStorage.setItem(cacheKey, data.insight);
+      }
       setInsight(data.insight);
     } catch (e) {
       console.error(e);
-      setInsight("Stay hydrated and listen to your body!");
+      setInsight("Stay hydrated and listen to your body! Get plenty of rest today.");
     }
   };
 

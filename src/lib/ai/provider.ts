@@ -48,10 +48,10 @@ export class GeminiProvider implements AIProvider {
       }
     });
 
-    // Hard 35-second timeout to prevent the SDK from hanging endlessly on internal retries,
-    // but large enough to allow DDI analysis (which takes ~15-25s) to complete.
+    // Hard 15-second timeout to prevent the SDK from hanging endlessly on internal retries.
+    // 15 seconds is enough for almost all DDI and AI queries if the server is healthy.
     const timeoutPromise = new Promise<never>((_, reject) => {
-      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (35s).")), 35000);
+      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (15s).")), 15000);
       if (signal) {
         signal.addEventListener('abort', () => {
           clearTimeout(timeoutId);
@@ -151,35 +151,34 @@ export class AdaptiveProvider implements AIProvider {
       let success = false;
       let result = "";
 
-      // Retry up to 3 times for 503/Busy errors before burning the key
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        if (signal?.aborted) {
-          throw new Error("AbortError: AI request was cancelled by the user.");
+      // Do not endlessly retry if Google is having a global outage
+      if (signal?.aborted) {
+        throw new Error("AbortError: AI request was cancelled by the user.");
+      }
+      try {
+        const t0 = Date.now();
+        result = await provider.complete(system, user, useSearch, signal);
+        const latency = Date.now() - t0;
+        recordSuccess(key, latency);
+        console.log(`[AI ROUTER] Provider ${displayIndex} succeeded in ${latency}ms. New avg: ${Math.round(avgLatency(key))}ms`);
+        success = true;
+      } catch (err: any) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
+
+        if (errMsg.includes("AbortError")) {
+          throw err;
         }
-        try {
-          const t0 = Date.now();
-          result = await provider.complete(system, user, useSearch, signal);
-          const latency = Date.now() - t0;
-          recordSuccess(key, latency);
-          console.log(`[AI ROUTER] Provider ${displayIndex} succeeded in ${latency}ms. New avg: ${Math.round(avgLatency(key))}ms`);
-          success = true;
+
+        recordFailure(key);
+        allErrors.push(`[${provider.modelId}]: ${errMsg}`);
+        console.warn(`[AI ROUTER] Provider ${displayIndex} failed (${errMsg.slice(0, 80)}).`);
+        
+        // If 2 keys in a row fail with 503/timeout, assume a global API outage and stop trying 
+        // the remaining keys to prevent the user from waiting for minutes.
+        if (isBusy && allErrors.filter(e => e.includes("503") || e.includes("Timeout") || e.includes("High demand")).length >= 2) {
+          console.warn("[AI ROUTER] Detected global API outage (multiple 503s). Aborting router to fail fast.");
           break;
-        } catch (err: any) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
-
-          if (errMsg.includes("AbortError")) {
-            throw err;
-          }
-
-          if (attempt === 3 || !isBusy) {
-            recordFailure(key);
-            allErrors.push(`[${provider.modelId}]: ${errMsg}`);
-            break;
-          }
-
-          console.warn(`[AI ROUTER] Provider ${displayIndex} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 2.5s...`);
-          await new Promise(r => setTimeout(r, 2500));
         }
       }
 
@@ -188,8 +187,7 @@ export class AdaptiveProvider implements AIProvider {
       }
 
       if (rank < sorted.length - 1) {
-        console.warn(`[AI ROUTER] Provider ${displayIndex} fully failed — rotating to next fastest.`);
-        await new Promise(r => setTimeout(r, 1000));
+        console.warn(`[AI ROUTER] Rotating to next fastest.`);
       }
     }
 
