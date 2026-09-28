@@ -283,6 +283,22 @@ function OnboardingContent() {
               </div>
             </div>
 
+            {/* Inline Consent for Male/Other Pharmacologist */}
+            {isPharmacologist && form.gender && form.gender.toLowerCase() !== 'female' && (
+              <div className="ob-consent-box" style={{ marginTop: '1.5rem' }}>
+                <label className="ob-consent-label">
+                  <input 
+                    type="checkbox" 
+                    checked={form.consent_accepted} 
+                    onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
+                  />
+                  <span>
+                    <strong>Professional Consent:</strong> I confirm I am a licensed healthcare professional. I understand this tool provides supplementary analysis and does not replace clinical judgment.
+                  </span>
+                </label>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -454,8 +470,16 @@ function OnboardingContent() {
           )}
 
           {step === totalSteps && (
-            <button className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} onClick={handleSubmit} disabled={saving || (!isPharmacologist && !form.consent_accepted)}>
-              {saving ? 'Saving...' : <>Save Profile & Enter <Check size={18} /></>}
+            <button 
+              className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} 
+              onClick={handleSubmit} 
+              disabled={
+                saving || 
+                (!isPharmacologist && !form.consent_accepted) || 
+                (isPharmacologist && form.gender && form.gender.toLowerCase() !== 'female' && !form.consent_accepted)
+              }
+            >
+              {saving ? 'Saving...' : (isPharmacologist && form.gender?.toLowerCase() === 'female' && !form.consent_accepted ? <>Review Consent <ChevronRight size={18} /></> : <>Save Profile & Enter <Check size={18} /></>)}
             </button>
           )}
         </div>
@@ -513,20 +537,35 @@ function OnboardingContent() {
             background: 'var(--bg-main)', border: '1px solid var(--border)',
             borderRadius: '16px', padding: '2rem', maxWidth: '500px', width: '100%',
           }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-main)' }}>Professional Consent</h3>
-            <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              I confirm I am a licensed healthcare professional. I understand this tool provides supplementary analysis and does not replace clinical judgment.
-            </p>
+            <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--text-main)' }}>Professional Consent</h3>
+            
+            <div className="ob-consent-box" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <label className="ob-consent-label" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer', margin: 0 }}>
+                <input 
+                  type="checkbox" 
+                  checked={form.consent_accepted} 
+                  onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
+                  style={{ marginTop: '0.25rem' }}
+                />
+                <span style={{ color: 'var(--text-muted)', lineHeight: 1.5, fontSize: '0.95rem' }}>
+                  <strong>I confirm I am a licensed healthcare professional.</strong> I understand this tool provides supplementary analysis and does not replace clinical judgment.
+                </span>
+              </label>
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={() => setShowConsentModal(false)}>
                 Cancel
               </button>
-              <button className="btn btn-primary btn-pharm" onClick={() => {
-                setForm(f => ({ ...f, consent_accepted: true }));
-                setShowConsentModal(false);
-                setTimeout(handleSubmit, 100);
-              }}>
-                Accept & Continue
+              <button 
+                className="btn btn-primary btn-pharm" 
+                disabled={!form.consent_accepted || saving}
+                onClick={() => {
+                  setShowConsentModal(false);
+                  setTimeout(handleSubmit, 100);
+                }}
+              >
+                {saving ? 'Saving...' : 'Save Profile & Enter'}
               </button>
             </div>
           </div>
