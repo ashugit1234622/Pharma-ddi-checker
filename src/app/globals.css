@@ -380,18 +380,21 @@ a:hover { color: var(--accent-hover); }
 .card, 
 .panel, 
 .drug-search-box {
-  background: rgba(18, 26, 38, 0.75) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(14, 20, 32, 0.92) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 1.5rem;
   transition: border-color 0.3s, box-shadow 0.3s;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
 }
 
 .card:hover,
 .panel:hover,
 .drug-search-box:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.55);
 }
 
 /* Buttons */
@@ -545,9 +548,12 @@ a:hover { color: var(--accent-hover); }
 /* Charts */
 .chart-container {
   padding: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: rgba(14, 20, 32, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .chart-title {
@@ -763,6 +769,13 @@ a:hover { color: var(--accent-hover); }
 /* Report sections */
 .report-section {
   margin-top: 2rem;
+  background: rgba(14, 20, 32, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 .report-section > h3 {
@@ -772,17 +785,18 @@ a:hover { color: var(--accent-hover); }
 }
 
 .mechanism-card, .monitoring-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.05);
   padding: 1rem 1.25rem;
   border-radius: 10px;
   margin-bottom: 0.75rem;
   border-left: 3px solid var(--accent-primary);
+  backdrop-filter: blur(8px);
 }
 
 .source-item {
   font-size: 0.8rem;
   color: var(--text-muted);
-  background: var(--bg-hover);
+  background: rgba(255,255,255,0.06);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   margin-bottom: 0.4rem;
@@ -1506,6 +1520,13 @@ a:hover { color: var(--accent-hover); }
   width: 100%;
   max-width: 320px;
   margin: 0 auto;
+  background: rgba(14, 20, 32, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
 }
 
 .anatomy-title {
