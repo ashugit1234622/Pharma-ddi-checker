@@ -4,21 +4,11 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { User, LogOut, Clock, Bell } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export default function AuthUI() {
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      GoogleAuth.initialize({
-        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '659970984850-2j84u2v7l47087s2iif7dhlhh804s9k9.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
-      });
-    }
-
     if (status === 'authenticated') {
       if (!sessionStorage.getItem('post_signin_reload')) {
         sessionStorage.setItem('post_signin_reload', 'true');
@@ -30,21 +20,6 @@ export default function AuthUI() {
       sessionStorage.removeItem('post_signin_reload');
     }
   }, [status]);
-
-  const handleSignIn = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const user = await GoogleAuth.signIn();
-        if (user.authentication.idToken) {
-          await signIn('credentials', { idToken: user.authentication.idToken, redirect: true, callbackUrl: '/' });
-        }
-      } catch (error) {
-        console.error('Native Google Sign-In Error:', error);
-      }
-    } else {
-      signIn('google');
-    }
-  };
 
   if (status === 'loading') {
     return <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-hover)' }} className="pulse" />;
@@ -61,45 +36,17 @@ export default function AuthUI() {
             <Bell size={16} /> <span className="hide-on-mobile">Reminders</span>
           </Link>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
           {session.user.image ? (
-            <img 
-              src={session.user.image} 
-              alt={session.user.name || 'User'} 
-              style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--border)' }}
-            />
+            <img src={session.user.image} alt={session.user.name || 'User'} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--border)' }} />
           ) : (
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border)' }}>
-              <User size={18} />
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <User size={16} />
             </div>
           )}
-        </div>
-        <button
-          onClick={() => signOut()}
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-main)',
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            transition: 'background 0.2s, border-color 0.2s'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--bg-hover)';
-            e.currentTarget.style.borderColor = 'var(--text-dim)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'var(--bg-card)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }}
-        >
-          <LogOut size={14} />
-          <span className="hide-on-mobile">Sign Out</span>
+        </Link>
+        <button onClick={() => signOut()} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '8px', padding: '0.35rem 0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
+          <LogOut size={14} /> Sign Out
         </button>
       </div>
     );
@@ -107,26 +54,10 @@ export default function AuthUI() {
 
   return (
     <button
-      onClick={handleSignIn}
-      style={{
-        background: 'var(--accent-primary)',
-        color: '#fff',
-        border: 'none',
-        padding: '0.4rem 0.85rem',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        fontSize: '0.85rem',
-        fontWeight: 500,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        transition: 'transform 0.1s, box-shadow 0.2s'
-      }}
-      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-      onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+      onClick={() => signIn('google')}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-main)', borderRadius: '10px', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.9rem' }}
     >
-      <User size={16} />
-      Sign In
+      <User size={16} /> Sign In
     </button>
   );
 }
