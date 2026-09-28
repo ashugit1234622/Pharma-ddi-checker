@@ -63,17 +63,41 @@ For demographicEffects:
 
 export const ANALYSIS_SYSTEM_PROMPT = buildSystemPrompt();
 
-export function buildAnalysisPrompt(evidenceBundle: Record<string, unknown>): string {
+export function buildAnalysisPrompt(evidenceBundle: Record<string, unknown>, userProfile?: any): string {
+  let profileContext = '';
+  if (userProfile) {
+    const { age, gender, blood_group, underlying_diseases, allergies, current_medications, medical_history } = userProfile;
+    profileContext = `
+USER PROFILE CONTEXT (CRITICAL):
+The user requesting this analysis has the following profile:
+- Age: ${age || 'Unknown'}
+- Gender: ${gender || 'Unknown'}
+- Blood Group: ${blood_group || 'Unknown'}
+- Underlying Diseases: ${underlying_diseases?.length ? underlying_diseases.join(', ') : 'None reported'}
+- Drug/Food Allergies: ${allergies?.length ? allergies.join(', ') : 'None reported'}
+- Current Medications: ${current_medications?.length ? current_medications.join(', ') : 'None reported'}
+- Medical History: ${medical_history || 'None reported'}
+
+INSTRUCTIONS FOR PERSONALIZATION:
+You MUST heavily personalize the following sections based on the user's profile:
+1. "clinicalSignificance": Explicitly state how the interaction affects the user given their specific diseases, age, or gender.
+2. "interactionMechanisms": If their diseases or other medications amplify the mechanism, state this.
+3. "admeAnalysis": If their age or diseases affect absorption, metabolism, etc. (e.g., liver disease affecting CYP enzymes), highlight it.
+4. "evidenceAssessment": Reference how the evidence specifically applies to a patient with their profile (e.g., "Given your history of asthma, this interaction...").
+Address the user directly (e.g., "Because you have diabetes...") in these personalized sections where appropriate.
+`;
+  }
+
   return `Analyze the following drug interaction evidence bundle and return a structured JSON response.
 
 EVIDENCE BUNDLE:
 ${JSON.stringify(evidenceBundle, null, 2)}
-
+${profileContext}
 Return a JSON object with these exact fields:
 - overallStatus: one of "interaction_detected", "no_significant_interaction_identified", "insufficient_evidence", "unknown"
 - severity: one of "minor", "moderate", "major", "contraindicated", "unknown"
 - confidence: one of "high", "moderate", "low", "insufficient"
-- executiveSummary: concise 2-3 sentence assessment
+- executiveSummary: concise 2-3 sentence assessment (incorporate user profile warnings if highly relevant)
 - interactionMechanisms: array of {type, explanation, evidence}
 - clinicalSignificance: explanation of clinical meaning
 - potentialConsequences: array of consequence strings

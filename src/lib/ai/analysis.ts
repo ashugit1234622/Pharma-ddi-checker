@@ -22,7 +22,7 @@ export async function runDDIAnalysis(
   drug1Id: string,
   drug2Id: string,
   bundle: any,
-  options?: { forceRefresh?: boolean, signal?: AbortSignal }
+  options?: { forceRefresh?: boolean, signal?: AbortSignal, userProfile?: any }
 ): Promise<{ analysis: DDIAnalysis; fromCache: boolean; model: string }> {
   
   // Sort IDs alphabetically to ensure consistent cache keys
@@ -38,7 +38,9 @@ export async function runDDIAnalysis(
   }
 
   // 1. Check cache if database is available and refresh not forced
-  if (pool && !options?.forceRefresh) {
+  // IMPORTANT: We MUST bypass the global cache if a userProfile is provided,
+  // to prevent leaking personalized reports to other users.
+  if (pool && !options?.forceRefresh && !options?.userProfile) {
     try {
       const res = await pool.query(
         'SELECT result_json FROM ddi_cache WHERE drug1_id = $1 AND drug2_id = $2',
@@ -59,7 +61,7 @@ export async function runDDIAnalysis(
   const provider = getAIProvider();
   let raw: string;
   try {
-    raw = await provider.complete(ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt(bundle), false, options?.signal);
+    raw = await provider.complete(ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt(bundle, options?.userProfile), false, options?.signal);
   } catch (error) {
     throw new AIUnavailableError(`Failed to fetch from AI provider: ${error}`);
   }
