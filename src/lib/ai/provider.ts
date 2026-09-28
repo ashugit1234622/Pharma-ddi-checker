@@ -70,28 +70,83 @@ export class GeminiProvider implements AIProvider {
 }
 
 /**
- * Tries multiple Gemini providers in sequence — rotates on any failure.
+ * Per-provider latency tracker using a fixed-size rolling window.
+ * Stored at module level so state persists across requests within the same server process.
  */
-export class FallbackProvider implements AIProvider {
-  private providers: AIProvider[];
+const LATENCY_WINDOW = 4; // number of recent measurements to track
 
-  constructor(providers: AIProvider[]) {
-    if (providers.length === 0) {
-      throw new Error("FallbackProvider requires at least one provider.");
-    }
+interface ProviderStats {
+  key: string;
+  successTimes: number[];  // rolling window of latency in ms
+  consecutiveFailures: number;
+}
+
+const providerStatsMap = new Map<string, ProviderStats>();
+
+function getStats(key: string): ProviderStats {
+  if (!providerStatsMap.has(key)) {
+    providerStatsMap.set(key, { key, successTimes: [], consecutiveFailures: 0 });
+  }
+  return providerStatsMap.get(key)!;
+}
+
+function recordSuccess(key: string, latencyMs: number) {
+  const stats = getStats(key);
+  stats.successTimes.push(latencyMs);
+  if (stats.successTimes.length > LATENCY_WINDOW) {
+    stats.successTimes.shift();
+  }
+  stats.consecutiveFailures = 0;
+}
+
+function recordFailure(key: string) {
+  const stats = getStats(key);
+  stats.consecutiveFailures++;
+}
+
+/** Average latency, or Infinity if no data yet (= put it at the end). */
+function avgLatency(key: string): number {
+  const stats = providerStatsMap.get(key);
+  if (!stats || stats.successTimes.length === 0) return Infinity;
+  return stats.successTimes.reduce((a, b) => a + b, 0) / stats.successTimes.length;
+}
+
+/**
+ * Adaptive provider: tries providers in ascending order of observed latency.
+ * After LATENCY_WINDOW successes, the fastest key rises to the top automatically.
+ * Falls back sequentially on failure exactly like the old FallbackProvider.
+ */
+export class AdaptiveProvider implements AIProvider {
+  private providers: AIProvider[];
+  private keys: string[];
+
+  constructor(providers: AIProvider[], keys: string[]) {
+    if (providers.length === 0) throw new Error("AdaptiveProvider requires at least one provider.");
+    if (providers.length !== keys.length) throw new Error("providers and keys must be same length.");
     this.providers = providers;
+    this.keys = keys;
   }
 
   get modelId() {
-    return `Fallback Chain (Primary: ${this.providers[0].modelId})`;
+    const fastest = [...this.keys].sort((a, b) => avgLatency(a) - avgLatency(b))[0];
+    return `Adaptive Chain (fastest: ${fastest}, avg: ${avgLatency(fastest) === Infinity ? 'no data' : Math.round(avgLatency(fastest)) + 'ms'})`;
   }
 
   async complete(system: string, user: string, useSearch: boolean = false, signal?: AbortSignal): Promise<string> {
+    // Sort indices by ascending average latency — unknown providers (Infinity) go last
+    const order = this.providers
+      .map((_, i) => i)
+      .sort((a, b) => avgLatency(this.keys[a]) - avgLatency(this.keys[b]));
+
+    const sorted = order.map(i => ({ provider: this.providers[i], key: this.keys[i], originalIndex: i }));
     const allErrors: string[] = [];
 
-    for (let i = 0; i < this.providers.length; i++) {
-      const provider = this.providers[i];
-      console.log(`[AI ROUTER] Trying provider ${i + 1}/${this.providers.length}: ${provider.modelId}`);
+    for (let rank = 0; rank < sorted.length; rank++) {
+      const { provider, key, originalIndex } = sorted[rank];
+      const displayIndex = rank + 1;
+      const currentAvg = avgLatency(key);
+      const avgStr = currentAvg === Infinity ? 'no data' : `${Math.round(currentAvg)}ms avg`;
+      console.log(`[AI ROUTER] Trying provider ${displayIndex}/${sorted.length}: ${provider.modelId} (${avgStr})`);
 
       let success = false;
       let result = "";
@@ -102,23 +157,28 @@ export class FallbackProvider implements AIProvider {
           throw new Error("AbortError: AI request was cancelled by the user.");
         }
         try {
+          const t0 = Date.now();
           result = await provider.complete(system, user, useSearch, signal);
+          const latency = Date.now() - t0;
+          recordSuccess(key, latency);
+          console.log(`[AI ROUTER] Provider ${displayIndex} succeeded in ${latency}ms. New avg: ${Math.round(avgLatency(key))}ms`);
           success = true;
           break;
         } catch (err: any) {
           const errMsg = err instanceof Error ? err.message : String(err);
           const isBusy = errMsg.includes("503") || errMsg.includes("Timeout") || errMsg.includes("High demand");
-          
+
           if (errMsg.includes("AbortError")) {
             throw err;
           }
 
           if (attempt === 3 || !isBusy) {
+            recordFailure(key);
             allErrors.push(`[${provider.modelId}]: ${errMsg}`);
-            break; // Break the retry loop, move to next provider
+            break;
           }
-          
-          console.warn(`[AI ROUTER] Provider ${i + 1} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 2.5s...`);
+
+          console.warn(`[AI ROUTER] Provider ${displayIndex} attempt ${attempt} busy (${errMsg.slice(0, 80)}). Cooldown 2.5s...`);
           await new Promise(r => setTimeout(r, 2500));
         }
       }
@@ -127,8 +187,8 @@ export class FallbackProvider implements AIProvider {
         return result;
       }
 
-      if (i < this.providers.length - 1) {
-        console.warn(`[AI ROUTER] Provider ${i + 1} fully failed — rotating to provider ${i + 2}.`);
+      if (rank < sorted.length - 1) {
+        console.warn(`[AI ROUTER] Provider ${displayIndex} fully failed — rotating to next fastest.`);
         await new Promise(r => setTimeout(r, 1000));
       }
     }
@@ -155,8 +215,9 @@ const GEMINI_KEY_CONFIGS = [
   { envVar: "GEMINI_API_KEY_7",              model: "gemini-3.8-flash" },
 ] as const;
 
-function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[] {
+function buildGeminiProviders(effSuffix: string, logPrefix: string): { providers: AIProvider[], keys: string[] } {
   const providers: AIProvider[] = [];
+  const keys: string[] = [];
   for (const { envVar, model } of GEMINI_KEY_CONFIGS) {
     const val = process.env[envVar];
     if (val && !val.startsWith("your-")) {
@@ -164,30 +225,31 @@ function buildGeminiProviders(effSuffix: string, logPrefix: string): AIProvider[
         const effVar = `${envVar}_${effSuffix}`;
         process.env[effVar] = val;
         providers.push(new GeminiProvider(effVar, model));
+        keys.push(envVar); // Use the original env var name as the stable stats key
         console.log(`[${logPrefix}] Registered: ${envVar} → ${model}`);
       } catch (e) {
         console.warn(`[${logPrefix}] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
       }
     }
   }
-  return providers;
+  return { providers, keys };
 }
 
 // ─── DDI Analysis provider ────────────────────────────────────────────────────
 let cachedProvider: AIProvider | null = null;
 
 /**
- * Returns a Gemini FallbackProvider for DDI analysis, MedCheck, and Ask routes.
- * Rotates through all 4 Gemini keys automatically on quota/availability errors.
+ * Returns an AdaptiveProvider for DDI analysis, MedCheck, and Ask routes.
+ * Learns the fastest API key over time and always fires it first.
  */
 export function getAIProvider(): AIProvider {
   if (!cachedProvider) {
-    const providers = buildGeminiProviders("EFF", "AI ROUTER");
+    const { providers, keys } = buildGeminiProviders("EFF", "AI ROUTER");
     if (providers.length === 0) {
       throw new Error("No Gemini API keys configured. Add at least one to .env");
     }
-    console.log(`[AI ROUTER] Initialized with ${providers.length} provider(s).`);
-    cachedProvider = new FallbackProvider(providers);
+    console.log(`[AI ROUTER] Initialized AdaptiveProvider with ${providers.length} provider(s).`);
+    cachedProvider = new AdaptiveProvider(providers, keys);
   }
   return cachedProvider;
 }
@@ -196,18 +258,17 @@ export function getAIProvider(): AIProvider {
 let cachedGeminiProvider: AIProvider | null = null;
 
 /**
- * Returns a Gemini FallbackProvider for the Aastha chatbot.
- * Same key list and rotation as getAIProvider — kept separate so chat and
- * analysis failures don't cross-contaminate their caches.
+ * Returns an AdaptiveProvider for the Aastha chatbot.
+ * Kept separate so chat and analysis stats don't cross-contaminate.
  */
 export function getGeminiProvider(): AIProvider {
   if (!cachedGeminiProvider) {
-    const providers = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER");
+    const { providers, keys } = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER");
     if (providers.length === 0) {
       throw new Error("No Gemini API keys available for Aastha. Add at least one Gemini key to .env");
     }
-    console.log(`[AASTHA ROUTER] Initialized with ${providers.length} Gemini provider(s).`);
-    cachedGeminiProvider = new FallbackProvider(providers);
+    console.log(`[AASTHA ROUTER] Initialized AdaptiveProvider with ${providers.length} Gemini provider(s).`);
+    cachedGeminiProvider = new AdaptiveProvider(providers, keys);
   }
   return cachedGeminiProvider;
 }
