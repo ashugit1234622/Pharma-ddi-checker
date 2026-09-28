@@ -533,75 +533,68 @@ export default function Home() {
         sessionStorage.removeItem('pending_prescription_check');
       }
 
-      // If we didn't load from history and didn't trigger a new check, restore the last session
-      if (!stored && !pendingCheck) {
-        try {
-          // Try the legacy generic key as fallback on very first load (user-specific key
-          // will be populated after session resolves in the separate session-change effect)
-          const sessionStored = localStorage.getItem('pharma_ddi_session');
-          if (sessionStored) {
-            const parsed = JSON.parse(sessionStored);
-            if (parsed.drug1) setDrug1(parsed.drug1);
-            if (parsed.drug2) setDrug2(parsed.drug2);
-            if (parsed.report) setReport(parsed.report);
-          }
-        } catch (e) {}
-      }
+      // (Session restore moved entirely to the session status effect below to avoid race conditions)
     }
   }, []);
 
-  // React to session changes: sign-out → clear screen; sign-in → restore user cache
+  // React to session changes and handle cache restoration safely across page reloads
   useEffect(() => {
-    const prevStatus = prevSessionStatusRef.current;
-    const prevEmail = prevSessionEmailRef.current;
+    if (sessionStatus === 'loading') return;
+
     const currentEmail = session?.user?.email ?? null;
+    let lastEmail = null;
+    try {
+      lastEmail = localStorage.getItem('last_logged_in_email');
+    } catch(e) {}
 
-    if (sessionStatus === 'loading') {
-      prevSessionStatusRef.current = sessionStatus;
-      return;
-    }
-
-    // Signed out: clear the screen and remember who signed out
-    if (prevStatus === 'authenticated' && sessionStatus === 'unauthenticated') {
-      setDrug1(null);
-      setDrug2(null);
-      setReport(null);
-      setError('');
-      // Remember which account just left so we can restore for them specifically
-      (prevSessionStatusRef as any).lastSignedOutEmail = prevEmail;
-    }
-
-    // Signed in (new or returning): decide whether to restore or stay blank
-    if (sessionStatus === 'authenticated' && currentEmail && currentEmail !== prevEmail) {
-      const lastSignedOutEmail = (prevSessionStatusRef as any).lastSignedOutEmail;
-      if (currentEmail === lastSignedOutEmail) {
-        // Same user returning to their own device — restore their last report
+    // SCENARIO 1: Unauthenticated
+    if (sessionStatus === 'unauthenticated') {
+      if (lastEmail) {
+        // User just logged out (lastEmail exists but now unauthenticated).
+        // Clear screen to protect their data, and wipe guest cache to stay clean.
+        setDrug1(null); setDrug2(null); setReport(null); setError('');
         try {
-          const userKey = getSessionKey(currentEmail);
-          if (userKey) {
-            const saved = localStorage.getItem(userKey);
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              // Only restore if nothing is already on screen (e.g. from history nav)
-              setDrug1(d => d ?? parsed.drug1 ?? null);
-              setDrug2(d => d ?? parsed.drug2 ?? null);
-              setReport(r => r ?? parsed.report ?? null);
-            }
+          localStorage.removeItem('pharma_ddi_session');
+          localStorage.removeItem('last_logged_in_email');
+        } catch(e) {}
+      } else {
+        // Normal guest reload. Restore guest cache (if screen isn't already populated by history/medcheck)
+        try {
+          const sessionStored = localStorage.getItem('pharma_ddi_session');
+          if (sessionStored) {
+            const parsed = JSON.parse(sessionStored);
+            setDrug1(d => d ?? parsed.drug1 ?? null);
+            setDrug2(d => d ?? parsed.drug2 ?? null);
+            setReport(r => r ?? parsed.report ?? null);
           }
         } catch (e) {}
-      } else {
-        // Different account on this device — start completely fresh, no report shown
-        setDrug1(null);
-        setDrug2(null);
-        setReport(null);
-        setError('');
       }
-      // Clear the sign-out memory after consuming it
-      (prevSessionStatusRef as any).lastSignedOutEmail = null;
     }
 
-    prevSessionStatusRef.current = sessionStatus;
-    prevSessionEmailRef.current = currentEmail;
+    // SCENARIO 2: Authenticated
+    if (sessionStatus === 'authenticated' && currentEmail) {
+      if (lastEmail !== currentEmail) {
+        // Account switched or Guest -> User. Start fresh for this new identity.
+        setDrug1(null); setDrug2(null); setReport(null); setError('');
+        try {
+          localStorage.setItem('last_logged_in_email', currentEmail);
+        } catch(e) {}
+      }
+
+      // Restore this user's specific cache (if screen isn't already populated)
+      try {
+        const userKey = getSessionKey(currentEmail);
+        if (userKey) {
+          const saved = localStorage.getItem(userKey);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setDrug1(d => d ?? parsed.drug1 ?? null);
+            setDrug2(d => d ?? parsed.drug2 ?? null);
+            setReport(r => r ?? parsed.report ?? null);
+          }
+        }
+      } catch (e) {}
+    }
   }, [sessionStatus, session]);
 
   useEffect(() => {
