@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { DDIAnalysis } from '../lib/ai/schemas';
 import OrbitalAnimation, { VoiceState } from './OrbitalAnimation';
 import { LanguageOption, LANGUAGES, VoiceMode, ISpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../lib/voice';
@@ -46,6 +47,8 @@ import { useVisualViewport } from '../hooks/useVisualViewport';
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline = false, forceOpen = false }: AasthaChatProps) {
   const viewportHeight = useVisualViewport();
+  const { data: session } = useSession();
+  const isPharmacologist = (session?.user as any)?.userRole === 'pharmacologist';
 
   // ── Existing chat state (unchanged) ─────────────────────────────────────
   const [isOpen, setIsOpen] = useState(forceOpen);
@@ -127,11 +130,18 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   useEffect(() => {
     setMessages([]);
     if (!isOpen) return;
-    const welcomeText = report
-      ? "Hi, I'm Aastha. I can help explain this report, including the interaction mechanism, ADME findings, toxicity, monitoring considerations, alternatives, and evidence."
-      : "Hi, I'm Aastha. I can help you understand how Pharma DDI Checker works and explain pharmacology concepts. Once you run an analysis, I can also explain the findings from your report.";
+    let welcomeText: string;
+    if (report) {
+      welcomeText = isPharmacologist
+        ? "Hi, I'm Aastha. I can help explain this report, including the interaction mechanism, ADME findings, toxicity, monitoring considerations, alternatives, and evidence."
+        : "Hi, I'm Aastha! 👋 I've looked at this report. Ask me anything about it — I'll explain it simply so it's easy to understand.";
+    } else {
+      welcomeText = isPharmacologist
+        ? "Hi, I'm Aastha. I can help you understand how Pharma DDI Checker works and explain pharmacology concepts. Once you run an analysis, I can also explain the findings from your report."
+        : "Hi, I'm Aastha 👋 Your friendly health assistant! Ask me anything about your health, medicines, symptoms, diet, or lifestyle. I'll always explain things in simple, everyday language.";
+    }
     setMessages([{ role: 'assistant', content: welcomeText }]);
-  }, [drug1?.id, drug2?.id, report, isOpen]);
+  }, [drug1?.id, drug2?.id, report, isOpen, isPharmacologist]);
 
   // ── Cleanup on unmount / close voice ────────────────────────────────────
   const cleanupVoice = useCallback(() => {
@@ -488,19 +498,35 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   // ─────────────────────────────────────────────────────────────────────────
   if (isAnalyzing) return null;
 
-  const preReportChips = [
+  // Suggested question chips — role-aware
+  const preReportChipsPharm = [
     "What is a drug interaction?",
     "How does the analysis work?",
     "What is ADME?",
     "What does CYP mean?"
   ];
-  const postReportChips = [
+  const preReportChipsUser = [
+    "Is it safe to take two medicines together?",
+    "What should I do if I miss a dose?",
+    "How do I read my prescription?",
+    "What are common food and medicine interactions?"
+  ];
+  const postReportChipsPharm = [
     "Why is this interaction significant?",
     "Explain the mechanism",
     "Why was this alternative suggested?",
     "Explain the ADME findings"
   ];
-  const chips = report ? postReportChips : preReportChips;
+  const postReportChipsUser = [
+    "What does this mean for me?",
+    "Is this dangerous?",
+    "Should I tell my doctor?",
+    "What should I watch out for?"
+  ];
+
+  const chips = report
+    ? (isPharmacologist ? postReportChipsPharm : postReportChipsUser)
+    : (isPharmacologist ? preReportChipsPharm : preReportChipsUser);
 
   const isVoiceActive = voiceMode !== 'off';
   const orbitalState = getOrbitalState(voiceMode as VoiceMode);
