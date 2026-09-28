@@ -740,11 +740,6 @@ export default function Home() {
       const keyToUse = userKey || 'pharma_ddi_session';
       if (report) {
         localStorage.setItem(keyToUse, JSON.stringify({ drug1, drug2, report }));
-      } else {
-        // Only wipe the user-specific key so other users' data on this device is preserved
-        if (userKey) localStorage.removeItem(userKey);
-        // Also wipe the legacy generic key in case it exists
-        localStorage.removeItem('pharma_ddi_session');
       }
     } catch (e) {}
   }, [drug1, drug2, report, session]);
@@ -753,7 +748,12 @@ export default function Home() {
 
   const handleReset = () => { 
     setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); 
-    try { localStorage.removeItem('pharma_ddi_session'); } catch(e) {}
+    try {
+      const email = session?.user?.email;
+      const userKey = getSessionKey(email);
+      if (userKey) localStorage.removeItem(userKey);
+      localStorage.removeItem('pharma_ddi_session');
+    } catch(e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
