@@ -287,7 +287,7 @@ function OnboardingContent() {
         )}
 
         {/* ── Step 2: Pharmacologist Menstruation Details ── */}
-        {step === 2 && isPharmacologist && form.gender?.toLowerCase() === 'female' && (
+        {step === 2 && isPharmacologist && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><Calendar size={20} /> Menstruation Details</div>
             <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
@@ -446,7 +446,7 @@ function OnboardingContent() {
           {step > 0 && step < totalSteps && (
             <button
               className="ob-btn-primary"
-              onClick={() => setStep(s => s + 1)}
+              onClick={() => setStep(s => Math.min(s + 1, totalSteps))}
               disabled={step === 1 && !form.display_name.trim()}
             >
               Continue <ChevronRight size={18} />
@@ -464,6 +464,15 @@ function OnboardingContent() {
           <button className="ob-skip" onClick={() => router.push('/')}>
             Skip for now
           </button>
+        )}
+
+        {/* Fallback if step is somehow out of bounds (e.g. double click) */}
+        {step > totalSteps && (
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button className="btn btn-outline" onClick={() => setStep(totalSteps)}>
+              Return to Previous Step
+            </button>
+          </div>
         )}
       </div>
 
