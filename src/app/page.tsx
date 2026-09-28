@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { DDIAnalysis } from "../lib/ai/schemas";
 import { Pill, Microscope, AlertTriangle, CheckCircle, ArrowRightLeft, XCircle, AlertOctagon, AlertCircle, FileText, Scale, ArrowUp, User, ClipboardList, Settings, Users, Dna, BarChart, Lightbulb, Beaker } from "lucide-react";
 import OrganToxicityAnatomy from '../components/OrganToxicityAnatomy';
@@ -480,6 +481,14 @@ export default function Home() {
   // prescription scanner events, or swap triggers firing before React re-renders.
   const isRunningRef = useRef(false);
 
+  const { data: session, status: sessionStatus } = useSession();
+  const prevSessionStatusRef = useRef<string | null>(null);
+  const prevSessionEmailRef = useRef<string | null>(null);
+
+  // Helper: localStorage key scoped to the current user's email
+  const getSessionKey = (email?: string | null) =>
+    email ? `pharma_ddi_session_${email}` : null;
+
   // Load history report or pending prescription check
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -516,6 +525,8 @@ export default function Home() {
       // If we didn't load from history and didn't trigger a new check, restore the last session
       if (!stored && !pendingCheck) {
         try {
+          // Try the legacy generic key as fallback on very first load (user-specific key
+          // will be populated after session resolves in the separate session-change effect)
           const sessionStored = localStorage.getItem('pharma_ddi_session');
           if (sessionStored) {
             const parsed = JSON.parse(sessionStored);
@@ -527,6 +538,46 @@ export default function Home() {
       }
     }
   }, []);
+
+  // React to session changes: sign-out → clear screen; sign-in → restore user cache
+  useEffect(() => {
+    const prevStatus = prevSessionStatusRef.current;
+    const prevEmail = prevSessionEmailRef.current;
+    const currentEmail = session?.user?.email ?? null;
+
+    if (sessionStatus === 'loading') {
+      prevSessionStatusRef.current = sessionStatus;
+      return;
+    }
+
+    // Signed out: clear the screen immediately
+    if (prevStatus === 'authenticated' && sessionStatus === 'unauthenticated') {
+      setDrug1(null);
+      setDrug2(null);
+      setReport(null);
+      setError('');
+    }
+
+    // Signed in (or account switched): restore this user's cached session
+    if (sessionStatus === 'authenticated' && currentEmail && currentEmail !== prevEmail) {
+      try {
+        const userKey = getSessionKey(currentEmail);
+        if (userKey) {
+          const saved = localStorage.getItem(userKey);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            // Only restore if nothing is already on screen (e.g. from history nav)
+            setDrug1(d => d ?? parsed.drug1 ?? null);
+            setDrug2(d => d ?? parsed.drug2 ?? null);
+            setReport(r => r ?? parsed.report ?? null);
+          }
+        }
+      } catch (e) {}
+    }
+
+    prevSessionStatusRef.current = sessionStatus;
+    prevSessionEmailRef.current = currentEmail;
+  }, [sessionStatus, session]);
 
   useEffect(() => {
     let idleTimer: NodeJS.Timeout;
@@ -663,16 +714,22 @@ export default function Home() {
   }, [runAnalysis]);
 
 
-  // Save session to cache only if report is generated
+  // Save session to cache only if report is generated, keyed by user email
   useEffect(() => {
     try {
+      const email = session?.user?.email;
+      const userKey = getSessionKey(email);
+      const keyToUse = userKey || 'pharma_ddi_session';
       if (report) {
-        localStorage.setItem('pharma_ddi_session', JSON.stringify({ drug1, drug2, report }));
+        localStorage.setItem(keyToUse, JSON.stringify({ drug1, drug2, report }));
       } else {
+        // Only wipe the user-specific key so other users' data on this device is preserved
+        if (userKey) localStorage.removeItem(userKey);
+        // Also wipe the legacy generic key in case it exists
         localStorage.removeItem('pharma_ddi_session');
       }
     } catch (e) {}
-  }, [drug1, drug2, report]);
+  }, [drug1, drug2, report, session]);
 
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
 
