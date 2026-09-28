@@ -103,6 +103,11 @@ export default function CycleTrackerPage() {
     currentPhase = prediction.phases[3]; // Fallback to luteal if between
   }
 
+  const startOfCycle = prediction.phases[0].startDate;
+  const diffTime = today.getTime() - startOfCycle.getTime();
+  const diffDays = diffTime / (1000 * 3600 * 24);
+  const progressPercent = Math.max(0, Math.min(100, (diffDays / prediction.cycleLength) * 100));
+
   return (
     <div className="container" style={{ paddingTop: '100px', maxWidth: '800px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
@@ -167,25 +172,67 @@ export default function CycleTrackerPage() {
         </div>
       )}
 
-      {/* Full Cycle View */}
+      {/* Visual Journey Chart */}
       <div className="card">
-        <h2 style={{ fontSize: '1rem', color: 'var(--text-dim)', marginBottom: '1rem' }}>Your {prediction.cycleLength}-Day Cycle</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h2 style={{ fontSize: '1rem', color: 'var(--text-dim)', marginBottom: '1.5rem' }}>Cycle Journey ({prediction.cycleLength} Days)</h2>
+        
+        {/* Progress Bar Container */}
+        <div style={{ position: 'relative', height: '14px', borderRadius: '7px', background: 'var(--bg-card)', display: 'flex', overflow: 'hidden', marginBottom: '2.5rem' }}>
+          {prediction.phases.map((phase, i) => {
+            const phaseDays = Math.ceil((phase.endDate.getTime() - phase.startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+            const width = `${(phaseDays / prediction.cycleLength) * 100}%`;
+            
+            // Colors for phases
+            let color = '#d946ef'; // Menstruation (Pink)
+            if (phase.name === 'Follicular Phase') color = '#a855f7'; // Purple
+            if (phase.name === 'Ovulation Window') color = '#3b82f6'; // Blue
+            if (phase.name === 'Luteal Phase') color = '#f59e0b'; // Yellow
+            
+            return (
+              <div key={i} style={{ width, background: color, opacity: 0.7 }} title={phase.name} />
+            );
+          })}
+          
+          {/* Today Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            bottom: '-4px',
+            width: '6px',
+            background: '#ffffff',
+            borderRadius: '3px',
+            left: `calc(${progressPercent}% - 3px)`,
+            boxShadow: '0 0 12px rgba(255,255,255,1)',
+            zIndex: 10
+          }}>
+            <div style={{ position: 'absolute', top: '-22px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 'bold', color: 'white', background: 'var(--bg-card)', padding: '2px 8px', borderRadius: '4px' }}>Today</div>
+          </div>
+        </div>
+
+        {/* Phase Details Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
           {prediction.phases.map((phase, i) => {
             const isCurrent = currentPhase.name === phase.name;
+            let color = '#d946ef';
+            if (phase.name === 'Follicular Phase') color = '#a855f7';
+            if (phase.name === 'Ovulation Window') color = '#3b82f6';
+            if (phase.name === 'Luteal Phase') color = '#f59e0b';
+
             return (
               <div key={i} style={{ 
                 padding: '1rem', 
                 borderRadius: '8px',
-                background: isCurrent ? 'rgba(255,255,255,0.05)' : 'transparent',
-                border: isCurrent ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
-                transition: 'all 0.2s'
+                background: isCurrent ? 'rgba(255,255,255,0.03)' : 'transparent',
+                border: isCurrent ? `1px solid ${color}` : '1px solid transparent',
+                borderLeft: `4px solid ${color}`,
+                transition: 'all 0.2s',
+                boxShadow: isCurrent ? `0 0 15px ${color}33` : 'none'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <span style={{ fontWeight: 600, color: isCurrent ? '#d946ef' : 'var(--text-main)' }}>{phase.name}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                    {new Date(phase.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {new Date(phase.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
+                  <span style={{ fontWeight: 600, color: isCurrent ? color : 'var(--text-main)' }}>{phase.name}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem' }}>
+                  {new Date(phase.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {new Date(phase.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{phase.description}</div>
               </div>
