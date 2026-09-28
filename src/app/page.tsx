@@ -746,14 +746,18 @@ export default function Home() {
 
   const handleAnalyze = () => { if (drug1 && drug2) runAnalysis(drug1, drug2); };
 
-  const handleReset = () => { 
-    setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); 
+  const clearSessionCache = () => {
     try {
       const email = session?.user?.email;
       const userKey = getSessionKey(email);
       if (userKey) localStorage.removeItem(userKey);
       localStorage.removeItem('pharma_ddi_session');
     } catch(e) {}
+  };
+
+  const handleReset = () => { 
+    setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); 
+    clearSessionCache();
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
@@ -855,7 +859,7 @@ export default function Home() {
           id="drug-box-1"
           label="Drug 1" drug={drug1} accentColor="var(--chart-drug1)"
           onSelect={d => { setDrug1(d); setReport(null); }}
-          onClear={() => { setDrug1(null); setReport(null); }}
+          onClear={() => { setDrug1(null); setReport(null); clearSessionCache(); }}
         />
 
         {/* Centre status indicator */}
@@ -869,7 +873,7 @@ export default function Home() {
           id="drug-box-2"
           label="Drug 2" drug={drug2} accentColor="var(--chart-drug2)"
           onSelect={d => { setDrug2(d); setReport(null); }}
-          onClear={() => { setDrug2(null); setReport(null); }}
+          onClear={() => { setDrug2(null); setReport(null); clearSessionCache(); }}
         />
       </div>
 
@@ -921,7 +925,7 @@ export default function Home() {
                 <button 
                   className="btn btn-outline print-hide" 
                   style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                  onClick={() => { setDrug1(null); setDrug2(null); setReport(null); }}
+                  onClick={() => { setDrug1(null); setDrug2(null); setReport(null); clearSessionCache(); }}
                 >
                   <XCircle className="icon" size={16} /> Clear
                 </button>
