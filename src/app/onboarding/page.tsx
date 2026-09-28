@@ -473,11 +473,11 @@ function OnboardingContent() {
             <button 
               className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} 
               onClick={handleSubmit} 
-              disabled={
+              disabled={Boolean(
                 saving || 
                 (!isPharmacologist && !form.consent_accepted) || 
                 (isPharmacologist && form.gender && form.gender.toLowerCase() !== 'female' && !form.consent_accepted)
-              }
+              )}
             >
               {saving ? 'Saving...' : (isPharmacologist && form.gender?.toLowerCase() === 'female' && !form.consent_accepted ? <>Review Consent <ChevronRight size={18} /></> : <>Save Profile & Enter <Check size={18} /></>)}
             </button>
