@@ -550,29 +550,43 @@ export default function Home() {
       return;
     }
 
-    // Signed out: clear the screen immediately
+    // Signed out: clear the screen and remember who signed out
     if (prevStatus === 'authenticated' && sessionStatus === 'unauthenticated') {
       setDrug1(null);
       setDrug2(null);
       setReport(null);
       setError('');
+      // Remember which account just left so we can restore for them specifically
+      (prevSessionStatusRef as any).lastSignedOutEmail = prevEmail;
     }
 
-    // Signed in (or account switched): restore this user's cached session
+    // Signed in (new or returning): decide whether to restore or stay blank
     if (sessionStatus === 'authenticated' && currentEmail && currentEmail !== prevEmail) {
-      try {
-        const userKey = getSessionKey(currentEmail);
-        if (userKey) {
-          const saved = localStorage.getItem(userKey);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            // Only restore if nothing is already on screen (e.g. from history nav)
-            setDrug1(d => d ?? parsed.drug1 ?? null);
-            setDrug2(d => d ?? parsed.drug2 ?? null);
-            setReport(r => r ?? parsed.report ?? null);
+      const lastSignedOutEmail = (prevSessionStatusRef as any).lastSignedOutEmail;
+      if (currentEmail === lastSignedOutEmail) {
+        // Same user returning to their own device — restore their last report
+        try {
+          const userKey = getSessionKey(currentEmail);
+          if (userKey) {
+            const saved = localStorage.getItem(userKey);
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              // Only restore if nothing is already on screen (e.g. from history nav)
+              setDrug1(d => d ?? parsed.drug1 ?? null);
+              setDrug2(d => d ?? parsed.drug2 ?? null);
+              setReport(r => r ?? parsed.report ?? null);
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      } else {
+        // Different account on this device — start completely fresh, no report shown
+        setDrug1(null);
+        setDrug2(null);
+        setReport(null);
+        setError('');
+      }
+      // Clear the sign-out memory after consuming it
+      (prevSessionStatusRef as any).lastSignedOutEmail = null;
     }
 
     prevSessionStatusRef.current = sessionStatus;
