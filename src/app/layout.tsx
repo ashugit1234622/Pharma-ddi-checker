@@ -7,6 +7,8 @@ import Header from '@/components/Header';
 import GlobalReminder from '@/components/GlobalReminder';
 import TipOfTheDay from '@/components/TipOfTheDay';
 import NextAuthProvider from '@/components/NextAuthProvider';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const viewport: Viewport = {
   themeColor: '#0d1117',
@@ -32,11 +34,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(authOptions);
+  const userRole = (session?.user as any)?.userRole || 'user';
+  const themeClass = userRole === 'pharmacologist' ? 'theme-pharmacologist' : 'theme-user';
+
   return (
     <html lang="en">
       <head>
@@ -50,7 +56,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#0d1117" />
         <meta name="msapplication-TileImage" content="/icon-512.jpg" />
       </head>
-      <body>
+      <body className={themeClass}>
         <NextAuthProvider>
           {/* Service Worker Registration */}
           <Script

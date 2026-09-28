@@ -23,17 +23,38 @@ export default function CycleTrackerPage() {
     }
 
     if (status === 'authenticated') {
+      // 1. Try to load profile from cache for instant render
+      try {
+        const cachedProfile = localStorage.getItem('pharma_profile_cache');
+        if (cachedProfile) {
+          const prof = JSON.parse(cachedProfile);
+          setProfile(prof);
+          if (prof.last_menstruation_date) {
+            const calculated = calculateCycle({
+              lastPeriodDate: new Date(prof.last_menstruation_date),
+              age: prof.age || 30,
+              conditions: prof.underlying_diseases || [],
+              medications: prof.current_medications || []
+            });
+            setPrediction(calculated);
+            setLoading(false);
+            generateInsight(prof, calculated);
+          }
+        }
+      } catch (e) {}
+
+      // 2. Fetch profile in background to keep updated
       fetch('/api/profile')
         .then(res => res.json())
         .then(data => {
           if (data.profile) {
+            localStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
             setProfile(data.profile);
             if (data.profile.gender !== 'female') {
               router.push('/');
               return;
             }
             if (!data.profile.last_menstruation_date) {
-              // Redirect to onboarding if date is missing
               router.push('/onboarding');
               return;
             }
@@ -60,12 +81,24 @@ export default function CycleTrackerPage() {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       const cacheKey = `cycle_insight_${todayStr}`;
+      const countKey = `cycle_insight_count_${todayStr}`;
       
       const cachedInsight = localStorage.getItem(cacheKey);
-      if (cachedInsight) {
+      let count = parseInt(localStorage.getItem(countKey) || '0', 10);
+
+      if (cachedInsight && count >= 3) {
+        // Max 3 regenerations a day, or if we just want to avoid hitting the API if we already have it
         setInsight(cachedInsight);
         return;
       }
+      
+      // If we have cached insight, show it immediately while we fetch a new one (if < 3 times)
+      if (cachedInsight) {
+        setInsight(cachedInsight);
+      }
+
+      // If we already fetched 3 times today, stop.
+      if (count >= 3) return;
 
       const res = await fetch('/api/cycle/analyze', {
         method: 'POST',
@@ -76,11 +109,12 @@ export default function CycleTrackerPage() {
       
       if (data.insight && !data.insight.includes('Stay hydrated')) {
         localStorage.setItem(cacheKey, data.insight);
+        localStorage.setItem(countKey, (count + 1).toString());
+        setInsight(data.insight);
       }
-      setInsight(data.insight);
     } catch (e) {
       console.error(e);
-      setInsight("Stay hydrated and listen to your body! Get plenty of rest today.");
+      if (!insight) setInsight("Stay hydrated and listen to your body! Get plenty of rest today.");
     }
   };
 

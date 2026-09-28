@@ -493,6 +493,8 @@ export default function Home() {
   const isRunningRef = useRef(false);
 
   const { data: session, status: sessionStatus } = useSession();
+  const userRole = (session?.user as any)?.userRole || 'user';
+  const isPharmacologist = userRole === 'pharmacologist';
   const prevSessionStatusRef = useRef<string | null>(null);
   const prevSessionEmailRef = useRef<string | null>(null);
 
@@ -846,15 +848,30 @@ export default function Home() {
         }}>
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem', paddingTop: '1.5rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}><Pill size={48} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 12px var(--accent-glow))' }} /></div>
-          <h1 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>Drug-Drug Interaction Checker</h1>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+            <Pill size={48} style={{ color: 'var(--accent-primary)', filter: 'drop-shadow(0 0 12px var(--accent-glow))' }} />
+          </div>
+          <h1 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+            {isPharmacologist ? 'Drug-Drug Interaction Checker' : 'Aastha Health Assistant'}
+          </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '550px', margin: '0 auto' }}>
-            Select two drugs to check for interactions, view ADME & toxicity charts, and get AI-powered clinical analysis.
+            {isPharmacologist 
+              ? 'Select two drugs to check for interactions, view ADME & toxicity charts, and get AI-powered clinical analysis.' 
+              : 'Ask Aastha about your health, medications, or any medical questions you have.'}
           </p>
         </div>
 
-      {/* Drug Selection */}
-      <div className="ddi-search-container">
+        {/* ── USER MODE: Aastha Chat ── */}
+        {!isPharmacologist && (
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <AasthaChat inline={true} forceOpen={true} />
+          </div>
+        )}
+
+        {/* ── PHARMACOLOGIST MODE: DDI Checker ── */}
+        {isPharmacologist && (
+          <>
+            <div className="ddi-search-container">
         <DrugSearchBox
           id="drug-box-1"
           label="Drug 1" drug={drug1} accentColor="var(--chart-drug1)"
@@ -1160,10 +1177,12 @@ export default function Home() {
           </div>
         </div>
       )}
+      </>
+      )}
       </div>
       </div>
-      <PrintSummary report={report} drug1={drug1} drug2={drug2} />
-      <AasthaChat isAnalyzing={analyzing} drug1={drug1} drug2={drug2} report={report} />
+      {isPharmacologist && <PrintSummary report={report} drug1={drug1} drug2={drug2} />}
+      {isPharmacologist && <AasthaChat isAnalyzing={analyzing} drug1={drug1} drug2={drug2} report={report} />}
     </div>
   );
 }

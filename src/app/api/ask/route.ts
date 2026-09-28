@@ -3,8 +3,11 @@ import { z } from "zod";
 import { buildEvidenceBundle, DrugNotFoundError } from "../../../lib/ddi/evidenceBundle";
 import { getAIProvider, extractJson } from "../../../lib/ai/provider";
 import { ASK_SYSTEM_PROMPT } from "../../../lib/ai/prompts";
+import { getRoleInstruction, UserRole } from "../../../lib/ai/roleContext";
 import { ConstrainedAnswerSchema } from "../../../lib/ai/schemas";
 import { findSharedCypSignal } from "../../../lib/ddi/ruleEngine";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const RequestSchema = z.object({
   drug1Id: z.string().min(1),
@@ -40,6 +43,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not load drug data." }, { status: 503 });
   }
 
+  let userRole: UserRole = 'user';
+  try {
+    const session = await getServerSession(authOptions);
+    userRole = (session?.user as any)?.userRole || 'user';
+  } catch (e) {}
+
   try {
     const provider = getAIProvider();
     const cypSignals = findSharedCypSignal(bundle.drug1, bundle.drug2);
@@ -48,8 +57,9 @@ export async function POST(req: NextRequest) {
       null,
       2
     );
+    const systemPrompt = ASK_SYSTEM_PROMPT + '\n\n' + getRoleInstruction(userRole);
 
-    const raw = await provider.complete(ASK_SYSTEM_PROMPT, userPrompt);
+    const raw = await provider.complete(systemPrompt, userPrompt);
     const parsedAnswer = ConstrainedAnswerSchema.safeParse(JSON.parse(extractJson(raw)));
 
     if (!parsedAnswer.success) {

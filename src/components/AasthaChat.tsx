@@ -13,10 +13,12 @@ interface Message {
 }
 
 interface AasthaChatProps {
-  isAnalyzing: boolean;
-  drug1: any | null;
-  drug2: any | null;
-  report: DDIAnalysis | null;
+  isAnalyzing?: boolean;
+  drug1?: any | null;
+  drug2?: any | null;
+  report?: DDIAnalysis | null;
+  inline?: boolean;
+  forceOpen?: boolean;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -42,11 +44,11 @@ function getStatusLabel(mode: VoiceMode, errorMsg: string): string {
 import { useVisualViewport } from '../hooks/useVisualViewport';
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: AasthaChatProps) {
+export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline = false, forceOpen = false }: AasthaChatProps) {
   const viewportHeight = useVisualViewport();
 
   // ── Existing chat state (unchanged) ─────────────────────────────────────
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(forceOpen);
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const stored = sessionStorage.getItem('aastha_chat_history');
@@ -98,9 +100,9 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
     }
   }, [messages]);
 
-  // ── Lock body scroll when chat is open ───────────────────────────────────
+  // ── Lock body scroll when chat is open (only if not inline) ───────────
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !inline) {
       // Prevent background scrolling on mobile
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
@@ -119,7 +121,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
       document.body.style.overscrollBehaviorY = '';
       document.documentElement.style.overscrollBehaviorY = '';
     };
-  }, [isOpen]);
+  }, [isOpen, inline]);
 
   // ── Welcome message on open ──────────────────────────────────────────────
   useEffect(() => {
@@ -507,10 +509,23 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
+  const inlineStyle = inline ? {
+    position: 'relative' as const,
+    height: '600px',
+    maxHeight: '80vh',
+    width: '100%',
+    borderRadius: '16px',
+    boxShadow: 'none',
+    border: '1px solid var(--border)',
+    zIndex: 10,
+    bottom: 'auto',
+    right: 'auto',
+  } : {};
+
   return (
     <>
       {/* Floating Trigger Button (unchanged) */}
-      {!isOpen && (
+      {!isOpen && !inline && (
         <button
           className="aastha-trigger-btn"
           onClick={() => setIsOpen(true)}
@@ -527,7 +542,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report }: Aastha
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="aastha-panel">
+        <div className={`aastha-panel ${inline ? 'inline' : ''}`} style={inline ? inlineStyle : {}}>
           {/* Header (unchanged) */}
           <div className="aastha-header">
             <div className="aastha-header-info">

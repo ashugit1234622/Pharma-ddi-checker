@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Camera, Loader2, X, FileText, CheckCircle2, AlertTriangle, Zap, Info, ChevronsDown } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 type PrescScanState = 'idle' | 'camera_active' | 'processing' | 'result' | 'error';
 
@@ -32,6 +33,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const { data: session } = useSession();
+  const isPharmacologist = (session?.user as any)?.userRole === 'pharmacologist';
   const [arRect, setArRect] = useState({ top: 0.12, left: 0.08, right: 0.08, bottom: 0.12 });
   const [selectedPair, setSelectedPair] = useState<[number, number] | null>(null);
 
@@ -481,8 +484,8 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
                 })}
               </div>
 
-              {/* Interaction CTA — appears when 2 valid medicines selected */}
-              {selectedPair && selectedPair[0] !== -1 && selectedPair[1] !== -1 && selectedPair[1] !== undefined && (
+              {/* Interaction CTA — appears when 2 valid medicines selected and user is pharmacologist */}
+              {isPharmacologist && selectedPair && selectedPair[0] !== -1 && selectedPair[1] !== -1 && selectedPair[1] !== undefined && (
                 <button className="presc-interaction-btn btn btn-primary" onClick={handleInteractionCheck}>
                   <Zap size={18} />
                   Check Interaction: {result.medicines[selectedPair[0]]?.rawName} ↔ {result.medicines[selectedPair[1]]?.rawName}

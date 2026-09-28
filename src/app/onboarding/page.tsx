@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User, Calendar, Heart, AlertTriangle, Pill, FileText, Phone, ChevronRight, Check, Plus, X } from 'lucide-react';
+import { User, Calendar, Heart, AlertTriangle, Pill, FileText, Phone, ChevronRight, Check, Plus, X, Stethoscope } from 'lucide-react';
 import CustomDialog from '@/components/CustomDialog';
 
 const COMMON_DISEASES = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'COPD', 'Thyroid', 'Kidney Disease', 'Liver Disease', 'Epilepsy', 'Arthritis'];
@@ -16,7 +16,7 @@ function OnboardingContent() {
 
   const [step, setStep] = useState(() => {
     const s = searchParams.get('step');
-    return s ? parseInt(s, 10) : 1;
+    return s ? parseInt(s, 10) : 0; // Starts at 0 for role selection
   });
   const [saving, setSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -34,6 +34,8 @@ function OnboardingContent() {
     medical_history: '',
     emergency_contact: '',
     last_menstruation_date: '',
+    user_role: null as 'user' | 'pharmacologist' | null,
+    consent_accepted: false,
   });
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
@@ -66,7 +68,13 @@ function OnboardingContent() {
               medical_history: data.profile.medical_history || '',
               emergency_contact: data.profile.emergency_contact || '',
               last_menstruation_date: data.profile.last_menstruation_date || '',
+              user_role: data.profile.user_role || null,
+              consent_accepted: data.profile.consent_accepted || false,
             });
+            // If they already have a role, start at step 1 instead of 0
+            if (data.profile.user_role && step === 0 && !searchParams.has('step')) {
+               setStep(1);
+            }
             return;
           }
         }
@@ -83,7 +91,7 @@ function OnboardingContent() {
     if (status === 'authenticated') {
       fetchProfile();
     }
-  }, [session, status, router]);
+  }, [session, status, router, step, searchParams]);
 
   const addTag = (list: keyof typeof form, value: string, setter: (v: string) => void) => {
     const items = value.split(',').map(s => s.trim()).filter(s => s);
@@ -114,14 +122,18 @@ function OnboardingContent() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        await update({ profileComplete: true }); // Refetch session so profileComplete becomes true
-        // Fire-and-forget: generate personalized tips in the background
-        fetch('/api/tips/generate', { method: 'POST' }).catch(() => {});
+        // Refetch session so profileComplete AND userRole become available
+        await update({ profileComplete: true, userRole: form.user_role }); 
+        
+        // Fire-and-forget: generate personalized tips in the background if they are a user
+        if (form.user_role === 'user') {
+          fetch('/api/tips/generate', { method: 'POST' }).catch(() => {});
+        }
         router.push('/?welcome=1');
       } else {
         const errMsg = data.error || 'Unknown error';
-        const step = data.step ? ` [${data.step}]` : '';
-        setDialogConfig({ isOpen: true, title: 'Profile Error', message: `Failed to save profile${step}: ${errMsg}`, type: 'alert', onConfirm: closeDialog });
+        const stp = data.step ? ` [${data.step}]` : '';
+        setDialogConfig({ isOpen: true, title: 'Profile Error', message: `Failed to save profile${stp}: ${errMsg}`, type: 'alert', onConfirm: closeDialog });
       }
     } catch (err: any) {
       setDialogConfig({ isOpen: true, title: 'Network Error', message: `Network error: ${err.message}`, type: 'alert', onConfirm: closeDialog });
@@ -138,8 +150,9 @@ function OnboardingContent() {
     );
   }
 
-  const totalSteps = 3;
-  const progress = (step / totalSteps) * 100;
+  const isPharmacologist = form.user_role === 'pharmacologist';
+  const totalSteps = isPharmacologist ? 1 : 3;
+  const progress = step === 0 ? 0 : (step / totalSteps) * 100;
 
   return (
     <div className="onboarding-root">
@@ -151,8 +164,8 @@ function OnboardingContent() {
         onConfirm={dialogConfig.onConfirm}
         onCancel={closeDialog}
       />
-      {/* Background glow */}
-      <div className="onboarding-glow" />
+      {/* Background glow based on role */}
+      <div className={`onboarding-glow ${isPharmacologist ? 'glow-pharm' : 'glow-user'}`} />
 
       <div className="onboarding-card">
         {/* Header */}
@@ -161,19 +174,48 @@ function OnboardingContent() {
           <h1 className="onboarding-title">Welcome to Pharma DDI</h1>
           <p className="onboarding-subtitle">
             {session?.user?.name ? `Hi ${session.user.name.split(' ')[0]}! ` : ''}
-            Let's set up your health profile to personalize your experience.
+            {step === 0 ? "Let's personalize your experience." : "Let's set up your profile."}
           </p>
         </div>
 
         {/* Progress bar */}
-        <div className="onboarding-progress-wrap">
-          <div className="onboarding-progress-bar">
-            <div className="onboarding-progress-fill" style={{ width: `${progress}%` }} />
+        {step > 0 && (
+          <div className="onboarding-progress-wrap">
+            <div className="onboarding-progress-bar">
+              <div className="onboarding-progress-fill" style={{ width: `${progress}%`, backgroundColor: isPharmacologist ? 'var(--pharmacologist-accent)' : 'var(--primary-accent)' }} />
+            </div>
+            <span className="onboarding-step-label">Step {step} of {totalSteps}</span>
           </div>
-          <span className="onboarding-step-label">Step {step} of {totalSteps}</span>
-        </div>
+        )}
 
-        {/* ── Step 1: Basic Info ── */}
+        {/* ── Step 0: Role Selection ── */}
+        {step === 0 && (
+          <div className="onboarding-step">
+            <div className="role-selection-grid">
+              <button 
+                type="button"
+                className={`role-card ${form.user_role === 'user' ? 'active user-active' : ''}`}
+                onClick={() => setForm(f => ({ ...f, user_role: 'user' }))}
+              >
+                <div className="role-card-icon">👤</div>
+                <h3>Patient / User</h3>
+                <p>Simple answers, health tracking, and easy-to-understand chats.</p>
+              </button>
+
+              <button 
+                type="button"
+                className={`role-card ${form.user_role === 'pharmacologist' ? 'active pharm-active' : ''}`}
+                onClick={() => setForm(f => ({ ...f, user_role: 'pharmacologist' }))}
+              >
+                <div className="role-card-icon"><Stethoscope size={32} /></div>
+                <h3>Pharmacologist / MD</h3>
+                <p>Advanced drug interaction checker and detailed clinical terminology.</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 1: Basic Info (Both Roles) ── */}
         {step === 1 && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><User size={20} /> Basic Information</div>
@@ -227,11 +269,27 @@ function OnboardingContent() {
                 ))}
               </div>
             </div>
+
+            {/* If Pharmacologist, show consent here as this is their last step */}
+            {isPharmacologist && (
+              <div className="ob-consent-box">
+                <label className="ob-consent-label">
+                  <input 
+                    type="checkbox" 
+                    checked={form.consent_accepted} 
+                    onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
+                  />
+                  <span>
+                    <strong>Professional Consent:</strong> I confirm I am a licensed healthcare professional. I understand this tool provides supplementary analysis and does not replace clinical judgment.
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── Step 2: Medical Background ── */}
-        {step === 2 && (
+        {/* ── Step 2: Medical Background (User Only) ── */}
+        {step === 2 && !isPharmacologist && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><Heart size={20} /> Medical Background</div>
 
@@ -287,8 +345,8 @@ function OnboardingContent() {
           </div>
         )}
 
-        {/* ── Step 3: Medications & History ── */}
-        {step === 3 && (
+        {/* ── Step 3: Medications & History (User Only) ── */}
+        {step === 3 && !isPharmacologist && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><Pill size={20} /> Current Medications & History</div>
 
@@ -343,17 +401,41 @@ function OnboardingContent() {
                 onChange={e => setForm(f => ({ ...f, emergency_contact: e.target.value }))}
               />
             </div>
+
+            <div className="ob-consent-box">
+              <label className="ob-consent-label">
+                <input 
+                  type="checkbox" 
+                  checked={form.consent_accepted} 
+                  onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
+                />
+                <span>
+                  <strong>Data Consent:</strong> I agree to allow Pharma DDI to use my health profile for personalized insights. This data is kept private and local.
+                </span>
+              </label>
+            </div>
           </div>
         )}
 
         {/* Navigation buttons */}
         <div className="onboarding-actions">
-          {step > 1 && (
+          {step > 0 && (
             <button className="ob-btn-secondary" onClick={() => setStep(s => s - 1)}>
               Back
             </button>
           )}
-          {step < totalSteps ? (
+          
+          {step === 0 && (
+            <button
+              className="ob-btn-primary"
+              onClick={() => setStep(s => s + 1)}
+              disabled={!form.user_role}
+            >
+              Continue <ChevronRight size={18} />
+            </button>
+          )}
+
+          {step > 0 && step < totalSteps && (
             <button
               className="ob-btn-primary"
               onClick={() => setStep(s => s + 1)}
@@ -361,16 +443,20 @@ function OnboardingContent() {
             >
               Continue <ChevronRight size={18} />
             </button>
-          ) : (
-            <button className="ob-btn-primary" onClick={handleSubmit} disabled={saving}>
-              {saving ? 'Saving...' : <>Save Profile <Check size={18} /></>}
+          )}
+
+          {step === totalSteps && (
+            <button className={`ob-btn-primary ${isPharmacologist ? 'btn-pharm' : ''}`} onClick={handleSubmit} disabled={saving || !form.consent_accepted}>
+              {saving ? 'Saving...' : <>Save Profile & Enter <Check size={18} /></>}
             </button>
           )}
         </div>
 
-        <button className="ob-skip" onClick={() => router.push('/')}>
-          Skip for now
-        </button>
+        {step > 0 && !isPharmacologist && (
+          <button className="ob-skip" onClick={() => router.push('/')}>
+            Skip for now
+          </button>
+        )}
       </div>
     </div>
   );

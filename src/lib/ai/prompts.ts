@@ -1,4 +1,5 @@
 export const PROMPT_VERSION = '2.0.0';
+import { getRoleInstruction, UserRole } from './roleContext';
 
 export const ASK_SYSTEM_PROMPT = `You are a strict, evidence-based pharmacology assistant. 
 Answer questions ONLY using the provided evidence bundle and CYP signals.
@@ -9,9 +10,11 @@ Return a JSON object with:
 
 DO NOT hallucinate. Do NOT use outside knowledge.`;
 
-export function buildSystemPrompt(): string {
+export function buildSystemPrompt(userRole: UserRole = 'user'): string {
   return `You are an evidence-grounded pharmacology analysis assistant for the Pharma DDI Checker platform.
 You are trained on pharmacological data from standard references including KD Tripathi's Essentials of Medical Pharmacology.
+
+${getRoleInstruction(userRole)}
 
 CRITICAL RULES:
 1. Analyze the supplied structured data for Drug 1 and Drug 2. IMPORTANT: Drug 1 represents the first drug taken (or primary therapy), and Drug 2 represents the second drug taken (or add-on therapy). Analyze interactions taking this specific sequence and timing into account.
@@ -61,9 +64,9 @@ For demographicEffects:
 - State "Insufficient evidence for population-specific assessment" when data is lacking.`;
 }
 
-export const ANALYSIS_SYSTEM_PROMPT = buildSystemPrompt();
+export const ANALYSIS_SYSTEM_PROMPT = buildSystemPrompt('pharmacologist'); // Only used as fallback now
 
-export function buildAnalysisPrompt(evidenceBundle: Record<string, unknown>, userProfile?: any): string {
+export function buildAnalysisPrompt(evidenceBundle: Record<string, unknown>, userProfile?: any, userRole: UserRole = 'user'): string {
   let profileContext = '';
   if (userProfile) {
     const { age, gender, blood_group, underlying_diseases, allergies, current_medications, medical_history } = userProfile;
@@ -120,9 +123,12 @@ Return ONLY the JSON object, no markdown formatting.`;
 export function buildQAPrompt(
   question: string,
   evidenceBundle: Record<string, unknown>,
-  previousAnalysis: Record<string, unknown>
+  previousAnalysis: Record<string, unknown>,
+  userRole: UserRole = 'user'
 ): string {
-  return `You are answering a follow-up question about a drug interaction analysis.
+  return `${getRoleInstruction(userRole)}
+
+You are answering a follow-up question about a drug interaction analysis.
 
 PREVIOUS ANALYSIS CONTEXT:
 ${JSON.stringify(previousAnalysis, null, 2)}
@@ -152,12 +158,15 @@ export function buildAasthaPrompt(
   drugContext: { drug1: string; drug2: string } | null,
   reportContext: Record<string, unknown> | null,
   userMessage: string,
-  userProfile?: Record<string, unknown> | null
+  userProfile?: Record<string, unknown> | null,
+  userRole: UserRole = 'user'
 ): string {
   const isPostAnalysis = !!reportContext;
   
   return `You are Aastha, the constrained AI assistant for Pharma DDI Checker.
 Your purpose is to help users understand pharmacology and drug-interaction information.
+
+${getRoleInstruction(userRole)}
 
 CRITICAL RULES:
 1. Be polite, concise, precise, and honest.

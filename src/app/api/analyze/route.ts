@@ -48,10 +48,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Fetch User Profile
+  // 2. Fetch User Profile & Role
   let userProfile = null;
+  let userRole = 'user';
   try {
     const session = await getServerSession(authOptions);
+    userRole = (session?.user as any)?.userRole || 'user';
     if (session?.user?.email) {
       const pool = getDatabase();
       const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
@@ -78,7 +80,8 @@ export async function POST(req: NextRequest) {
     const { analysis, fromCache, model } = await runDDIAnalysis(drug1Id, drug2Id, bundle, {
       forceRefresh,
       signal: req.signal,
-      userProfile
+      userProfile,
+      userRole: userRole as any
     });
 
     return NextResponse.json({

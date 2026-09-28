@@ -81,8 +81,9 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, trigger, session }) {
-      if (trigger === 'update' && session?.profileComplete) {
-        token.profileComplete = session.profileComplete;
+      if (trigger === 'update' && session) {
+        if (session.profileComplete !== undefined) token.profileComplete = session.profileComplete;
+        if (session.userRole !== undefined) token.userRole = session.userRole;
       }
 
       if (user?.email) {
@@ -93,10 +94,17 @@ export const authOptions: NextAuthOptions = {
             if (dbUserRes.rows.length > 0) {
               const dbUser = dbUserRes.rows[0];
               token.userId = dbUser.id;
-              const profileRes = await pool.query('SELECT id FROM patient_profiles WHERE user_id = $1', [dbUser.id]);
-              token.profileComplete = profileRes.rows.length > 0;
+              const profileRes = await pool.query('SELECT id, user_role FROM patient_profiles WHERE user_id = $1', [dbUser.id]);
+              if (profileRes.rows.length > 0) {
+                token.profileComplete = true;
+                token.userRole = profileRes.rows[0].user_role || 'user';
+              } else {
+                token.profileComplete = false;
+                token.userRole = 'user';
+              }
             } else {
               token.profileComplete = false;
+              token.userRole = 'user';
             }
           }
         } catch (e) {
@@ -111,6 +119,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.userId as string || '';
         (session.user as any).profileComplete = token.profileComplete as boolean ?? false;
+        (session.user as any).userRole = token.userRole as string || 'user';
       }
       return session;
     },

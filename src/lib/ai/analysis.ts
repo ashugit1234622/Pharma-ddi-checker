@@ -1,5 +1,6 @@
 import { getAIProvider, extractJson } from './provider';
-import { ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt } from './prompts';
+import { buildSystemPrompt, buildAnalysisPrompt } from './prompts';
+import { UserRole } from './roleContext';
 import { DDIAnalysisSchema, DDIAnalysis } from './schemas';
 import { getDatabase } from '../db';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,7 +23,7 @@ export async function runDDIAnalysis(
   drug1Id: string,
   drug2Id: string,
   bundle: any,
-  options?: { forceRefresh?: boolean, signal?: AbortSignal, userProfile?: any }
+  options?: { forceRefresh?: boolean, signal?: AbortSignal, userProfile?: any, userRole?: UserRole }
 ): Promise<{ analysis: DDIAnalysis; fromCache: boolean; model: string }> {
   
   // Sort IDs alphabetically to ensure consistent cache keys
@@ -37,17 +38,19 @@ export async function runDDIAnalysis(
     console.warn("Database unavailable for cache:", e);
   }
 
+  const userRole = options?.userRole || 'user';
+
   // 1. Check cache if database is available and refresh not forced
   // IMPORTANT: We MUST bypass the global cache if a userProfile is provided,
   // to prevent leaking personalized reports to other users.
   if (pool && !options?.forceRefresh && !options?.userProfile) {
     try {
       const res = await pool.query(
-        'SELECT result_json FROM ddi_cache WHERE drug1_id = $1 AND drug2_id = $2',
-        [d1, d2]
+        'SELECT result_json FROM ddi_cache_v2 WHERE drug1_id = $1 AND drug2_id = $2 AND user_role = $3',
+        [d1, d2, userRole]
       );
       if (res.rows.length > 0) {
-        console.log(`[DDI Cache Hit] ${d1} + ${d2}`);
+        console.log(`[DDI Cache Hit] ${d1} + ${d2} (${userRole})`);
         const parsed = DDIAnalysisSchema.parse(JSON.parse(res.rows[0].result_json));
         return { analysis: parsed, fromCache: true, model: 'cache' };
       }
@@ -57,11 +60,11 @@ export async function runDDIAnalysis(
   }
 
   // 2. Cache miss: Call AI Provider
-  console.log(`[DDI Cache Miss] Fetching from AI for ${d1} + ${d2}`);
+  console.log(`[DDI Cache Miss] Fetching from AI for ${d1} + ${d2} (${userRole})`);
   const provider = getAIProvider();
   let raw: string;
   try {
-    raw = await provider.complete(ANALYSIS_SYSTEM_PROMPT, buildAnalysisPrompt(bundle, options?.userProfile), false, options?.signal);
+    raw = await provider.complete(buildSystemPrompt(userRole), buildAnalysisPrompt(bundle, options?.userProfile, userRole), false, options?.signal);
   } catch (error) {
     throw new AIUnavailableError(`Failed to fetch from AI provider: ${error}`);
   }
@@ -76,12 +79,12 @@ export async function runDDIAnalysis(
   }
 
   // 3. Save to cache asynchronously if DB is available
-  if (pool) {
+  if (pool && !options?.userProfile) {
     pool.query(
-      `INSERT INTO ddi_cache (id, drug1_id, drug2_id, result_json)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (drug1_id, drug2_id) DO UPDATE SET result_json = EXCLUDED.result_json, created_at = CURRENT_TIMESTAMP`,
-      [uuidv4(), d1, d2, cleanJsonString]
+      `INSERT INTO ddi_cache_v2 (id, drug1_id, drug2_id, user_role, result_json)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (drug1_id, drug2_id, user_role) DO UPDATE SET result_json = EXCLUDED.result_json, created_at = CURRENT_TIMESTAMP`,
+      [uuidv4(), d1, d2, userRole, cleanJsonString]
     ).catch(e => console.error("Failed to write to DDI cache:", e));
   }
 

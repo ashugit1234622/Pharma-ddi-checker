@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getGeminiProvider, extractJson } from "@/lib/ai/provider";
 import { buildAasthaPrompt } from "@/lib/ai/prompts";
 import { AasthaResponseSchema } from "@/lib/ai/schemas";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const AasthaRequestSchema = z.object({
   message: z.string().min(1),
@@ -36,6 +38,14 @@ export async function POST(req: NextRequest) {
 
   const { message, conversationHistory, drugContext, reportContext, userProfile } = parsed.data;
 
+  let userRole = 'user';
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      userRole = (session.user as any).userRole || 'user';
+    }
+  } catch (e) {}
+
   let rawResponse: string | null = null;
   try {
     const provider = getGeminiProvider();
@@ -46,7 +56,8 @@ export async function POST(req: NextRequest) {
       drugContext || null,
       reportContext || null,
       message,
-      userProfile || null
+      userProfile || null,
+      userRole as any
     );
 
     // Call the provider

@@ -2894,3 +2894,97 @@ body.is-printing .print-summary-container {
 
 .icon-spin, .animate-spin { animation: spin 1s linear infinite; }
 
+
+  
+  /* Theme Accents */
+  :root {
+    --pharmacologist-accent: #0ea5e9;
+    --user-accent: #10b981;
+  }
+  
+  body.theme-pharmacologist {
+    --accent-primary: #0ea5e9;
+    --accent-hover: #0284c7;
+    --accent-glow: rgba(14, 165, 233, 0.15);
+    --accent-soft: rgba(14, 165, 233, 0.08);
+  }
+  
+  body.theme-user {
+    --accent-primary: #10b981;
+    --accent-hover: #059669;
+    --accent-glow: rgba(16, 185, 129, 0.15);
+    --accent-soft: rgba(16, 185, 129, 0.08);
+  }
+  
+  .role-card-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .role-card.active.pharm-active {
+    border-color: var(--pharmacologist-accent);
+    background: rgba(14, 165, 233, 0.05);
+    box-shadow: 0 0 0 1px var(--pharmacologist-accent), 0 8px 30px rgba(14, 165, 233, 0.1);
+  }
+  
+  .role-card.active.user-active {
+    border-color: var(--user-accent);
+    background: rgba(16, 185, 129, 0.05);
+    box-shadow: 0 0 0 1px var(--user-accent), 0 8px 30px rgba(16, 185, 129, 0.1);
+  }
+  
+  .btn-pharm {
+    background: var(--pharmacologist-accent) !important;
+    color: #fff !important;
+  }
+  .btn-pharm:hover {
+    background: #0284c7 !important;
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.4) !important;
+  }
+  
+  .glow-pharm {
+    background: radial-gradient(circle at 50% -20%, rgba(14, 165, 233, 0.15), transparent 60%);
+  }
+  .glow-user {
+    background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.15), transparent 60%);
+  }
+  
+  .ob-consent-box {
+    margin-top: 2rem;
+    padding: 1.25rem;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  
+  .ob-consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    color: var(--text-main);
+    font-size: 0.95rem;
+  }
+  
+  .ob-consent-label input {
+    margin-top: 4px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+  }
+  
+  .role-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  @media (min-width: 640px) {
+    .role-selection-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  

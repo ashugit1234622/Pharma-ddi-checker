@@ -129,6 +129,27 @@ async function initializeSchema(db: Pool) {
       ) THEN 
         ALTER TABLE patient_profiles ADD COLUMN last_menstruation_date TEXT;
       END IF; 
+      
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='patient_profiles' AND column_name='user_role'
+      ) THEN 
+        ALTER TABLE patient_profiles ADD COLUMN user_role TEXT DEFAULT 'user';
+      END IF;
+      
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='patient_profiles' AND column_name='consent_accepted'
+      ) THEN 
+        ALTER TABLE patient_profiles ADD COLUMN consent_accepted BOOLEAN DEFAULT FALSE;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='patient_profiles' AND column_name='consent_accepted_at'
+      ) THEN 
+        ALTER TABLE patient_profiles ADD COLUMN consent_accepted_at TIMESTAMP;
+      END IF;
     END $$;
     
     CREATE TABLE IF NOT EXISTS accounts (
@@ -214,13 +235,14 @@ async function initializeSchema(db: Pool) {
     CREATE INDEX IF NOT EXISTS idx_user_tips_user_id ON user_tips(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_tips_type ON user_tips(user_id, tip_type);
 
-    CREATE TABLE IF NOT EXISTS ddi_cache (
+    CREATE TABLE IF NOT EXISTS ddi_cache_v2 (
       id TEXT PRIMARY KEY,
       drug1_id TEXT NOT NULL,
       drug2_id TEXT NOT NULL,
+      user_role TEXT DEFAULT 'user',
       result_json TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(drug1_id, drug2_id)
+      UNIQUE(drug1_id, drug2_id, user_role)
     );
   `);
 }
