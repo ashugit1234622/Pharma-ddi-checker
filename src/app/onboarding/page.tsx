@@ -38,17 +38,59 @@ export default function OnboardingPage() {
   const closeDialog = () => setDialogConfig(prev => ({ ...prev, isOpen: false }));
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/');
-    if (session?.user?.name) {
-      setForm(f => ({ ...f, display_name: f.display_name || session.user!.name! }));
+    if (status === 'unauthenticated') {
+      router.push('/');
+      return;
     }
-  }, [session, status]);
+    
+    // Fetch existing profile data so the form is pre-filled when editing
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setForm({
+              display_name: data.profile.display_name || session?.user?.name || '',
+              age: data.profile.age ? data.profile.age.toString() : '',
+              gender: data.profile.gender || '',
+              blood_group: data.profile.blood_group || '',
+              underlying_diseases: data.profile.underlying_diseases || [],
+              allergies: data.profile.allergies || [],
+              current_medications: data.profile.current_medications || [],
+              medical_history: data.profile.medical_history || '',
+              emergency_contact: data.profile.emergency_contact || '',
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      }
+      
+      // Fallback if no profile exists
+      if (session?.user?.name) {
+        setForm(f => ({ ...f, display_name: f.display_name || session.user!.name! }));
+      }
+    };
+    
+    if (status === 'authenticated') {
+      fetchProfile();
+    }
+  }, [session, status, router]);
 
   const addTag = (list: keyof typeof form, value: string, setter: (v: string) => void) => {
-    const v = value.trim();
-    if (!v) return;
-    const arr = form[list] as string[];
-    if (!arr.includes(v)) setForm(f => ({ ...f, [list]: [...arr, v] }));
+    const items = value.split(',').map(s => s.trim()).filter(s => s);
+    if (items.length === 0) return;
+    
+    setForm(f => {
+      const arr = f[list] as string[];
+      // Deduplicate the items from the input and remove ones already in the array
+      const uniqueItems = Array.from(new Set(items));
+      const newItems = uniqueItems.filter(v => !arr.includes(v));
+      if (newItems.length === 0) return f;
+      return { ...f, [list]: [...arr, ...newItems] };
+    });
     setter('');
   };
 
