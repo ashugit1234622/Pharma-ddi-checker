@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, AlertCircle, Loader2, Sparkles, Droplets } from 'lucide-react';
+import { CalendarDays, AlertCircle, Loader2, Sparkles, Droplets, X } from 'lucide-react';
 import { calculateCycle, CyclePrediction } from '@/lib/cycle-tracker';
 
 export default function CycleTrackerPage() {
@@ -14,6 +14,7 @@ export default function CycleTrackerPage() {
   const [profile, setProfile] = useState<any>(null);
   const [prediction, setPrediction] = useState<CyclePrediction | null>(null);
   const [insight, setInsight] = useState<string>('');
+  const [selectedPhase, setSelectedPhase] = useState<any>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -219,14 +220,15 @@ export default function CycleTrackerPage() {
             if (phase.name === 'Luteal Phase') color = '#f59e0b';
 
             return (
-              <div key={i} style={{ 
+              <div key={i} onClick={() => setSelectedPhase(phase)} style={{ 
                 padding: '1rem', 
                 borderRadius: '8px',
                 background: isCurrent ? 'rgba(255,255,255,0.03)' : 'transparent',
                 border: isCurrent ? `1px solid ${color}` : '1px solid transparent',
                 borderLeft: `4px solid ${color}`,
                 transition: 'all 0.2s',
-                boxShadow: isCurrent ? `0 0 15px ${color}33` : 'none'
+                boxShadow: isCurrent ? `0 0 15px ${color}33` : 'none',
+                cursor: 'pointer'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                   <span style={{ fontWeight: 600, color: isCurrent ? color : 'var(--text-main)' }}>{phase.name}</span>
@@ -240,6 +242,39 @@ export default function CycleTrackerPage() {
           })}
         </div>
       </div>
+
+      {/* Phase Info Modal */}
+      {selectedPhase && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+          padding: '24px'
+        }} onClick={() => setSelectedPhase(null)}>
+          <div style={{
+            background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)',
+            width: '100%', maxWidth: '400px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', overflow: 'hidden',
+            animation: 'slideUp 0.3s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '20px 24px', borderBottom: '1px solid var(--border-color)',
+              background: 'rgba(255,255,255,0.02)'
+            }}>
+              <h2 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--text-main)', fontWeight: 600 }}>{selectedPhase.name}</h2>
+              <button 
+                onClick={() => setSelectedPhase(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div style={{ padding: '24px', fontSize: '1rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>
+              {selectedPhase.description}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
