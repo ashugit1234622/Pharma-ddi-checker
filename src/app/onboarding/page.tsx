@@ -79,7 +79,7 @@ function OnboardingContent() {
               menstruation_details: data.profile.menstruation_details || null,
             });
             // If they already have a role, start at step 1 instead of 0
-            if (data.profile.user_role && step === 0 && !searchParams.has('step')) {
+            if (data.profile.user_role && searchParams.get('step') === null) {
                setStep(1);
             }
             setIsFetching(false);
@@ -100,7 +100,7 @@ function OnboardingContent() {
     if (status === 'authenticated') {
       fetchProfile();
     }
-  }, [session, status, router, step, searchParams]);
+  }, [session, status, router]);
 
   const addTag = (list: keyof typeof form, value: string, setter: (v: string) => void) => {
     const items = value.split(',').map(s => s.trim()).filter(s => s);
