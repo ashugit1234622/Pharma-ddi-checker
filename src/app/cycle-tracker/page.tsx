@@ -15,6 +15,32 @@ export default function CycleTrackerPage() {
   const [prediction, setPrediction] = useState<CyclePrediction | null>(null);
   const [insight, setInsight] = useState<string>('');
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
+  const [patterns, setPatterns] = useState<any>(null);
+
+  useEffect(() => {
+    if (profile?.menstruation_details) {
+      const detailsStr = JSON.stringify(profile.menstruation_details);
+      const cacheKey = `cycle_patterns_${detailsStr.length}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try { setPatterns(JSON.parse(cached)); } catch(e) {}
+      } else {
+        fetch('/api/cycle/predict-patterns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ details: profile.menstruation_details })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.patterns) {
+            localStorage.setItem(cacheKey, JSON.stringify(data.patterns));
+            setPatterns(data.patterns);
+          }
+        })
+        .catch(console.error);
+      }
+    }
+  }, [profile?.menstruation_details]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -313,6 +339,15 @@ export default function CycleTrackerPage() {
                 <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#3b82f6', margin: '0 0 0.5rem 0', fontWeight: 600 }}>What You Might Feel</h3>
                 <p style={{ margin: 0, color: 'var(--text-main)' }}>{selectedPhase.detailedInfo?.symptoms || 'No specific symptoms noted.'}</p>
               </div>
+
+              {profile?.menstruation_details && (
+                <div>
+                  <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Personalized AI Prediction</h3>
+                  <p style={{ margin: 0, color: 'var(--text-main)' }}>
+                    {patterns?.[selectedPhase.name] || <span style={{ color: 'var(--text-muted)' }}>Analyzing your patterns...</span>}
+                  </p>
+                </div>
+              )}
 
               <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Recommendation</h3>

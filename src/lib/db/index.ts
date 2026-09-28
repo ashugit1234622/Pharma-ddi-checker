@@ -146,6 +146,13 @@ async function initializeSchema(db: Pool) {
 
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
+        WHERE table_name='patient_profiles' AND column_name='menstruation_details'
+      ) THEN 
+        ALTER TABLE patient_profiles ADD COLUMN menstruation_details TEXT;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
         WHERE table_name='patient_profiles' AND column_name='consent_accepted_at'
       ) THEN 
         ALTER TABLE patient_profiles ADD COLUMN consent_accepted_at TIMESTAMP;

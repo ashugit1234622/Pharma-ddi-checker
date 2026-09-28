@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Calendar, Heart, AlertTriangle, Pill, FileText, Phone, ChevronRight, Check, Plus, X, Stethoscope } from 'lucide-react';
 import CustomDialog from '@/components/CustomDialog';
+import MenstruationDetailsForm from '@/components/MenstruationDetailsForm';
 
 const COMMON_DISEASES = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'COPD', 'Thyroid', 'Kidney Disease', 'Liver Disease', 'Epilepsy', 'Arthritis'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -36,7 +37,10 @@ function OnboardingContent() {
     last_menstruation_date: '',
     user_role: null as 'user' | 'pharmacologist' | null,
     consent_accepted: false,
+    menstruation_details: null as any,
   });
+
+  const [showMenstruationModal, setShowMenstruationModal] = useState(false);
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
     isOpen: false, message: '', type: 'alert', onConfirm: () => {}
@@ -70,6 +74,7 @@ function OnboardingContent() {
               last_menstruation_date: data.profile.last_menstruation_date || '',
               user_role: data.profile.user_role || null,
               consent_accepted: data.profile.consent_accepted || false,
+              menstruation_details: data.profile.menstruation_details || null,
             });
             // If they already have a role, start at step 1 instead of 0
             if (data.profile.user_role && step === 0 && !searchParams.has('step')) {
@@ -151,7 +156,7 @@ function OnboardingContent() {
   }
 
   const isPharmacologist = form.user_role === 'pharmacologist';
-  const totalSteps = isPharmacologist ? 1 : 3;
+  const totalSteps = isPharmacologist ? (form.gender === 'female' ? 2 : 1) : 3;
   const progress = step === 0 ? 0 : (step / totalSteps) * 100;
 
   return (
@@ -288,6 +293,29 @@ function OnboardingContent() {
           </div>
         )}
 
+        {/* ── Step 2: Pharmacologist Menstruation Details ── */}
+        {step === 2 && isPharmacologist && form.gender === 'female' && (
+          <div className="onboarding-step">
+            <div className="onboarding-step-title"><Calendar size={20} /> Menstruation Details</div>
+            <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <MenstruationDetailsForm form={form} setForm={setForm} />
+            </div>
+            
+            <div className="ob-consent-box" style={{ marginTop: '1.5rem' }}>
+              <label className="ob-consent-label">
+                <input 
+                  type="checkbox" 
+                  checked={form.consent_accepted} 
+                  onChange={e => setForm(f => ({...f, consent_accepted: e.target.checked}))}
+                />
+                <span>
+                  <strong>Data Consent:</strong> I agree to allow Pharma DDI to use my health profile for personalized insights. This data is kept private and local.
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* ── Step 2: Medical Background (User Only) ── */}
         {step === 2 && !isPharmacologist && (
           <div className="onboarding-step">
@@ -382,13 +410,13 @@ function OnboardingContent() {
 
             {form.gender === 'female' && (
               <div className="ob-field">
-                <label className="ob-label"><Calendar size={14} /> Date of Last Menstruation</label>
-                <input
-                  className="ob-input"
-                  type="date"
-                  value={form.last_menstruation_date}
-                  onChange={e => setForm(f => ({ ...f, last_menstruation_date: e.target.value }))}
-                />
+                <label className="ob-label"><Calendar size={14} /> Menstruation Details</label>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setShowMenstruationModal(true)}>
+                    <Calendar size={16} style={{ marginRight: '6px' }} />
+                    {form.last_menstruation_date || form.menstruation_details ? 'Edit Menstruation Details' : 'Add Menstruation Details'}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -458,6 +486,32 @@ function OnboardingContent() {
           </button>
         )}
       </div>
+
+      {showMenstruationModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 9999, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'var(--bg-main)', border: '1px solid var(--border)',
+            borderRadius: '16px', padding: '2rem', maxWidth: '600px', width: '100%',
+            maxHeight: '85vh', overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={20} /> Menstruation Details</h3>
+              <button onClick={() => setShowMenstruationModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <MenstruationDetailsForm form={form} setForm={setForm} />
+            <button className="btn btn-primary" style={{ width: '100%', marginTop: '2rem' }} onClick={() => setShowMenstruationModal(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
