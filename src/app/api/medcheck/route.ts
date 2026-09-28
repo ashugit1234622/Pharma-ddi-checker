@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAIProvider, extractJson } from "../../../lib/ai/provider";
+import { getRoleInstruction, UserRole } from "../../../lib/ai/roleContext";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../../lib/auth";
 import { z } from "zod";
 
 const RequestSchema = z.object({ barcode: z.string().min(1) });
@@ -465,18 +468,17 @@ async function fetchQRUrl(url: string): Promise<{ medicine?: MedicineData; produ
 
 // ─── AI Summary (Gemini — used ONLY for summary text, NOT for identification) ──
 // Only calls AI when the medicine record is sparse to conserve API quota.
-async function generateAISummary(medicine: MedicineData): Promise<string> {
+async function generateAISummary(medicine: MedicineData, userRole: UserRole = 'user'): Promise<string> {
   // If we already have good structured data, just build a local summary — no AI needed.
   const hasGoodData = medicine.medicineName && (medicine.strength || medicine.manufacturer);
   if (hasGoodData) {
     return buildFallbackSummary(medicine);
   }
   try {
+    const roleInstruction = getRoleInstruction(userRole);
     const provider = getAIProvider();
     const raw = await provider.complete(
-      `You are MedCheck AI for Pharma DDI Checker. Write a 1-2 sentence factual summary of the
-verified medicine record below. Max 65 words. Do NOT add dosing advice, warnings, or side effects
-not in the data. End with the data source. Return ONLY JSON: {"summary": "..."}`,
+      `${roleInstruction}\nYou are MedCheck AI for Pharma DDI Checker. Write a 1-2 sentence factual summary of the verified medicine record below. Max 65 words. Do NOT add dosing advice, warnings, or side effects not in the data. End with the data source. Return ONLY JSON: {"summary": "..."}`,
       `Summarize:\n${JSON.stringify(medicine, null, 2)}`
     );
     const parsed = JSON.parse(extractJson(raw));
@@ -612,11 +614,14 @@ export async function POST(req: NextRequest) {
   const cacheKey = rawScan.toLowerCase();
   console.log(`[MedCheck] Lookup: ${rawScan}`);
 
+  const session = await getServerSession(authOptions);
+  const userRole: UserRole = (session?.user as any)?.userRole ?? 'user';
+
   // Cache hit
   if (barcodeCache.has(cacheKey)) {
     const cached = barcodeCache.get(cacheKey)!;
     if ("error" in cached) return NextResponse.json(cached, { status: 404 });
-    const summary = await generateAISummary(cached as MedicineData);
+    const summary = await generateAISummary(cached as MedicineData, userRole);
     return NextResponse.json({ ...(cached as MedicineData), summary });
   }
 
@@ -636,6 +641,6 @@ export async function POST(req: NextRequest) {
   }
 
   barcodeCache.set(cacheKey, medicine);
-  const summary = await generateAISummary(medicine);
+  const summary = await generateAISummary(medicine, userRole);
   return NextResponse.json({ ...medicine, summary });
 }
