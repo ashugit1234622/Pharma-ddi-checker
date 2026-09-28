@@ -44,6 +44,7 @@ export default function CycleTrackerPage() {
               medications: data.profile.current_medications || []
             });
             setPrediction(calculated);
+            setLoading(false);
             generateInsight(data.profile, calculated);
           }
         })
@@ -66,8 +67,6 @@ export default function CycleTrackerPage() {
     } catch (e) {
       console.error(e);
       setInsight("Stay hydrated and listen to your body!");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -130,7 +129,11 @@ export default function CycleTrackerPage() {
           <Sparkles size={18} /> Personalized Insight
         </h2>
         <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
-          {insight || <Loader2 className="animate-spin" size={16} />}
+          {insight ? insight : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+              <Loader2 className="spinner" size={16} /> Generating personalized insight...
+            </div>
+          )}
         </div>
       </div>
 

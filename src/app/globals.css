@@ -2891,3 +2891,6 @@ body.is-printing .print-summary-container {
   justify-content: flex-end;
   padding: 1rem;
 }
+
+.icon-spin, .animate-spin { animation: spin 1s linear infinite; }
+
