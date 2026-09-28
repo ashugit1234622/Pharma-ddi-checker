@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Bell, Clock, AlertCircle, Plus, Pill, CheckCircle2, X, Trash2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import CinematicBackground from '@/components/CinematicBackground';
 import CustomDialog from '@/components/CustomDialog';
 
@@ -40,29 +42,49 @@ export default function RemindersPage() {
 
 
 
-  const checkNotificationStatus = () => {
-    if ('Notification' in window) {
-      setNotificationsEnabled(Notification.permission === 'granted');
+  const checkNotificationStatus = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const permStatus = await LocalNotifications.checkPermissions();
+      setNotificationsEnabled(permStatus.display === 'granted');
+    } else {
+      if ('Notification' in window) {
+        setNotificationsEnabled(Notification.permission === 'granted');
+      }
     }
   };
 
   const requestNotifications = async () => {
-    if (!('Notification' in window)) {
-      setDialogConfig({
-        isOpen: true,
-        title: 'Unsupported Browser',
-        message: "Your browser doesn't support notifications.",
-        type: 'alert',
-        onConfirm: closeDialog
-      });
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    setNotificationsEnabled(permission === 'granted');
-    if (permission === 'granted') {
-      new Notification('Reminders Enabled', {
-        body: 'You will now receive medication reminders when you have this app open.',
-      });
+    if (Capacitor.isNativePlatform()) {
+      const permStatus = await LocalNotifications.requestPermissions();
+      setNotificationsEnabled(permStatus.display === 'granted');
+      if (permStatus.display === 'granted') {
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: 999999,
+            title: 'Reminders Enabled',
+            body: 'You will now receive native medication reminders reliably on your device.',
+            schedule: { at: new Date(Date.now() + 2000) }
+          }]
+        });
+      }
+    } else {
+      if (!('Notification' in window)) {
+        setDialogConfig({
+          isOpen: true,
+          title: 'Unsupported Browser',
+          message: "Your browser doesn't support notifications.",
+          type: 'alert',
+          onConfirm: closeDialog
+        });
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      setNotificationsEnabled(permission === 'granted');
+      if (permission === 'granted') {
+        new Notification('Reminders Enabled', {
+          body: 'You will now receive medication reminders when you have this app open.',
+        });
+      }
     }
   };
 
@@ -101,6 +123,22 @@ export default function RemindersPage() {
       });
 
       if (res.ok) {
+        if (Capacitor.isNativePlatform() && notificationsEnabled) {
+          const scheduleList = times_json.map((timeStr: string, idx: number) => {
+             const [hours, minutes] = timeStr.split(':').map(Number);
+             return {
+                id: Math.floor(Math.random() * 1000000) + idx,
+                title: `Medication Reminder: ${drugName}`,
+                body: `Time to take ${drugName} ${dosage}. ${instructions}`,
+                schedule: { on: { hour: hours, minute: minutes } }
+             };
+          });
+          
+          await LocalNotifications.schedule({
+            notifications: scheduleList
+          });
+        }
+
         setIsAdding(false);
         setDrugName('');
         setDosage('');
