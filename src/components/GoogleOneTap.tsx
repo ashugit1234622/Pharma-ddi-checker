@@ -14,6 +14,7 @@ declare global {
         };
       };
     };
+    triggerGoogleSignIn?: () => void;
   }
 }
 
@@ -24,6 +25,25 @@ export default function GoogleOneTap({ clientId }: { clientId: string }) {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Set up global sign in trigger function
+    window.triggerGoogleSignIn = () => {
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isMobile && window.google?.accounts?.id) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            signIn('google', { prompt: 'select_account' });
+          }
+        });
+      } else {
+        signIn('google', { prompt: 'select_account' });
+      }
+    };
+    
+    return () => {
+      delete window.triggerGoogleSignIn;
+    };
   }, []);
 
   useEffect(() => {
@@ -52,15 +72,11 @@ export default function GoogleOneTap({ clientId }: { clientId: string }) {
             // You can optionally add context: 'signin' | 'signup' | 'use'
             context: 'signin'
           });
-          window.google.accounts.id.prompt();
+          // Do not automatically prompt here, wait for manual trigger via window.triggerGoogleSignIn
         }
       };
       document.body.appendChild(script);
       scriptLoaded.current = true;
-    } else {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.prompt();
-      }
     }
   }, [mounted, status, clientId]);
 

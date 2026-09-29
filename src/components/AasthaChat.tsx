@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { triggerSignIn } from '@/lib/triggerSignIn';
 import { DDIAnalysis } from '../lib/ai/schemas';
 import OrbitalAnimation, { VoiceState } from './OrbitalAnimation';
 import { LanguageOption, LANGUAGES, VoiceMode, ISpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../lib/voice';
@@ -861,7 +862,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
             <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
               You've reached the limit of 2 questions as a guest. Please sign in to continue chatting with Aastha and access all features.
             </p>
-            <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }} onClick={() => signIn('google', { prompt: 'select_account' })}>
+            <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }} onClick={() => triggerSignIn()}>
               Sign in with Google
             </button>
           </div>

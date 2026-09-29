@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
+import { triggerSignIn } from '@/lib/triggerSignIn';
 import { User, LogOut, Clock, Bell } from 'lucide-react';
 
 export default function AuthUI() {
@@ -54,7 +55,7 @@ export default function AuthUI() {
 
   return (
     <button
-      onClick={() => signIn('google', { prompt: 'select_account' })}
+      onClick={() => triggerSignIn()}
       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-main)', borderRadius: '10px', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.9rem' }}
     >
       <User size={16} /> Sign In

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
+import { triggerSignIn } from '@/lib/triggerSignIn';
 import { useRouter, usePathname } from 'next/navigation';
 import MedCheck from './MedCheck';
 import FoodCheck from './FoodCheck';
@@ -72,7 +73,7 @@ export default function Header() {
       .catch(console.error);
   }, [status]);
 
-  const handleSignIn = () => signIn('google', { prompt: 'select_account' });
+  const handleSignIn = () => triggerSignIn();
 
   // Redirect new users (no profile yet) to onboarding
   useEffect(() => {
@@ -379,7 +380,7 @@ export default function Header() {
             </p>
             <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }} onClick={() => {
               setShowAuthDialog(false);
-              signIn('google', { prompt: 'select_account' });
+              triggerSignIn();
             }}>
               Sign in with Google
             </button>
