@@ -214,7 +214,7 @@ const GEMINI_KEY_CONFIGS = [
   { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.8-flash" },
 ] as const;
 
-function buildGeminiProviders(effSuffix: string, logPrefix: string): { providers: AIProvider[], keys: string[] } {
+function buildGeminiProviders(effSuffix: string, logPrefix: string, modelOverride?: string): { providers: AIProvider[], keys: string[] } {
   const providers: AIProvider[] = [];
   const keys: string[] = [];
   for (const { envVar, model } of GEMINI_KEY_CONFIGS) {
@@ -223,9 +223,10 @@ function buildGeminiProviders(effSuffix: string, logPrefix: string): { providers
       try {
         const effVar = `${envVar}_${effSuffix}`;
         process.env[effVar] = val;
-        providers.push(new GeminiProvider(effVar, model));
+        const targetModel = modelOverride || model;
+        providers.push(new GeminiProvider(effVar, targetModel));
         keys.push(envVar); // Use the original env var name as the stable stats key
-        console.log(`[${logPrefix}] Registered: ${envVar} → ${model}`);
+        console.log(`[${logPrefix}] Registered: ${envVar} → ${targetModel}`);
       } catch (e) {
         console.warn(`[${logPrefix}] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
       }
@@ -262,7 +263,10 @@ let cachedGeminiProvider: AIProvider | null = null;
  */
 export function getGeminiProvider(): AIProvider {
   if (!cachedGeminiProvider) {
-    const { providers, keys } = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER");
+    // We override chat models to use 'gemini-3.5-flash-lite' because 
+    // gemini-3.8-flash has extremely strict free-tier quotas (20 per day).
+    // Using 3.5-flash-lite allows the user to chat 1000+ times a day.
+    const { providers, keys } = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER", "gemini-3.5-flash-lite");
     if (providers.length === 0) {
       throw new Error("No Gemini API keys available for Aastha. Add at least one Gemini key to .env");
     }
