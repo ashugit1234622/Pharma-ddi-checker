@@ -127,6 +127,21 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
     };
   }, [isOpen, inline]);
 
+  // ── Auto-popup strict login after 2nd response for guests ───────────────
+  useEffect(() => {
+    if (status !== 'authenticated' && messages.length > 0 && !isLoading) {
+      const userMessageCount = messages.filter(m => m.role === 'user').length;
+      const lastMessage = messages[messages.length - 1];
+      
+      if (userMessageCount >= 2 && lastMessage.role === 'assistant') {
+        const timer = setTimeout(() => {
+          setShowStrictAuthDialog(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [messages, status, isLoading]);
+
   // ── Welcome message on open ──────────────────────────────────────────────
   useEffect(() => {
     setMessages([]);
