@@ -104,6 +104,23 @@ function OnboardingContent() {
     }
   }, [session, status, router]);
 
+  // Guard against male users accidentally getting menstruation data or having their gender forced
+  useEffect(() => {
+    if (form.gender && form.gender.toLowerCase() !== 'female') {
+      if (showMenstruationModal) {
+        setShowMenstruationModal(false);
+      }
+      if (form.last_menstruation_date || form.menstruation_details) {
+        setForm(f => ({
+          ...f,
+          last_menstruation_date: '',
+          menstruation_details: null
+        }));
+      }
+    }
+  }, [form.gender, showMenstruationModal]);
+
+
   const addTag = (list: keyof typeof form, value: string, setter: (v: string) => void) => {
     const items = value.split(',').map(s => s.trim()).filter(s => s);
     if (items.length === 0) return;
@@ -305,7 +322,7 @@ function OnboardingContent() {
         )}
 
         {/* ── Step 2: Pharmacologist Menstruation Details ── */}
-        {step === 2 && isPharmacologist && (
+        {step === 2 && isPharmacologist && form.gender?.toLowerCase() === 'female' && (
           <div className="onboarding-step">
             <div className="onboarding-step-title"><Calendar size={20} /> Menstruation Details</div>
             <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
