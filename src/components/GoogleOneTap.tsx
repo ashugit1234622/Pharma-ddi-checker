@@ -63,7 +63,7 @@ export default function GoogleOneTap({ clientId }: { clientId: string }) {
                 signIn('credentials', {
                   idToken: response.credential,
                   redirect: true,
-                  callbackUrl: '/'
+                  callbackUrl: window.location.href
                 });
               }
             },
