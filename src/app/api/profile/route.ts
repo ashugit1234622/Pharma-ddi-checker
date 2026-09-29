@@ -128,3 +128,28 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const pool = tryGetDatabase();
+    if (!pool) return NextResponse.json({ error: "DB Error" }, { status: 500 });
+
+    const user = session.user as any;
+    
+    // Delete profile data (DPDP Act compliance)
+    await pool.query('DELETE FROM patient_profiles WHERE user_id = $1', [user.id]);
+    
+    // Optional: Delete user's chat history/interactions if stored with user_id
+    // await pool.query('DELETE FROM chat_history WHERE user_id = $1', [user.id]);
+
+    return NextResponse.json({ success: true, message: "Data deleted successfully" });
+  } catch (e: any) {
+    console.error('[Profile API DELETE] Error:', e.message);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+

@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { selectedLang, saveLanguage, isLoadingLang } = useVoiceLanguage();
 
   useEffect(() => {
@@ -160,9 +161,37 @@ export default function ProfilePage() {
         </div>
       </div>
       
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+      
+      <div style={{ marginTop: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
         <button className="btn btn-outline" onClick={() => router.push('/onboarding')} style={{ padding: '0.75rem 2rem' }}>
           Edit Profile
+        </button>
+        <button 
+          onClick={async () => {
+            if (confirm("Are you sure you want to delete all your personal health data? This cannot be undone.")) {
+              setIsDeleting(true);
+              try {
+                await fetch('/api/profile', { method: 'DELETE' });
+                alert('Data deleted successfully.');
+                window.location.href = '/';
+              } catch (e) {
+                console.error(e);
+                alert('Failed to delete data.');
+                setIsDeleting(false);
+              }
+            }
+          }}
+          style={{ 
+            background: 'transparent', 
+            border: 'none', 
+            color: 'var(--danger)', 
+            textDecoration: 'underline', 
+            cursor: 'pointer', 
+            fontSize: '0.85rem' 
+          }}
+          disabled={isDeleting}
+        >
+          {isDeleting ? 'Deleting...' : 'Delete My Data (DPDP Compliance)'}
         </button>
       </div>
     </div>

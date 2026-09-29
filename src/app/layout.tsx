@@ -4,6 +4,7 @@ import './medcheck.css';
 import './pwa.css';
 import Script from 'next/script';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import GlobalReminder from '@/components/GlobalReminder';
 import TipOfTheDay from '@/components/TipOfTheDay';
 import NextAuthProvider from '@/components/NextAuthProvider';
@@ -80,6 +81,7 @@ export default async function RootLayout({
           <GlobalReminder />
           <TipOfTheDay />
           <main className="container">{children}</main>
+          <Footer />
         </NextAuthProvider>
       </body>
     </html>
