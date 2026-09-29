@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getAIProvider, extractJson } from '@/lib/ai/provider';
+import { getGeminiProvider, extractJson } from '@/lib/ai/provider';
 import { TIPS_SYSTEM_PROMPT, buildTipsGenerationPrompt } from '@/lib/ai/prompts';
 import { TipsGenerationSchema } from '@/lib/ai/schemas';
 import { getDatabase } from '@/lib/db';
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     // Generate tips using the multi-API fallback provider
     console.log('[Tips Generate] Generating personalized tips for user:', userId);
-    const ai = getAIProvider();
+    const ai = getGeminiProvider();
     const userPrompt = buildTipsGenerationPrompt(profileData);
     const rawResponse = await ai.complete(TIPS_SYSTEM_PROMPT, userPrompt);
     const cleanJson = extractJson(rawResponse);
