@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const generatePromise = ai.models.generateContent({
-            model: "gemini-3.8-flash",
+            model: "gemini-3.5-flash-lite",
             contents: [{
               role: "user",
               parts: [

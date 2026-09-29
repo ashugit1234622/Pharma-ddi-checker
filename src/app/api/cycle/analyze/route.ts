@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getAIProvider } from '@/lib/ai/provider';
+import { getGeminiProvider } from '@/lib/ai/provider';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
     `;
 
     try {
-      const ai = getAIProvider();
+      const ai = getGeminiProvider();
       const response = await ai.complete("You are a medical AI assistant.", prompt);
       
-      // getAIProvider().complete returns a string directly
+      // getGeminiProvider().complete returns a string directly
       return NextResponse.json({ insight: response.trim() });
     } catch (aiError: any) {
       console.error('[Cycle AI] Gemini API Error:', aiError.message);

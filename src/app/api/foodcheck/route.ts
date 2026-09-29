@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIProvider, extractJson } from "../../../lib/ai/provider";
+import { getGeminiProvider, extractJson } from "../../../lib/ai/provider";
 import { z } from "zod";
 
 const RequestSchema = z.object({
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     
     const userPrompt = `Medicine: ${drugName}\nFood/Supplement: ${foodName}`;
     
-    const provider = getAIProvider();
+    const provider = getGeminiProvider();
     
     // We don't strictly need a massive timeout here because it's a small prompt,
     // but we use the provider.complete which has a built-in 35s timeout and 3 retries anyway!

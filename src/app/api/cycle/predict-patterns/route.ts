@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getAIProvider } from '@/lib/ai/provider';
+import { getGeminiProvider } from '@/lib/ai/provider';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     `;
 
     try {
-      const ai = getAIProvider();
+      const ai = getGeminiProvider();
       const response = await ai.complete("You are a medical AI assistant that outputs raw JSON only.", prompt);
       
       let cleaned = response.trim();
