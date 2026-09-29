@@ -28,7 +28,7 @@ export default function Header() {
   const isPharmacologist = userRole === 'pharmacologist';
 
   const requireAuth = (e: React.MouseEvent, featureName: string, onValid: () => void) => {
-    if (status !== 'authenticated') {
+    if (status === 'unauthenticated') {
       e.preventDefault();
       setAuthDialogMsg(`Please sign in to access ${featureName}.`);
       setShowAuthDialog(true);

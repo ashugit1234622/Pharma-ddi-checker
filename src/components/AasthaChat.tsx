@@ -129,7 +129,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
 
   // ── Auto-popup strict login after 2nd response for guests ───────────────
   useEffect(() => {
-    if (status !== 'authenticated' && messages.length > 0 && !isLoading) {
+    if (status === 'unauthenticated' && messages.length > 0 && !isLoading) {
       const userMessageCount = messages.filter(m => m.role === 'user').length;
       const lastMessage = messages[messages.length - 1];
       
@@ -190,7 +190,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
-    if (status !== 'authenticated') {
+    if (status === 'unauthenticated') {
       const userMessageCount = messages.filter(m => m.role === 'user').length;
       if (userMessageCount >= 2) {
         setShowStrictAuthDialog(true);
@@ -258,7 +258,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
       return;
     }
 
-    if (status !== 'authenticated') {
+    if (status === 'unauthenticated') {
       const userMessageCount = messages.filter(m => m.role === 'user').length;
       if (userMessageCount >= 2) {
         setShowStrictAuthDialog(true);
