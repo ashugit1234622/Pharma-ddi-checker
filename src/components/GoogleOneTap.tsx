@@ -33,11 +33,11 @@ export default function GoogleOneTap({ clientId }: { clientId: string }) {
       if (isMobile && window.google?.accounts?.id) {
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            signIn('google', { prompt: 'select_account' });
+            signIn('google');
           }
         });
       } else {
-        signIn('google', { prompt: 'select_account' });
+        signIn('google');
       }
     };
     
@@ -69,10 +69,14 @@ export default function GoogleOneTap({ clientId }: { clientId: string }) {
             },
             auto_select: false,
             cancel_on_tap_outside: true,
-            // You can optionally add context: 'signin' | 'signup' | 'use'
             context: 'signin'
           });
-          // Do not automatically prompt here, wait for manual trigger via window.triggerGoogleSignIn
+          
+          // Auto-prompt on mobile for seamless login
+          const isMobile = window.innerWidth <= 768;
+          if (isMobile) {
+            window.google.accounts.id.prompt();
+          }
         }
       };
       document.body.appendChild(script);

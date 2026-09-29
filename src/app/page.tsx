@@ -877,7 +877,7 @@ export default function Home() {
         {/* ── PHARMACOLOGIST MODE: DDI Checker ── */}
         {isPharmacologist && (
           <>
-            <div className="ddi-search-container">
+            <div className="ddi-search-container" style={{ display: "flex", gap: "1rem", alignItems: "center", justifyContent: "center", flexWrap: "wrap", maxWidth: "900px", margin: "0 auto" }}>
         <DrugSearchBox
           id="drug-box-1"
           label="Drug 1" drug={drug1} accentColor="var(--chart-drug1)"
@@ -887,7 +887,7 @@ export default function Home() {
 
         {/* Centre status indicator */}
         <div className="ddi-search-indicator">
-          <div className={`interaction-indicator ${report ? (isInteraction ? 'indicator-danger' : 'indicator-safe') : 'indicator-pending'}`}>
+          <div className={`interaction-indicator ${report ? (isInteraction ? 'indicator-danger' : 'indicator-safe') : 'indicator-pending'}`} style={{boxShadow: 'none', background: 'var(--bg-main)', border: '1px solid var(--border)'}}>
             {report ? (isInteraction ? <AlertTriangle size={20} /> : <CheckCircle size={20} />) : <ArrowRightLeft size={20} />}
           </div>
         </div>

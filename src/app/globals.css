@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-main: #0a0a0c;
-  --bg-card: #131316;
-  --bg-hover: #1c1c22;
-  --bg-input: #111114;
-  --text-main: #e8e8ec;
-  --text-muted: #8b8b96;
-  --text-dim: #5a5a66;
-  --accent-primary: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-glow: rgba(99, 102, 241, 0.15);
-  --accent-soft: rgba(99, 102, 241, 0.08);
+  --bg-main: #020617;
+  --bg-card: #0f172a;
+  --bg-hover: #1e293b;
+  --bg-input: #0f172a;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent-primary: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-glow: rgba(14, 165, 233, 0.1);
+  --accent-soft: rgba(14, 165, 233, 0.05);
   --success: #10b981;
   --success-glow: rgba(16, 185, 129, 0.15);
   --warning: #f59e0b;
   --warning-glow: rgba(245, 158, 11, 0.15);
   --danger: #ef4444;
   --danger-glow: rgba(239, 68, 68, 0.15);
-  --border: #1f1f25;
-  --border-hover: #2a2a33;
-  --chart-drug1: #6366f1;
-  --chart-drug2: #06b6d4;
+  --border: #334155;
+  --border-hover: #475569;
+  --chart-drug1: #0ea5e9;
+  --chart-drug2: #8b5cf6;
   --chart-low: #10b981;
   --chart-moderate: #f59e0b;
   --chart-high: #ef4444;
@@ -50,13 +50,15 @@ html {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #02070b; /* matches the 3D canvas clear color */
+  background-color: var(--bg-main); /* matches the 3D canvas clear color */
   color: #e8e8ec;
   line-height: 1.6;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-}
+
+  background-image: linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;}
 
 .cinematic-visual-layer {
   position: fixed;
@@ -117,8 +119,8 @@ a:hover { color: var(--accent-hover); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: rgba(10, 10, 12, 0.92);
-  backdrop-filter: blur(16px);
+  background-color: rgba(2, 6, 23, 0.95);
+  
   position: sticky;
   top: 0;
   width: 100%;
@@ -273,7 +275,7 @@ a:hover { color: var(--accent-hover); }
   left: auto !important;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   min-width: 180px;
   padding: 0.4rem;
@@ -380,21 +382,19 @@ a:hover { color: var(--accent-hover); }
 .card, 
 .panel, 
 .drug-search-box {
-  background: rgba(14, 20, 32, 0.92) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-card) !important;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1.5rem;
   transition: border-color 0.3s, box-shadow 0.3s;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .card:hover,
 .panel:hover,
 .drug-search-box:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.55);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Buttons */
@@ -414,13 +414,13 @@ a:hover { color: var(--accent-hover); }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+  background: var(--accent-primary); border: 1px solid var(--accent-hover);
   color: white;
-  box-shadow: 0 2px 12px var(--accent-glow);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.35);
+  background: var(--accent-hover); transform: translateY(-1px);
   transform: translateY(-1px);
 }
 
@@ -552,7 +552,7 @@ a:hover { color: var(--accent-hover); }
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -770,8 +770,6 @@ a:hover { color: var(--accent-hover); }
 .report-section {
   margin-top: 2rem;
   background: rgba(14, 20, 32, 0.90);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 14px;
   padding: 1.5rem;
@@ -832,7 +830,7 @@ a:hover { color: var(--accent-hover); }
 @media (max-width: 480px) {
   h1 { font-size: 1.4rem; }
   .logo { font-size: 1rem; }
-  .tabs-container { flex-direction: column; gap: 0.5rem; border-radius: 12px; }
+  .tabs-container { flex-direction: column; gap: 0.5rem; border-radius: 8px; }
   .tab-pill { flex: 1 1 100%; width: 100%; border-radius: 8px; }
   
   .dose-pill { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
@@ -973,7 +971,9 @@ a:hover { color: var(--accent-hover); }
     padding: 0;
     font-size: 11pt;
     font-family: Arial, sans-serif;
-  }
+  
+  background-image: linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;}
 
   /* 5. Force bar colors through */
   .static-bar-fill.d1 {
@@ -1164,7 +1164,7 @@ body.is-printing .print-summary-container {
 .aastha-message {
   max-width: 85%;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 0.9rem;
   line-height: 1.5;
   word-wrap: break-word;
@@ -1402,7 +1402,7 @@ body.is-printing .print-summary-container {
   flex-direction: column;
   align-items: center;
   padding: 0.65rem 0.5rem;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1.5px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.04);
   color: white;
@@ -1557,12 +1557,10 @@ body.is-printing .print-summary-container {
   max-width: 320px;
   margin: 0 auto;
   background: rgba(14, 20, 32, 0.90);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 16px;
   padding: 1.25rem 1rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .anatomy-title {
@@ -1651,7 +1649,7 @@ body.is-printing .print-summary-container {
   background: rgba(19, 19, 22, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
 }
@@ -2220,7 +2218,7 @@ body.is-printing .print-summary-container {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: rgba(16, 185, 129, 0.1);
   display: flex;
   align-items: center;
@@ -2472,7 +2470,7 @@ body.is-printing .print-summary-container {
 .tips-tab-count {
   background: var(--bg-hover);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 0.75rem;
 }
 
@@ -2530,7 +2528,7 @@ body.is-printing .print-summary-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
@@ -2809,7 +2807,7 @@ body.is-printing .print-summary-container {
   color: #ec4899;
   border: 1px solid rgba(236, 72, 153, 0.2);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
 }
@@ -2944,7 +2942,7 @@ body.is-printing .print-summary-container {
     font-weight: 800;
     letter-spacing: 0.08em;
     padding: 2px 7px;
-    border-radius: 12px;
+    border-radius: 8px;
     text-transform: uppercase;
     margin-left: 6px;
   }
@@ -3026,7 +3024,7 @@ body.is-printing .print-summary-container {
     padding: 1.25rem;
     background: var(--bg-main);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
   }
   
   .ob-consent-label {

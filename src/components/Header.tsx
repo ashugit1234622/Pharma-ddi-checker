@@ -119,12 +119,12 @@ export default function Header() {
         Health Tips
       </Link>
       <Link href="/skincare" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Skincare AI', closeMenu)}>
-        <Droplet size={18} style={{ color: '#ec4899' }} />
+        <Droplet size={18} style={{ color: 'var(--accent-primary)' }} />
         Skincare AI
       </Link>
       {userGender === 'female' && (
         <Link href="/cycle-tracker" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Menstruation Cycle', closeMenu)}>
-          <CalendarDays size={18} style={{ color: '#d946ef' }} />
+          <CalendarDays size={18} style={{ color: 'var(--accent-primary)' }} />
           Menstruation Cycle
         </Link>
       )}
@@ -309,11 +309,11 @@ export default function Header() {
               <Heart size={18} style={{ color: 'var(--accent-primary)' }} /> Health Tips
             </Link>
             <Link href="/skincare" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Skincare AI', () => setIsMenuOpen(false))}>
-              <Droplet size={18} style={{ color: '#ec4899' }} /> Skincare AI
+              <Droplet size={18} style={{ color: 'var(--accent-primary)' }} /> Skincare AI
             </Link>
             {userGender === 'female' && (
               <Link href="/cycle-tracker" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Menstruation Cycle', () => setIsMenuOpen(false))}>
-                <CalendarDays size={18} style={{ color: '#d946ef' }} /> Menstruation Cycle
+                <CalendarDays size={18} style={{ color: 'var(--accent-primary)' }} /> Menstruation Cycle
               </Link>
             )}
 
@@ -339,8 +339,8 @@ export default function Header() {
             <X size={16} />
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <CalendarDays size={20} style={{ color: '#d946ef' }} />
-            <h4 style={{ margin: 0, color: '#d946ef', fontWeight: 600 }}>New Feature</h4>
+            <CalendarDays size={20} style={{ color: 'var(--accent-primary)' }} />
+            <h4 style={{ margin: 0, color: 'var(--accent-primary)', fontWeight: 600 }}>New Feature</h4>
           </div>
           <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
             <strong>Menstrual Cycle Tracker</strong><br />

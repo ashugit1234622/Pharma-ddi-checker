@@ -21,12 +21,12 @@
 .medcheck-container {
   background: var(--bg-main);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
 }
@@ -93,8 +93,8 @@
   aspect-ratio: 1;
   max-height: 350px;
   margin: 0 auto;
-  border-radius: 24px;
-  border: 2px dashed var(--border);
+  border-radius: 12px;
+  border: 2px dashed var(--border-hover);
   background: var(--bg-card);
   display: flex;
   flex-direction: column;
@@ -113,7 +113,7 @@
 
 .medcheck-squircle.camera-active {
   border: 2px solid var(--accent-primary);
-  border-radius: 16px;
+  border-radius: 8px;
   cursor: default;
   background: black;
 }
@@ -414,7 +414,7 @@
   width: 100%;
   min-height: 200px;
   border-radius: 18px;
-  border: 2px dashed var(--border);
+  border: 2px dashed var(--border-hover);
   background: var(--bg-card);
   display: flex;
   align-items: center;
@@ -478,7 +478,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   background: #000;
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
