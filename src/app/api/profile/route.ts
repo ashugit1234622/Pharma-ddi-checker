@@ -131,14 +131,14 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) {
+    const user = session?.user as any;
+    
+    if (!session || !user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const pool = tryGetDatabase();
     if (!pool) return NextResponse.json({ error: "DB Error" }, { status: 500 });
-
-    const user = session.user as any;
     
     // Delete profile data (DPDP Act compliance)
     await pool.query('DELETE FROM patient_profiles WHERE user_id = $1', [user.id]);
