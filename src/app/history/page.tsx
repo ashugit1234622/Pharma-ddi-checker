@@ -11,7 +11,15 @@ export default function HistoryPage() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  const userRole = (session?.user as any)?.userRole || 'user';
   const [activeTab, setActiveTab] = useState<'interactions' | 'prescriptions'>('interactions');
+
+  useEffect(() => {
+    if (userRole === 'user') {
+      setActiveTab('prescriptions');
+    }
+  }, [userRole]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedPrescriptionDrugs, setSelectedPrescriptionDrugs] = useState<string[]>([]);
   
@@ -115,9 +123,11 @@ export default function HistoryPage() {
 
         {/* Tab Navigation */}
         <div className="tabs-container" style={{ marginBottom: '2rem' }}>
-          <button className={`tab-pill ${activeTab === 'interactions' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('interactions')}>
-            Interactions ({interactions.length})
-          </button>
+          {userRole !== 'user' && (
+            <button className={`tab-pill ${activeTab === 'interactions' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('interactions')}>
+              Interactions ({interactions.length})
+            </button>
+          )}
           <button className={`tab-pill ${activeTab === 'prescriptions' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('prescriptions')}>
             Prescriptions ({prescriptions.length})
           </button>
@@ -221,6 +231,7 @@ export default function HistoryPage() {
                               key={idx} 
                               onClick={(e) => {
                                 e.stopPropagation();
+                                if (userRole === 'user') return;
                                 setSelectedPrescriptionDrugs(prev => {
                                   if (prev.includes(med.rawName)) return prev.filter(n => n !== med.rawName);
                                   if (prev.length >= 2) return [prev[1], med.rawName];
@@ -232,7 +243,7 @@ export default function HistoryPage() {
                                 padding: '0.75rem', 
                                 borderRadius: '8px', 
                                 border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border)'}`,
-                                cursor: 'pointer',
+                                cursor: userRole === 'user' ? 'default' : 'pointer',
                                 transition: 'all 0.2s',
                                 position: 'relative'
                               }}
@@ -279,7 +290,7 @@ export default function HistoryPage() {
                       )}
                       
                       {/* Check Interaction Button Inline */}
-                      {selectedPrescriptionDrugs.length === 2 && dataJson.medicines.some((m: any) => selectedPrescriptionDrugs.includes(m.rawName)) && (
+                      {userRole !== 'user' && selectedPrescriptionDrugs.length === 2 && dataJson.medicines.some((m: any) => selectedPrescriptionDrugs.includes(m.rawName)) && (
                         <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
                           <button 
                             className="btn btn-primary fade-in"
