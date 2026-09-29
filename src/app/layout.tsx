@@ -9,6 +9,7 @@ import TipOfTheDay from '@/components/TipOfTheDay';
 import NextAuthProvider from '@/components/NextAuthProvider';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import GoogleOneTapWrapper from '@/components/GoogleOneTapWrapper';
 
 export const viewport: Viewport = {
   themeColor: '#0d1117',
@@ -58,6 +59,7 @@ export default async function RootLayout({
       </head>
       <body className={themeClass}>
         <NextAuthProvider>
+          <GoogleOneTapWrapper />
           {/* Service Worker Registration */}
           <Script
             id="sw-register"
