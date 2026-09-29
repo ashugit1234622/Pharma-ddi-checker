@@ -43,6 +43,7 @@ function OnboardingContent() {
 
   const [showMenstruationModal, setShowMenstruationModal] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title?: string, message: string, type: 'alert', onConfirm: () => void}>({
     isOpen: false, message: '', type: 'alert', onConfirm: () => {}
@@ -81,6 +82,7 @@ function OnboardingContent() {
             // If they already have a role, start at step 1 instead of 0
             if (data.profile.user_role && searchParams.get('step') === null) {
                setStep(1);
+               setIsEditing(true);
             }
             setIsFetching(false);
             return;
@@ -443,7 +445,7 @@ function OnboardingContent() {
 
         {/* Navigation buttons */}
         <div className="onboarding-actions">
-          {step > 0 && (
+          {step > 0 && !(step === 1 && isEditing) && (
             <button className="ob-btn-secondary" onClick={() => setStep(s => s - 1)}>
               Back
             </button>
