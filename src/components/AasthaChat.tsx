@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { DDIAnalysis } from '../lib/ai/schemas';
 import OrbitalAnimation, { VoiceState } from './OrbitalAnimation';
 import { LanguageOption, LANGUAGES, VoiceMode, ISpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../lib/voice';
@@ -69,6 +69,7 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showStrictAuthDialog, setShowStrictAuthDialog] = useState(false);
 
   useEffect(() => {
     if (isOpen && !userProfile) {
@@ -174,6 +175,14 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
+    if (status !== 'authenticated') {
+      const userMessageCount = messages.filter(m => m.role === 'user').length;
+      if (userMessageCount >= 2) {
+        setShowStrictAuthDialog(true);
+        return;
+      }
+    }
+
     const trimmed = text.trim();
     const userMessage: Message = { role: 'user', content: trimmed };
     const newMessages = [...messages, userMessage];
@@ -232,6 +241,14 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
       setVoiceMode('listening');
       startListening(lang);
       return;
+    }
+
+    if (status !== 'authenticated') {
+      const userMessageCount = messages.filter(m => m.role === 'user').length;
+      if (userMessageCount >= 2) {
+        setShowStrictAuthDialog(true);
+        return;
+      }
     }
 
     // Add user transcript to shared conversation
@@ -810,6 +827,29 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Strict Auth Required Dialog (Non-negotiable) ── */}
+      {showStrictAuthDialog && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary-accent)', margin: '0 auto 1rem auto' }}>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1.25rem' }}>Login Required</h3>
+            <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              You've reached the limit of 2 questions as a guest. Please sign in to continue chatting with Aastha and access all features.
+            </p>
+            <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }} onClick={() => signIn('google', { prompt: 'select_account' })}>
+              Sign in with Google
+            </button>
+          </div>
         </div>
       )}
     </>

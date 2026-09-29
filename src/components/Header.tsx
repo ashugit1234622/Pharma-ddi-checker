@@ -16,12 +16,26 @@ export default function Header() {
   const { data: session, status } = useSession();
   const [userGender, setUserGender] = useState<string | null>(null);
   const [showCyclePrompt, setShowCyclePrompt] = useState(false);
+  
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [authDialogMsg, setAuthDialogMsg] = useState("");
+  
   const router = useRouter();
   const pathname = usePathname();
 
   // ── Role from session (zero extra network call) ──
   const userRole = (session?.user as any)?.userRole || 'user';
   const isPharmacologist = userRole === 'pharmacologist';
+
+  const requireAuth = (e: React.MouseEvent, featureName: string, onValid: () => void) => {
+    if (status !== 'authenticated') {
+      e.preventDefault();
+      setAuthDialogMsg(`Please sign in to access ${featureName}.`);
+      setShowAuthDialog(true);
+      return;
+    }
+    onValid();
+  };
 
   // ── Profile: try localStorage first (instant), refresh silently ──
   useEffect(() => {
@@ -91,24 +105,24 @@ export default function Header() {
   // ── Shared menu item builders ──
   const commonMenuItems = (closeMenu: () => void) => (
     <>
-      <button onClick={() => { openMedCheck(); closeMenu(); }} className="header-dropdown-item">
+      <button onClick={(e) => requireAuth(e, 'MedCheck', () => { openMedCheck(); closeMenu(); })} className="header-dropdown-item">
         <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} />
         MedCheck
       </button>
-      <button onClick={() => { openFoodCheck(); closeMenu(); }} className="header-dropdown-item">
+      <button onClick={(e) => requireAuth(e, 'Food & Supplements', () => { openFoodCheck(); closeMenu(); })} className="header-dropdown-item">
         <Apple size={18} style={{ color: 'var(--accent-primary)' }} />
         Food & Supplements
       </button>
-      <Link href="/health-tips" className="header-dropdown-item" onClick={closeMenu}>
+      <Link href="/health-tips" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Health Tips', closeMenu)}>
         <Heart size={18} style={{ color: 'var(--accent-primary)' }} />
         Health Tips
       </Link>
-      <Link href="/skincare" className="header-dropdown-item" onClick={closeMenu}>
+      <Link href="/skincare" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Skincare AI', closeMenu)}>
         <Droplet size={18} style={{ color: '#ec4899' }} />
         Skincare AI
       </Link>
       {userGender === 'female' && (
-        <Link href="/cycle-tracker" className="header-dropdown-item" onClick={closeMenu}>
+        <Link href="/cycle-tracker" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Menstruation Cycle', closeMenu)}>
           <CalendarDays size={18} style={{ color: '#d946ef' }} />
           Menstruation Cycle
         </Link>
@@ -284,20 +298,20 @@ export default function Header() {
             <div className="mobile-menu-divider" />
 
             {/* Common features */}
-            <button onClick={openMedCheck} className="mobile-menu-item">
+            <button onClick={(e) => requireAuth(e, 'MedCheck', openMedCheck)} className="mobile-menu-item">
               <ScanBarcode size={18} style={{ color: 'var(--accent-primary)' }} /> MedCheck
             </button>
-            <button onClick={openFoodCheck} className="mobile-menu-item">
+            <button onClick={(e) => requireAuth(e, 'Food & Supplements', openFoodCheck)} className="mobile-menu-item">
               <Apple size={18} style={{ color: 'var(--accent-primary)' }} /> Food & Supplements
             </button>
-            <Link href="/health-tips" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/health-tips" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Health Tips', () => setIsMenuOpen(false))}>
               <Heart size={18} style={{ color: 'var(--accent-primary)' }} /> Health Tips
             </Link>
-            <Link href="/skincare" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/skincare" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Skincare AI', () => setIsMenuOpen(false))}>
               <Droplet size={18} style={{ color: '#ec4899' }} /> Skincare AI
             </Link>
             {userGender === 'female' && (
-              <Link href="/cycle-tracker" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/cycle-tracker" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Menstruation Cycle', () => setIsMenuOpen(false))}>
                 <CalendarDays size={18} style={{ color: '#d946ef' }} /> Menstruation Cycle
               </Link>
             )}
@@ -341,6 +355,35 @@ export default function Header() {
           >
             Update Profile
           </button>
+        </div>
+      )}
+
+      {/* ── Auth Required Dialog (Negotiable) ── */}
+      {showAuthDialog && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', position: 'relative' }}>
+            <button
+              onClick={() => setShowAuthDialog(false)}
+              style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+            <User size={48} style={{ color: 'var(--accent-primary)', margin: '0 auto 1rem auto' }} />
+            <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1.25rem' }}>Sign In Required</h3>
+            <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              {authDialogMsg}
+            </p>
+            <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }} onClick={() => {
+              setShowAuthDialog(false);
+              signIn('google', { prompt: 'select_account' });
+            }}>
+              Sign in with Google
+            </button>
+          </div>
         </div>
       )}
 
