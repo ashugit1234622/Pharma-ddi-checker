@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results });
   } catch (err) {
     return NextResponse.json(
-      { error: "Search is temporarily unavailable.", detail: err instanceof Error ? err.message : String(err) },
+      { error: "Search is temporarily unavailable. Please try again later." },
       { status: 503 }
     );
   }

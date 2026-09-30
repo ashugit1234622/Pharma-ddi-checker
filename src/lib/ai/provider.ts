@@ -48,10 +48,10 @@ export class GeminiProvider implements AIProvider {
       }
     });
 
-    // Hard 15-second timeout to prevent the SDK from hanging endlessly on internal retries.
-    // 15 seconds is enough for almost all DDI and AI queries if the server is healthy.
+    // Hard 45-second timeout to prevent the SDK from hanging endlessly on internal retries.
+    // 45 seconds is enough for almost all DDI and AI queries if the server is healthy.
     const timeoutPromise = new Promise<never>((_, reject) => {
-      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (15s).")), 15000);
+      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (45s).")), 45000);
       if (signal) {
         signal.addEventListener('abort', () => {
           clearTimeout(timeoutId);
