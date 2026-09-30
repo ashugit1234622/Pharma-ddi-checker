@@ -3056,3 +3056,11 @@ body.is-printing .print-summary-container {
     }
   }
   
+
+
+/* Hide footer on mobile when keyboard is open (input is focused) */
+@media (max-width: 768px) {
+  main:focus-within ~ footer {
+    display: none !important;
+  }
+}
