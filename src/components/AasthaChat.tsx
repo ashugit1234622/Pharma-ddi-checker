@@ -570,11 +570,10 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
   // ─────────────────────────────────────────────────────────────────────────
   const inlineStyle = inline ? {
     position: 'relative' as const,
-    height: '600px',
-    maxHeight: '80vh',
+    height: '550px', // Fixed height so it does not squish when virtual keyboard opens
     width: '100%',
-    borderRadius: '16px',
-    boxShadow: 'none',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
     border: '1px solid var(--border)',
     zIndex: 10,
     bottom: 'auto',
