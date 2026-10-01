@@ -307,11 +307,11 @@ const STANDARD_MODELS = [
   "gemini-2.5-flash",
   "gemini-1.5-flash",
   "gemini-2.0-flash",
+  "gemini-3.8-flash", // restoring for safety in case some keys ONLY have this
 ];
 
 const LITE_MODELS = [
-  "gemini-2.5-flash-8b",
-  "gemini-1.5-flash-8b",
+  "gemini-3.5-flash-lite", // The specific model name required by this environment
 ];
 
 function buildProviders(keys: string[], models: string[]): GeminiProvider[] {
