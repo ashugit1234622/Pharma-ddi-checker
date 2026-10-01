@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 
-const ADMIN_EMAIL = 'ashirwadsingh857@gmail.com';
+const ADMIN_EMAIL = 'pharmaddichecker.app@gmail.com';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);

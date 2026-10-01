@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, MessageSquare, ShieldAlert, CheckCircle2, User, Clock } from 'lucide-react';
 import CinematicBackground from '@/components/CinematicBackground';
 
-const ADMIN_EMAIL = 'ashirwadsingh857@gmail.com';
+const ADMIN_EMAIL = 'pharmaddichecker.app@gmail.com';
 
 interface Feedback {
   id: string;
