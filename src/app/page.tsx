@@ -307,7 +307,7 @@ function DosageToxicityChart({ report, drug1Name, drug2Name, multiplier }: {
       <div className="chart-legend">
         <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--chart-drug1)' }} />{drug1Name}</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--chart-drug2)' }} />{drug2Name}</div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--chart-low)' }} />Low</div>
           <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--chart-moderate)' }} />Moderate</div>
           <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--chart-high)' }} />High</div>
