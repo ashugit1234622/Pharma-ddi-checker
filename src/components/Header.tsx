@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { triggerSignIn } from '@/lib/triggerSignIn';
@@ -128,6 +128,10 @@ export default function Header() {
           Menstruation Cycle
         </Link>
       )}
+      <Link href="/feedback" className="header-dropdown-item" onClick={(e) => requireAuth(e, 'Feedback', closeMenu)}>
+        <MessageSquare size={18} style={{ color: 'var(--accent-primary)' }} />
+        Submit Feedback
+      </Link>
     </>
   );
 

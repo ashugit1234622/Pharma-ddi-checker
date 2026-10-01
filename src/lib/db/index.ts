@@ -251,5 +251,15 @@ async function initializeSchema(db: Pool) {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(drug1_id, drug2_id, user_role)
     );
+    CREATE TABLE IF NOT EXISTS feedbacks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      user_name TEXT,
+      user_tier TEXT,
+      category TEXT,
+      content TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
   `);
 }
