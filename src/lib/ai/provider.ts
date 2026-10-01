@@ -1,5 +1,4 @@
 import { GoogleGenAI } from "@google/genai";
-import crypto from "crypto";
 
 export interface AIProvider {
   /** Sends a system + user prompt pair, expects back a raw JSON string. */
@@ -7,86 +6,16 @@ export interface AIProvider {
   readonly modelId: string;
 }
 
-export class AIUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AIUnavailableError';
-  }
-}
-
-export class AIValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AIValidationError';
-  }
-}
-
-enum CircuitState {
-  CLOSED,
-  OPEN,
-  HALF_OPEN
-}
-
-interface ProviderHealth {
-  consecutiveFailures: number;
-  consecutive503s: number;
-  consecutive429s: number;
-  cooldownUntil: number;
-  disabled: boolean;
-  lastSuccess: number;
-  lastFailure: number;
-  failureReason: string;
-  circuitState: CircuitState;
-  latencyWindow: number[];
-}
-
-const MAX_LATENCY_WINDOW = 5;
-const MAX_CONSECUTIVE_FAILURES = 3;
-const COOLDOWN_MS_503 = 30000; // 30s
-const COOLDOWN_MS_429 = 60000; // 60s
-
-const providerHealthMap = new Map<string, ProviderHealth>();
-
-function getHealth(key: string): ProviderHealth {
-  if (!providerHealthMap.has(key)) {
-    providerHealthMap.set(key, {
-      consecutiveFailures: 0,
-      consecutive503s: 0,
-      consecutive429s: 0,
-      cooldownUntil: 0,
-      disabled: false,
-      lastSuccess: 0,
-      lastFailure: 0,
-      failureReason: "",
-      circuitState: CircuitState.CLOSED,
-      latencyWindow: []
-    });
-  }
-  return providerHealthMap.get(key)!;
-}
-
-function avgLatency(key: string): number {
-  const h = getHealth(key);
-  if (h.latencyWindow.length === 0) return Infinity;
-  return h.latencyWindow.reduce((a, b) => a + b, 0) / h.latencyWindow.length;
-}
-
-function calculateBackoff(attempt: number): number {
-  // attempt 1: ~1s, attempt 2: ~2s, attempt 3: ~4s
-  const base = Math.pow(2, attempt - 1) * 1000;
-  const jitter = Math.random() * 500;
-  return Math.min(base + jitter, 10000); // max 10s backoff
-}
-
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-
+/**
+ * Gemini implementation.
+ */
 export class GeminiProvider implements AIProvider {
   private ai: GoogleGenAI;
   readonly modelId: string;
-  readonly envVarName: string;
-  readonly modelName: string;
+  private envVarName: string;
+  private modelName: string;
 
-  constructor(envVarName: string, modelName: string) {
+  constructor(envVarName: string = "GEMINI_API_KEY", modelName: string = "gemini-3.8-flash") {
     this.envVarName = envVarName;
     this.modelName = modelName;
     const apiKey = process.env[envVarName];
@@ -104,260 +33,250 @@ export class GeminiProvider implements AIProvider {
     };
 
     if (useSearch) {
+      // Google Search Grounding is incompatible with responseMimeType: "application/json"
       config.tools = [{ googleSearch: {} }];
     } else {
       config.responseMimeType = "application/json";
     }
 
-    const maxRetries = 2; // Up to 3 attempts total
-    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      if (signal?.aborted) throw new Error("AbortError: Cancelled");
-
-      const generatePromise = this.ai.models.generateContent({
-        model: this.modelName,
-        contents: user,
-        config: {
-          ...config,
-          ...(signal && { abortSignal: signal })
-        }
-      });
-
-      const timeoutMs = 45000;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        const tid = setTimeout(() => reject(new Error("503 Timeout")), timeoutMs);
-        if (signal) {
-          signal.addEventListener('abort', () => {
-            clearTimeout(tid);
-            reject(new Error("AbortError"));
-          });
-        }
-      });
-
-      try {
-        const response = await Promise.race([generatePromise, timeoutPromise]) as any;
-        if (!response.text) throw new Error("No text content");
-        return response.text;
-      } catch (err: any) {
-        const msg = err instanceof Error ? err.message : String(err);
-        const isTransient = msg.includes("503") || msg.includes("Timeout") || msg.includes("429");
-        
-        if (attempt <= maxRetries && isTransient) {
-          const delay = calculateBackoff(attempt);
-          console.warn(`[GeminiProvider] ${this.modelId} transient error: ${msg}. Retrying in ${Math.round(delay)}ms...`);
-          await sleep(delay);
-          continue; // Retry
-        }
-        
-        throw err; // Exhausted retries or non-transient error
+    const generatePromise = this.ai.models.generateContent({
+      model: this.modelName,
+      contents: user,
+      config: {
+        ...config,
+        ...(signal && { abortSignal: signal })
       }
+    });
+
+    // Hard 45-second timeout to prevent the SDK from hanging endlessly on internal retries.
+    // 45 seconds is enough for almost all DDI and AI queries if the server is healthy.
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      const timeoutId = setTimeout(() => reject(new Error("503 Timeout: API took too long to respond (45s).")), 45000);
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error("AbortError: AI request was cancelled by the user."));
+        });
+      }
+    });
+
+    const response = await Promise.race([generatePromise, timeoutPromise]) as any;
+
+    if (!response.text) {
+      throw new Error("Gemini returned no text content.");
     }
-    throw new Error("Unreachable");
+    return response.text;
   }
 }
 
-let activeRequests = 0;
-const MAX_CONCURRENCY = parseInt(process.env.MAX_AI_CONCURRENCY || "20", 10);
-const requestCache = new Map<string, { result: string, expires: number }>();
+/**
+ * Per-provider latency tracker using a fixed-size rolling window.
+ * Stored at module level so state persists across requests within the same server process.
+ */
+const LATENCY_WINDOW = 4; // number of recent measurements to track
 
-export class RouterProvider implements AIProvider {
-  private providers: GeminiProvider[];
-  private poolName: string;
+interface ProviderStats {
+  key: string;
+  successTimes: number[];  // rolling window of latency in ms
+  consecutiveFailures: number;
+}
 
-  constructor(providers: GeminiProvider[], poolName: string) {
+const providerStatsMap = new Map<string, ProviderStats>();
+
+function getStats(key: string): ProviderStats {
+  if (!providerStatsMap.has(key)) {
+    providerStatsMap.set(key, { key, successTimes: [], consecutiveFailures: 0 });
+  }
+  return providerStatsMap.get(key)!;
+}
+
+function recordSuccess(key: string, latencyMs: number) {
+  const stats = getStats(key);
+  stats.successTimes.push(latencyMs);
+  if (stats.successTimes.length > LATENCY_WINDOW) {
+    stats.successTimes.shift();
+  }
+  stats.consecutiveFailures = 0;
+}
+
+function recordFailure(key: string) {
+  const stats = getStats(key);
+  stats.consecutiveFailures++;
+}
+
+/** Average latency, or Infinity if no data yet (= put it at the end). */
+function avgLatency(key: string): number {
+  const stats = providerStatsMap.get(key);
+  if (!stats || stats.successTimes.length === 0) return Infinity;
+  return stats.successTimes.reduce((a, b) => a + b, 0) / stats.successTimes.length;
+}
+
+/**
+ * Adaptive provider: tries providers in ascending order of observed latency.
+ * After LATENCY_WINDOW successes, the fastest key rises to the top automatically.
+ * Falls back sequentially on failure exactly like the old FallbackProvider.
+ */
+export class AdaptiveProvider implements AIProvider {
+  private providers: AIProvider[];
+  private keys: string[];
+
+  constructor(providers: AIProvider[], keys: string[]) {
+    if (providers.length === 0) throw new Error("AdaptiveProvider requires at least one provider.");
+    if (providers.length !== keys.length) throw new Error("providers and keys must be same length.");
     this.providers = providers;
-    this.poolName = poolName;
+    this.keys = keys;
   }
 
   get modelId() {
-    return `${this.poolName} Router (${this.providers.length} instances)`;
+    const fastest = [...this.keys].sort((a, b) => avgLatency(a) - avgLatency(b))[0];
+    return `Adaptive Chain (fastest: ${fastest}, avg: ${avgLatency(fastest) === Infinity ? 'no data' : Math.round(avgLatency(fastest)) + 'ms'})`;
   }
 
   async complete(system: string, user: string, useSearch: boolean = false, signal?: AbortSignal): Promise<string> {
-    // Duplicate protection
-    const hash = crypto.createHash("sha256").update(system + user + useSearch).digest("hex");
-    const cached = requestCache.get(hash);
-    if (cached && cached.expires > Date.now()) {
-      console.log(`[${this.poolName}] Returning short-lived cached response for duplicate request.`);
-      return cached.result;
-    }
+    // Sort indices by ascending average latency — unknown providers (Infinity) go last
+    const order = this.providers
+      .map((_, i) => i)
+      .sort((a, b) => avgLatency(this.keys[a]) - avgLatency(this.keys[b]));
 
-    // Concurrency protection
-    if (activeRequests >= MAX_CONCURRENCY) {
-      throw new Error("429 Too Many Requests: Server concurrency limit reached.");
-    }
-    
-    activeRequests++;
-    try {
-      const result = await this.routeRequest(system, user, useSearch, signal);
-      // Cache for 10 seconds to catch immediate double-clicks
-      requestCache.set(hash, { result, expires: Date.now() + 10000 });
-      return result;
-    } finally {
-      activeRequests--;
-    }
-  }
-
-  private async routeRequest(system: string, user: string, useSearch: boolean, signal?: AbortSignal): Promise<string> {
-    const now = Date.now();
-    let eligible = this.providers.filter(p => {
-      const h = getHealth(p.envVarName);
-      if (h.disabled) return false;
-      if (h.circuitState === CircuitState.OPEN && h.cooldownUntil > now) return false;
-      if (h.circuitState === CircuitState.CLOSED && h.cooldownUntil > now) return false;
-      return true;
-    });
-
-    if (eligible.length === 0) {
-      throw new Error("AI analysis is temporarily unavailable. Please try again shortly.");
-    }
-
-    // Sort by circuit state (HALF_OPEN should be tested), then latency
-    eligible.sort((a, b) => {
-      const ha = getHealth(a.envVarName);
-      const hb = getHealth(b.envVarName);
-      if (ha.circuitState === CircuitState.HALF_OPEN && hb.circuitState !== CircuitState.HALF_OPEN) return -1;
-      if (hb.circuitState === CircuitState.HALF_OPEN && ha.circuitState !== CircuitState.HALF_OPEN) return 1;
-      return avgLatency(a.envVarName) - avgLatency(b.envVarName);
-    });
-
+    const sorted = order.map(i => ({ provider: this.providers[i], key: this.keys[i], originalIndex: i }));
     const allErrors: string[] = [];
 
-    for (const p of eligible) {
-      const h = getHealth(p.envVarName);
-      if (signal?.aborted) throw new Error("AbortError: Cancelled");
+    for (let rank = 0; rank < sorted.length; rank++) {
+      const { provider, key, originalIndex } = sorted[rank];
+      const displayIndex = rank + 1;
+      const currentAvg = avgLatency(key);
+      const avgStr = currentAvg === Infinity ? 'no data' : `${Math.round(currentAvg)}ms avg`;
+      console.log(`[AI ROUTER] Trying provider ${displayIndex}/${sorted.length}: ${provider.modelId} (${avgStr})`);
 
-      // Test HALF_OPEN circuit
-      if (h.circuitState === CircuitState.OPEN && h.cooldownUntil <= now) {
-        h.circuitState = CircuitState.HALF_OPEN;
+      let success = false;
+      let result = "";
+
+      // Do not endlessly retry if Google is having a global outage
+      if (signal?.aborted) {
+        throw new Error("AbortError: AI request was cancelled by the user.");
       }
-
-      console.log(`[${this.poolName}] Attempting with ${p.envVarName} (${p.modelName})`);
-      const t0 = Date.now();
       try {
-        const result = await p.complete(system, user, useSearch, signal);
+        const t0 = Date.now();
+        result = await provider.complete(system, user, useSearch, signal);
         const latency = Date.now() - t0;
-        
-        // Success Recovery
-        h.circuitState = CircuitState.CLOSED;
-        h.consecutiveFailures = 0;
-        h.consecutive503s = 0;
-        h.consecutive429s = 0;
-        h.lastSuccess = Date.now();
-        h.latencyWindow.push(latency);
-        if (h.latencyWindow.length > MAX_LATENCY_WINDOW) h.latencyWindow.shift();
-        
-        console.log(`[${this.poolName}] Success on ${p.envVarName} (${latency}ms)`);
-        return result;
-
+        recordSuccess(key, latency);
+        console.log(`[AI ROUTER] Provider ${displayIndex} succeeded in ${latency}ms. New avg: ${Math.round(avgLatency(key))}ms`);
+        success = true;
       } catch (err: any) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("AbortError")) throw err;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const isTimeout = errMsg.includes("Timeout");
+
+        if (errMsg.includes("AbortError")) {
+          throw err;
+        }
+
+        recordFailure(key);
+        allErrors.push(`[${provider.modelId}]: ${errMsg}`);
+        console.warn(`[AI ROUTER] Provider ${displayIndex} failed (${errMsg.slice(0, 80)}).`);
         
-        h.lastFailure = Date.now();
-        h.failureReason = msg;
-        h.consecutiveFailures++;
-        allErrors.push(`[${p.envVarName}]: ${msg}`);
-
-        if (msg.includes("401") || msg.includes("403")) {
-          console.error(`[${this.poolName}] ${p.envVarName} returned 401/403. Disabling.`);
-          h.disabled = true;
-        } else if (msg.includes("404")) {
-          console.error(`[${this.poolName}] ${p.modelName} not found on ${p.envVarName}. Disabling.`);
-          h.disabled = true;
-        } else if (msg.includes("503") || msg.includes("Timeout")) {
-          h.consecutive503s++;
-          h.cooldownUntil = Date.now() + COOLDOWN_MS_503;
-          console.warn(`[${this.poolName}] ${p.envVarName} hit 503. Cooldown 30s.`);
-        } else if (msg.includes("429") || msg.includes("quota") || msg.includes("exhausted")) {
-          h.consecutive429s++;
-          h.cooldownUntil = Date.now() + COOLDOWN_MS_429;
-          console.warn(`[${this.poolName}] ${p.envVarName} hit 429. Cooldown 60s.`);
+        // If 2 keys fail due to a strict 15s Timeout (which means 30s have elapsed), 
+        // abort to prevent the user from waiting endlessly. 
+        // We DO NOT abort on instant 503s or 429s, so we can reach the Pro keys at the end.
+        if (isTimeout && allErrors.filter(e => e.includes("Timeout")).length >= 2) {
+          console.warn("[AI ROUTER] Detected global API network timeout. Aborting router to fail fast.");
+          break;
         }
+      }
 
-        if (h.circuitState === CircuitState.HALF_OPEN || h.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          h.circuitState = CircuitState.OPEN;
-          h.cooldownUntil = Date.now() + Math.max(COOLDOWN_MS_503, COOLDOWN_MS_429); // Force long cooldown
-          console.warn(`[${this.poolName}] Circuit broken for ${p.envVarName}.`);
-        }
+      if (success) {
+        return result;
+      }
+
+      if (rank < sorted.length - 1) {
+        console.warn(`[AI ROUTER] Rotating to next fastest.`);
       }
     }
 
-    // Safe Final Failure
-    console.error(`[${this.poolName}] All providers failed.\n` + allErrors.join("\n"));
-    throw new Error("AI analysis is temporarily unavailable. Please try again shortly.");
+    // Reset caches so next request re-initialises with fresh providers
+    cachedProvider = null;
+    cachedGeminiProvider = null;
+
+    throw new Error(`All AI providers failed.\nErrors:\n${allErrors.join('\n')}`);
   }
 }
 
-// ─── Builder and Pools ────────────────────────────────────────────────────────
+// ─── Shared key list (used by both provider functions) ────────────────────────
+// Add all Gemini keys here — they become fallbacks for EVERY task automatically:
+// DDI analysis, Aastha chat, MedCheck, Ask, and Prescription OCR.
+// Each key+model combo has its own independent free-tier quota bucket.
+const GEMINI_KEY_CONFIGS = [
+  { envVar: "GEMINI_API_KEY_7",              model: "gemini-3.8-flash" },
+  { envVar: "GEMINI_API_KEY_SECONDARY",      model: "gemini-3.8-flash" },
+  { envVar: "GEMINI_API_KEY",                model: "gemini-3.8-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_3", model: "gemini-3.8-flash" },
+  { envVar: "PRESCRIPTION_GEMINI_API_KEY_4", model: "gemini-3.8-flash" },
+  { envVar: "GEMINI_API_KEY_5",              model: "gemini-3.8-flash" },
+  { envVar: "GEMINI_API_KEY_6",              model: "gemini-3.8-flash" },
+] as const;
 
-const DDI_KEYS = [
-  "GEMINI_API_KEY_7",
-  "GEMINI_API_KEY_SECONDARY",
-  "GEMINI_API_KEY",
-  "GEMINI_API_KEY_5",
-  "GEMINI_API_KEY_6",
-];
-
-const OCR_KEYS = [
-  "PRESCRIPTION_GEMINI_API_KEY_3",
-  "PRESCRIPTION_GEMINI_API_KEY_4",
-];
-
-const STANDARD_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-1.5-flash",
-  "gemini-2.0-flash",
-  "gemini-3.8-flash", // restoring for safety in case some keys ONLY have this
-];
-
-const LITE_MODELS = [
-  "gemini-3.5-flash-lite", // The specific model name required by this environment
-];
-
-function buildProviders(keys: string[], models: string[]): GeminiProvider[] {
-  const providers: GeminiProvider[] = [];
-  for (const key of keys) {
-    if (process.env[key] && !process.env[key]!.startsWith("your-")) {
-      // Add a provider variant for each valid model in the fallback chain
-      for (const model of models) {
-        providers.push(new GeminiProvider(key, model));
+function buildGeminiProviders(effSuffix: string, logPrefix: string, modelOverride?: string): { providers: AIProvider[], keys: string[] } {
+  const providers: AIProvider[] = [];
+  const keys: string[] = [];
+  for (const { envVar, model } of GEMINI_KEY_CONFIGS) {
+    const val = process.env[envVar];
+    if (val && !val.startsWith("your-")) {
+      try {
+        const effVar = `${envVar}_${effSuffix}`;
+        process.env[effVar] = val;
+        const targetModel = modelOverride || model;
+        providers.push(new GeminiProvider(effVar, targetModel));
+        keys.push(envVar); // Use the original env var name as the stable stats key
+        console.log(`[${logPrefix}] Registered: ${envVar} → ${targetModel}`);
+      } catch (e) {
+        console.warn(`[${logPrefix}] Skipped ${envVar}:`, e instanceof Error ? e.message : String(e));
       }
     }
   }
-  return providers;
+  return { providers, keys };
 }
 
-let ddiRouter: RouterProvider | null = null;
+// ─── DDI Analysis provider ────────────────────────────────────────────────────
+let cachedProvider: AIProvider | null = null;
+
+/**
+ * Returns an AdaptiveProvider for DDI analysis, MedCheck, and Ask routes.
+ * Learns the fastest API key over time and always fires it first.
+ */
 export function getAIProvider(): AIProvider {
-  if (!ddiRouter) {
-    const providers = buildProviders(DDI_KEYS, STANDARD_MODELS);
-    if (providers.length === 0) throw new Error("No valid DDI providers found.");
-    ddiRouter = new RouterProvider(providers, "DDI_ROUTER");
+  if (!cachedProvider) {
+    const { providers, keys } = buildGeminiProviders("EFF", "AI ROUTER");
+    if (providers.length === 0) {
+      throw new Error("No Gemini API keys configured. Add at least one to .env");
+    }
+    console.log(`[AI ROUTER] Initialized AdaptiveProvider with ${providers.length} provider(s).`);
+    cachedProvider = new AdaptiveProvider(providers, keys);
   }
-  return ddiRouter;
+  return cachedProvider;
 }
 
-let aasthaRouter: RouterProvider | null = null;
+// ─── Aastha chat provider (Gemini-only) ───────────────────────────────────────
+let cachedGeminiProvider: AIProvider | null = null;
+
+/**
+ * Returns an AdaptiveProvider for the Aastha chatbot.
+ * Kept separate so chat and analysis stats don't cross-contaminate.
+ */
 export function getGeminiProvider(): AIProvider {
-  if (!aasthaRouter) {
-    // Aastha uses lite models to preserve quotas
-    const providers = buildProviders(DDI_KEYS, LITE_MODELS);
-    if (providers.length === 0) throw new Error("No valid Aastha providers found.");
-    aasthaRouter = new RouterProvider(providers, "AASTHA_ROUTER");
+  if (!cachedGeminiProvider) {
+    // We override chat models to use 'gemini-3.5-flash-lite' because 
+    // gemini-3.8-flash has extremely strict free-tier quotas (20 per day).
+    // Using 3.5-flash-lite allows the user to chat 1000+ times a day.
+    const { providers, keys } = buildGeminiProviders("CHAT_EFF", "AASTHA ROUTER", "gemini-3.5-flash-lite");
+    if (providers.length === 0) {
+      throw new Error("No Gemini API keys available for Aastha. Add at least one Gemini key to .env");
+    }
+    console.log(`[AASTHA ROUTER] Initialized AdaptiveProvider with ${providers.length} Gemini provider(s).`);
+    cachedGeminiProvider = new AdaptiveProvider(providers, keys);
   }
-  return aasthaRouter;
+  return cachedGeminiProvider;
 }
 
-let ocrRouter: RouterProvider | null = null;
-export function getOCRProvider(): AIProvider {
-  if (!ocrRouter) {
-    const providers = buildProviders(OCR_KEYS, LITE_MODELS);
-    if (providers.length === 0) throw new Error("No valid OCR providers found.");
-    ocrRouter = new RouterProvider(providers, "OCR_ROUTER");
-  }
-  return ocrRouter;
-}
-
+/** Strips accidental markdown code fences some models add despite instructions. */
 export function extractJson(raw: string): string {
   const trimmed = raw.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
