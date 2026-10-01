@@ -47,8 +47,26 @@ export async function POST(req: NextRequest) {
       const ai = getGeminiProvider();
       const response = await ai.complete("You are a medical AI assistant.", prompt);
       
-      // getGeminiProvider().complete returns a string directly
-      return NextResponse.json({ insight: response.trim() });
+      const raw = response.trim();
+
+      // The router uses responseMimeType: "application/json" by default, so the model
+      // may return a JSON object. Extract just the insight string if that happens.
+      let insightText = raw;
+      try {
+        // Strip markdown fences if present
+        const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+        const parsed = JSON.parse(stripped);
+        // Support {"insight":"..."} or {"phase":"...","insight":"..."} shapes
+        if (parsed && typeof parsed.insight === 'string') {
+          insightText = parsed.insight;
+        } else if (parsed && typeof parsed.text === 'string') {
+          insightText = parsed.text;
+        }
+      } catch {
+        // Not JSON — already a plain text string, use as-is
+      }
+
+      return NextResponse.json({ insight: insightText });
     } catch (aiError: any) {
       console.error('[Cycle AI] Gemini API Error:', aiError.message);
       

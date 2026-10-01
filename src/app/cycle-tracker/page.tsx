@@ -112,14 +112,21 @@ export default function CycleTrackerPage() {
       const cachedInsight = localStorage.getItem(cacheKey);
       let count = parseInt(localStorage.getItem(countKey) || '0', 10);
 
-      if (cachedInsight && count >= 3) {
+      // Invalidate stale cache if it contains raw JSON (a bug from a previous version)
+      if (cachedInsight && cachedInsight.trim().startsWith('{')) {
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(countKey);
+        count = 0;
+      }
+
+      if (cachedInsight && !cachedInsight.trim().startsWith('{') && count >= 3) {
         // Max 3 regenerations a day, or if we just want to avoid hitting the API if we already have it
         setInsight(cachedInsight);
         return;
       }
       
       // If we have cached insight, show it immediately while we fetch a new one (if < 3 times)
-      if (cachedInsight) {
+      if (cachedInsight && !cachedInsight.trim().startsWith('{')) {
         setInsight(cachedInsight);
       }
 
