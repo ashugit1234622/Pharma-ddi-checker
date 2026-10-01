@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { DDIAnalysis } from "../lib/ai/schemas";
 import { Pill, Microscope, AlertTriangle, CheckCircle, ArrowRightLeft, XCircle, AlertOctagon, AlertCircle, FileText, Scale, ArrowUp, User, ClipboardList, Settings, Users, Dna, BarChart, Lightbulb, Beaker } from "lucide-react";
 import OrganToxicityAnatomy from '../components/OrganToxicityAnatomy';
@@ -486,6 +487,7 @@ export default function Home() {
   const [stepIndex, setStepIndex] = useState(0);
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
   const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'alternatives'>('overview');
+  const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   // Ref-based in-flight guard — prevents duplicate API calls from rapid clicks,
@@ -549,28 +551,10 @@ export default function Home() {
       lastEmail = localStorage.getItem('last_logged_in_email');
     } catch(e) {}
 
-    // SCENARIO 1: Unauthenticated
+    // SCENARIO 1: Unauthenticated -> Redirect to landing page
     if (sessionStatus === 'unauthenticated') {
-      if (lastEmail) {
-        // User just logged out (lastEmail exists but now unauthenticated).
-        // Clear screen to protect their data, and wipe guest cache to stay clean.
-        setDrug1(null); setDrug2(null); setReport(null); setError('');
-        try {
-          localStorage.removeItem('pharma_ddi_session');
-          localStorage.removeItem('last_logged_in_email');
-        } catch(e) {}
-      } else {
-        // Normal guest reload. Restore guest cache (if screen isn't already populated by history/medcheck)
-        try {
-          const sessionStored = localStorage.getItem('pharma_ddi_session');
-          if (sessionStored) {
-            const parsed = JSON.parse(sessionStored);
-            setDrug1(d => d ?? parsed.drug1 ?? null);
-            setDrug2(d => d ?? parsed.drug2 ?? null);
-            setReport(r => r ?? parsed.report ?? null);
-          }
-        } catch (e) {}
-      }
+      router.replace('/welcome');
+      return;
     }
 
     // SCENARIO 2: Authenticated
