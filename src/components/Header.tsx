@@ -320,6 +320,9 @@ export default function Header() {
                 <CalendarDays size={18} style={{ color: 'var(--accent-primary)' }} /> Menstruation Cycle
               </Link>
             )}
+            <Link href="/feedback" className="mobile-menu-item" onClick={(e) => requireAuth(e, 'Feedback', () => setIsMenuOpen(false))}>
+              <MessageSquare size={18} style={{ color: 'var(--accent-primary)' }} /> Submit Feedback
+            </Link>
 
             <div className="mobile-pwa-row">
               <PWAInstallButton />
