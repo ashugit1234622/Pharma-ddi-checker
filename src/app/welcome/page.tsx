@@ -367,7 +367,7 @@ export default function WelcomeLandingPage() {
             {/* Video Placeholder */}
             <div className="video-wrapper group" style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-main), transparent)', opacity: 0.6, zIndex: 10 }} />
-              <img src="/asset/images/video-poster.jpg" alt="Video Review" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5, mixBlendMode: 'overlay' }} />
+              <img src="/assets/images/video-poster.jpg" alt="Video Review" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5, mixBlendMode: 'overlay' }} />
               
               <PlayCircle size={64} style={{ color: 'rgba(255,255,255,0.8)', zIndex: 20, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '50%', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
               <p style={{ position: 'relative', zIndex: 20, marginTop: '1rem', color: 'white', fontWeight: 500 }}>Watch Full Review</p>
@@ -377,7 +377,7 @@ export default function WelcomeLandingPage() {
                 controls 
                 preload="none"
               >
-                <source src="/asset/video/review.mp4" type="video/mp4" />
+                <source src="/assets/video/review.mp4" type="video/mp4" />
               </video>
             </div>
             
@@ -385,11 +385,11 @@ export default function WelcomeLandingPage() {
             <div className="images-grid">
               <div className="image-card">
                 <ImageIcon size={48} style={{ color: 'var(--border-hover)', position: 'absolute', zIndex: 0 }} />
-                <img src="/asset/images/app-preview-1.jpg" alt="App UI 1" />
+                <img src="/assets/images/app-preview-1.jpg" alt="App UI 1" />
               </div>
               <div className="image-card">
                 <ImageIcon size={48} style={{ color: 'var(--border-hover)', position: 'absolute', zIndex: 0 }} />
-                <img src="/asset/images/app-preview-2.jpg" alt="App UI 2" />
+                <img src="/assets/images/app-preview-2.jpg" alt="App UI 2" />
               </div>
             </div>
           </div>
