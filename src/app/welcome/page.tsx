@@ -193,46 +193,59 @@ export default function WelcomeLandingPage() {
         .feature-card:hover .feature-icon-wrapper {
           transform: scale(1.1);
         }
-        .video-wrapper {
-          position: relative;
-          aspect-ratio: 16 / 9;
-          background-color: var(--bg-card);
-          border-radius: 1rem;
-          border: 1px solid var(--border);
-          overflow: hidden;
+        .feature-showcase {
+          display: flex;
+          flex-direction: column;
+          gap: 5rem;
+          margin-top: 2rem;
+        }
+        .showcase-row {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s;
+          gap: 2rem;
         }
-        .video-wrapper:hover {
+        @media (min-width: 768px) {
+          .showcase-row {
+            flex-direction: row;
+            gap: 4rem;
+          }
+          .showcase-row:nth-child(even) {
+            flex-direction: row-reverse;
+          }
+          .showcase-text, .showcase-image {
+            flex: 1;
+            width: 50%;
+          }
+        }
+        .showcase-text h3 {
+          font-size: clamp(1.5rem, 3vw, 2rem);
+          font-weight: 700;
+          margin-bottom: 1rem;
+          color: var(--text-main);
+        }
+        .showcase-text p {
+          font-size: 1.125rem;
+          color: var(--text-muted);
+          line-height: 1.6;
+        }
+        .showcase-image-wrapper {
+          position: relative;
+          border-radius: 1rem;
+          overflow: hidden;
+          border: 1px solid var(--border);
+          background-color: var(--bg-card);
+          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s;
+        }
+        .showcase-image-wrapper:hover {
+          transform: translateY(-8px) scale(1.02);
           border-color: var(--accent-primary);
         }
-        .images-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-          height: 100%;
-        }
-        .image-card {
-          background-color: var(--bg-card);
-          border-radius: 1rem;
-          border: 1px solid var(--border);
-          overflow: hidden;
-          position: relative;
-          aspect-ratio: 1 / 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .image-card img {
+        .showcase-image-wrapper img {
           width: 100%;
-          height: 100%;
-          object-fit: cover;
-          position: relative;
-          z-index: 10;
+          height: auto;
+          display: block;
         }
         .review-card {
           padding: 1.5rem;
@@ -355,41 +368,77 @@ export default function WelcomeLandingPage() {
         </div>
       </section>
 
-      {/* Media Section: Video & Images */}
-      <section className="welcome-section" style={{ borderTop: 'none', backgroundColor: 'transparent' }}>
+      {/* Features Showcase Section */}
+      <section className="welcome-section" style={{ borderTop: 'none', backgroundColor: 'transparent', padding: '2rem 1.5rem 8rem 1.5rem' }}>
         <div className="welcome-container">
           <div className="section-header">
-            <h2>See It In Action</h2>
-            <p>Watch how our intelligent engine analyzes complex interactions.</p>
+            <h2>Explore The Features</h2>
+            <p>A comprehensive toolkit designed for both medical professionals and patients.</p>
           </div>
           
-          <div className="grid-2">
-            {/* Video Placeholder */}
-            <div className="video-wrapper group" style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-main), transparent)', opacity: 0.6, zIndex: 10 }} />
-              <img src="/assets/images/video-poster.png" alt="Video Review" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5, mixBlendMode: 'overlay' }} />
-              
-              <PlayCircle size={64} style={{ color: 'rgba(255,255,255,0.8)', zIndex: 20, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '50%', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
-              <p style={{ position: 'relative', zIndex: 20, marginTop: '1rem', color: 'white', fontWeight: 500 }}>Watch Full Review</p>
-              
-              <video 
-                style={{ display: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
-                controls 
-                preload="none"
-              >
-                <source src="/assets/video/review.mp4" type="video/mp4" />
-              </video>
-            </div>
-            
-            {/* Images Grid */}
-            <div className="images-grid">
-              <div className="image-card">
-                <ImageIcon size={48} style={{ color: 'var(--border-hover)', position: 'absolute', zIndex: 0 }} />
-                <img src="/assets/images/app-preview-1.png" alt="App UI 1" />
+          <div className="feature-showcase">
+            {/* Feature 1 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <h3>Intelligent DDI Analysis</h3>
+                <p>Instantly detect and analyze multi-drug interactions, with deep insights into pharmacokinetics, CYP450 pathways, and specific ADME overlaps.</p>
               </div>
-              <div className="image-card">
-                <ImageIcon size={48} style={{ color: 'var(--border-hover)', position: 'absolute', zIndex: 0 }} />
-                <img src="/assets/images/app-preview-2.png" alt="App UI 2" />
+              <div className="showcase-image">
+                <div className="showcase-image-wrapper">
+                  <img src="/assets/images/app-preview-1.png" alt="Intelligent DDI Analysis" />
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <h3>Medication Reminders</h3>
+                <p>Never miss a dose. Set up intelligent reminders for yourself or your patients, complete with instructions like "take with food" to avoid side effects.</p>
+              </div>
+              <div className="showcase-image">
+                <div className="showcase-image-wrapper">
+                  <img src="/assets/images/app-preview-2.png" alt="Medication Reminders" />
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <h3>Patient-Friendly Summaries</h3>
+                <p>Turn complex medical jargon into easy-to-understand advice. Our platform provides a dual-mode interface tailored for both clinical accuracy and patient readability.</p>
+              </div>
+              <div className="showcase-image">
+                <div className="showcase-image-wrapper">
+                  <img src="/assets/images/video-poster.png" alt="Patient Friendly Summaries" />
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <h3>Visual Toxicity Profiles</h3>
+                <p>Visualize risk levels with intuitive charts. Quickly identify if a prescription regimen falls into severe, moderate, or minor risk categories before adverse events occur.</p>
+              </div>
+              <div className="showcase-image">
+                <div className="showcase-image-wrapper">
+                  <img src="/assets/images/Screenshot_20261002-132839.png" alt="Visual Toxicity Profiles" />
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <h3>AI Health Assistant</h3>
+                <p>Get answers to your pharmacological questions instantly. The built-in AI assistant helps clarify complex interactions, suggests alternatives, and explains pathways.</p>
+              </div>
+              <div className="showcase-image">
+                <div className="showcase-image-wrapper">
+                  <img src="/assets/images/Screenshot_20261002-132912.png" alt="AI Health Assistant" />
+                </div>
               </div>
             </div>
           </div>
