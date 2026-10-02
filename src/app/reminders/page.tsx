@@ -301,7 +301,7 @@ export default function RemindersPage() {
               return (
                 <div key={r.id} style={{
                   background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px',
-                  padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  padding: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center'
                 }}>
                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                     <div style={{
