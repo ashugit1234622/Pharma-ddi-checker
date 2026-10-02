@@ -385,7 +385,7 @@ export default function WelcomeLandingPage() {
               </div>
               <div className="showcase-image">
                 <div className="showcase-image-wrapper">
-                  <img src="/assets/images/app-preview-1.png" alt="Intelligent DDI Analysis" />
+                  <img src="/assets/images/DDI_checks.png" alt="Intelligent DDI Analysis" />
                 </div>
               </div>
             </div>
@@ -393,12 +393,12 @@ export default function WelcomeLandingPage() {
             {/* Feature 2 */}
             <div className="showcase-row">
               <div className="showcase-text">
-                <h3>Medication Reminders</h3>
-                <p>Never miss a dose. Set up intelligent reminders for yourself or your patients, complete with instructions like "take with food" to avoid side effects.</p>
+                <h3>Prescription Scanning</h3>
+                <p>Quickly digitize and verify your medications. Use our advanced OCR to scan your prescriptions and instantly cross-check for potential adverse interactions.</p>
               </div>
               <div className="showcase-image">
                 <div className="showcase-image-wrapper">
-                  <img src="/assets/images/app-preview-2.png" alt="Medication Reminders" />
+                  <img src="/assets/images/Priscription_scan.png" alt="Prescription Scan" />
                 </div>
               </div>
             </div>
@@ -406,12 +406,12 @@ export default function WelcomeLandingPage() {
             {/* Feature 3 */}
             <div className="showcase-row">
               <div className="showcase-text">
-                <h3>Patient-Friendly Summaries</h3>
-                <p>Turn complex medical jargon into easy-to-understand advice. Our platform provides a dual-mode interface tailored for both clinical accuracy and patient readability.</p>
+                <h3>Personalized Health Tips</h3>
+                <p>Receive actionable health and wellness advice tailored to your active medications. Navigate your treatment safely with scientifically-backed guidelines.</p>
               </div>
               <div className="showcase-image">
                 <div className="showcase-image-wrapper">
-                  <img src="/assets/images/video-poster.png" alt="Patient Friendly Summaries" />
+                  <img src="/assets/images/Health_tips.png" alt="Health Tips" />
                 </div>
               </div>
             </div>
@@ -419,12 +419,12 @@ export default function WelcomeLandingPage() {
             {/* Feature 4 */}
             <div className="showcase-row">
               <div className="showcase-text">
-                <h3>Visual Toxicity Profiles</h3>
-                <p>Visualize risk levels with intuitive charts. Quickly identify if a prescription regimen falls into severe, moderate, or minor risk categories before adverse events occur.</p>
+                <h3>Skincare AI</h3>
+                <p>Comprehensive dermatological analysis at your fingertips. Evaluate skincare ingredients and get customized routines that complement your health profile.</p>
               </div>
               <div className="showcase-image">
                 <div className="showcase-image-wrapper">
-                  <img src="/assets/images/Screenshot_20261002-132839.png" alt="Visual Toxicity Profiles" />
+                  <img src="/assets/images/Skincare_ai.png" alt="Skincare AI" />
                 </div>
               </div>
             </div>
@@ -432,12 +432,12 @@ export default function WelcomeLandingPage() {
             {/* Feature 5 */}
             <div className="showcase-row">
               <div className="showcase-text">
-                <h3>AI Health Assistant</h3>
-                <p>Get answers to your pharmacological questions instantly. The built-in AI assistant helps clarify complex interactions, suggests alternatives, and explains pathways.</p>
+                <h3>Interaction History</h3>
+                <p>Keep a detailed, secure log of all your past interaction checks. Easily review previous results to share with your doctor or pharmacist at any time.</p>
               </div>
               <div className="showcase-image">
                 <div className="showcase-image-wrapper">
-                  <img src="/assets/images/Screenshot_20261002-132912.png" alt="AI Health Assistant" />
+                  <img src="/assets/images/History.png" alt="Interaction History" />
                 </div>
               </div>
             </div>
