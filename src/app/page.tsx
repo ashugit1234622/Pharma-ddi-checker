@@ -830,8 +830,8 @@ export default function Home() {
           top: !report ? '70px' : 'auto',
           zIndex: 20
         }}>
-        {sessionStatus === 'loading' ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        {sessionStatus === 'loading' || sessionStatus === 'unauthenticated' ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', opacity: sessionStatus === 'loading' ? 1 : 0 }}>
             <div className="pulse" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-primary)' }} />
           </div>
         ) : (
