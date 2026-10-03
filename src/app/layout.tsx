@@ -24,6 +24,31 @@ export const metadata: Metadata = {
   title: 'Pharma DDI Checker | AI-Powered Drug Interaction Analysis',
   description:
     'Check drug-drug interactions with AI-powered analysis, ADME comparison charts, toxicity profiles, and clinical recommendations based on KD Tripathi pharmacology.',
+  keywords: ['DDI', 'Drug-Drug Interaction', 'Pharmacology', 'Healthcare AI', 'Medication Safety', 'ADME', 'Toxicity Tracker'],
+  authors: [{ name: 'Ashirwad' }],
+  metadataBase: new URL('https://pharma-ddi-checker-1.onrender.com'),
+  openGraph: {
+    title: 'Pharma DDI Checker | Next-Gen Pharmacovigilance',
+    description: 'AI-powered ADME tracking, real-time toxicity profiles, and clinical recommendations built for healthcare professionals and patients.',
+    url: 'https://pharma-ddi-checker-1.onrender.com',
+    siteName: 'Pharma DDI Checker',
+    images: [
+      {
+        url: '/assets/images/DDI_checks.png',
+        width: 1200,
+        height: 630,
+        alt: 'Pharma DDI Checker Dashboard preview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pharma DDI Checker',
+    description: 'AI-powered ADME tracking and real-time toxicity profiles.',
+    images: ['/assets/images/DDI_checks.png'],
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
