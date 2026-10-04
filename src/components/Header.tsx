@@ -340,6 +340,7 @@ export default function Header() {
           maxWidth: '320px', animation: 'slideUp 0.5s ease-out forwards'
         }}>
           <button
+            aria-label="Close"
             onClick={() => setShowCyclePrompt(false)}
             style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
           >
@@ -375,6 +376,7 @@ export default function Header() {
         }}>
           <div className="card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', position: 'relative' }}>
             <button
+              aria-label="Close dialog"
               onClick={() => setShowAuthDialog(false)}
               style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
             >
