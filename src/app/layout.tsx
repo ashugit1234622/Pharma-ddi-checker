@@ -80,6 +80,25 @@ export default async function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0d1117" />
         <meta name="msapplication-TileImage" content="/icon-512.jpg" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (document.cookie.includes('googtrans=/en/hi') || document.cookie.includes('googtrans=/auto/hi')) {
+                var style = document.createElement('style');
+                style.id = 'fouc-shield';
+                style.innerHTML = 'body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }';
+                document.head.appendChild(style);
+                setTimeout(function() {
+                  var shield = document.getElementById('fouc-shield');
+                  if (shield) {
+                    shield.innerHTML = 'body { visibility: visible; opacity: 1; transition: opacity 0.3s ease; }';
+                    setTimeout(function() { shield.remove(); }, 300);
+                  }
+                }, 2000);
+              }
+            `
+          }}
+        />
       </head>
       <body className={themeClass}>
         <NextAuthProvider>
@@ -95,6 +114,14 @@ export default async function RootLayout({
                     includedLanguages: 'hi,en',
                     autoDisplay: false
                   }, 'google_translate_element');
+                  
+                  setTimeout(function() {
+                    var shield = document.getElementById('fouc-shield');
+                    if (shield) {
+                      shield.innerHTML = 'body { visibility: visible; opacity: 1; transition: opacity 0.3s ease; }';
+                      setTimeout(function() { shield.remove(); }, 300);
+                    }
+                  }, 400);
                 }
               `,
             }}
