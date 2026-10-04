@@ -3073,3 +3073,9 @@ body { top: 0px !important; }
 /* Hide Google Translate Banner */
 .skiptranslate iframe { display: none !important; }
 body { top: 0px !important; }
+
+
+/* Hide hover tooltip */
+#goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
+.VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q { display: none !important; }
