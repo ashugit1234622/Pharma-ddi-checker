@@ -575,6 +575,13 @@ export default function WelcomeLandingPage() {
               </a>
             </div>
 
+            <div style={{ marginTop: '1.25rem', fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(2,6,23,0.5)', padding: '0.6rem 0.85rem', borderRadius: '0.5rem', border: '1px solid rgba(51,65,85,0.5)', maxWidth: '44rem' }}>
+              <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
+              <span style={{ lineHeight: 1.5 }}>
+                <strong>Access Restriction:</strong> Comprehensive DDI checks, ADME analysis, and Organ Toxicity profiling are restricted to verified Professional/MD accounts. Normal users will be routed to the Aastha Health Assistant.
+              </span>
+            </div>
+
             {/* Severity legend — uses exact vocabulary from prompts.ts severity enum */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1.75rem' }}>
               {Object.entries(SEVERITY_COLORS).map(([key, val]) => (
