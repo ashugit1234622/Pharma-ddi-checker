@@ -3065,3 +3065,8 @@ body.is-printing .print-summary-container {
     display: none !important;
   }
 }
+ 
+ / *   H i d e   G o o g l e   T r a n s l a t e   B a n n e r   * /  
+ . s k i p t r a n s l a t e   i f r a m e   {   d i s p l a y :   n o n e   ! i m p o r t a n t ;   }  
+ b o d y   {   t o p :   0 p x   ! i m p o r t a n t ;   }  
+ 

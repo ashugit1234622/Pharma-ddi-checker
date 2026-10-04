@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle, MessageSquare } from 'lucide-react';
+import { Menu, ScanBarcode, X, Clock, Bell, LogOut, User, Home, Apple, Heart, Droplet, CalendarDays, Microscope, MessageCircle, MessageSquare, Languages } from 'lucide-react';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { triggerSignIn } from '@/lib/triggerSignIn';
@@ -20,6 +20,23 @@ export default function Header() {
   
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [authDialogMsg, setAuthDialogMsg] = useState("");
+  const [isHindi, setIsHindi] = useState(false);
+  
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const isHi = document.cookie.includes('googtrans=/en/hi') || document.cookie.includes('googtrans=/auto/hi');
+      setIsHindi(isHi);
+    }
+  }, []);
+
+  const toggleLanguage = () => {
+    const newLang = isHindi ? 'en' : 'hi';
+    if (typeof document !== 'undefined') {
+      document.cookie = `googtrans=/en/${newLang}; path=/;`;
+      document.cookie = `googtrans=/en/${newLang}; domain=.${window.location.hostname}; path=/;`;
+      window.location.reload();
+    }
+  };
   
   const router = useRouter();
   const pathname = usePathname();
@@ -132,6 +149,11 @@ export default function Header() {
         <MessageSquare size={18} style={{ color: 'var(--accent-primary)' }} />
         Submit Feedback
       </Link>
+      <div className="dropdown-divider" />
+      <button onClick={toggleLanguage} className="header-dropdown-item" style={{ color: 'var(--accent-primary)' }}>
+        <Languages size={18} />
+        Language: {isHindi ? 'Hindi (HI)' : 'English (EN)'}
+      </button>
     </>
   );
 

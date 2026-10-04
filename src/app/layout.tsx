@@ -83,6 +83,26 @@ export default async function RootLayout({
       </head>
       <body className={themeClass}>
         <NextAuthProvider>
+          <div id="google_translate_element" style={{ display: 'none' }}></div>
+          <Script
+            id="google-translate-init"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                function googleTranslateElementInit() {
+                  new window.google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'hi,en',
+                    autoDisplay: false
+                  }, 'google_translate_element');
+                }
+              `,
+            }}
+          />
+          <Script
+            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+            strategy="afterInteractive"
+          />
           <GoogleOneTapWrapper />
           {/* Service Worker Registration */}
           <Script
