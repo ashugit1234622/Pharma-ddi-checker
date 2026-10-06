@@ -55,8 +55,8 @@ export const metadata: Metadata = {
     title: 'Pharma DDI',
   },
   icons: {
-    icon: '/icon-512.jpg',
-    apple: '/icon-512.jpg',
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',
   },
 };
 
@@ -73,13 +73,13 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-512.jpg" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Pharma DDI" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0d1117" />
-        <meta name="msapplication-TileImage" content="/icon-512.jpg" />
+        <meta name="msapplication-TileImage" content="/icon-512.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

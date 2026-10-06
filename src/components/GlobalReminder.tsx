@@ -57,7 +57,7 @@ export default function GlobalReminder() {
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification(`Medication Reminder: ${r.drug_name}`, {
                   body: `It's time to take ${r.dosage}. ${r.instructions || ''}`,
-                  icon: '/icon-512.jpg'
+                  icon: '/icon-512.png'
                 });
               }
             }
@@ -107,7 +107,7 @@ export default function GlobalReminder() {
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification(cycleNotifTitle, {
                   body: cycleNotifBody,
-                  icon: '/icon-512.jpg'
+                  icon: '/icon-512.png'
                 });
               }
             }
