@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.pharmaddi.app",
+    "sha256_cert_fingerprints": [
+      "CA:01:A4:D1:F2:CB:35:12:A1:3E:3A:B0:C9:8C:51:15:34:73:78:8A:E0:48:7D:93:4E:FB:B2:36:CD:82:9A:B9"
+    ]
+  }
+}]
