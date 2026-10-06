@@ -180,7 +180,7 @@ export default function Header() {
       <header className="header">
         {/* ── Brand / Logo ── */}
         <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span>💊</span>
+          <img src="/icon-192.png" alt="Logo" style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'cover', display: 'inline-block' }} />
           <span className="logo-brand">Pharma</span>
           <span className="logo-sub">DDI Checker</span>
         </Link>

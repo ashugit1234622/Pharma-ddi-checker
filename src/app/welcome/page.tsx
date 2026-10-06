@@ -853,7 +853,7 @@ export default function WelcomeLandingPage() {
       <footer className="wl-footer">
         <div className="wl-footer-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#f8fafc' }}>
-            <span>💊</span> Pharma DDI Checker
+            <img src="/icon-192.png" alt="Logo" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} /> Pharma DDI Checker
           </div>
 
           <div className="wl-footer-links">

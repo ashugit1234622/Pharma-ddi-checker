@@ -202,7 +202,7 @@ function OnboardingContent() {
       <div className="onboarding-card">
         {/* Header */}
         <div className="onboarding-hero">
-          <div className="onboarding-icon">💊</div>
+          <div className="onboarding-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/icon-192.png" alt="Logo" style={{ width: '1em', height: '1em', borderRadius: '20%', objectFit: 'cover' }} /></div>
           <h1 className="onboarding-title">Welcome to Pharma DDI</h1>
           <p className="onboarding-subtitle">
             {session?.user?.name ? `Hi ${session.user.name.split(' ')[0]}! ` : ''}
