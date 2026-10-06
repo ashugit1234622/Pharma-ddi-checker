@@ -1,15 +1,15 @@
 // Pharma DDI Checker - Service Worker
 // Strategy: Network-first for API calls, Cache-first for static assets
 
-const CACHE_NAME = 'pharma-ddi-v2';
-const STATIC_CACHE = 'pharma-static-v2';
+const CACHE_NAME = 'pharma-ddi-v3';
+const STATIC_CACHE = 'pharma-static-v3';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192.jpg',
-  '/icon-512.jpg',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 // Routes that should ALWAYS go to network (API calls, live data)
