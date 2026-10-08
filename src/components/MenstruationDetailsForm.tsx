@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Activity, AlertCircle } from 'lucide-react';
 
 export default function MenstruationDetailsForm({ form, setForm }: { form: any, setForm: any }) {
   const handleChange = (phase: string, q: string, value: string) => {
@@ -38,6 +38,50 @@ export default function MenstruationDetailsForm({ form, setForm }: { form: any, 
           onChange={e => setForm((f: any) => ({ ...f, last_menstruation_date: e.target.value }))}
         />
       </div>
+
+      <div className="ob-field" style={{ background: 'rgba(217,70,239,0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(217,70,239,0.2)' }}>
+        <label className="ob-label"><Activity size={14} style={{ marginRight: '0.25rem', color: '#d946ef' }} /> What's your period / menstruation cycle length?</label>
+        <select 
+          className="ob-input"
+          style={{ background: 'var(--bg-main)' }}
+          value={details.cycle_length_type || '28'}
+          onChange={e => setForm((f: any) => ({
+            ...f,
+            menstruation_details: {
+              ...(f.menstruation_details || {}),
+              cycle_length_type: e.target.value
+            }
+          }))}
+        >
+          <option value="28">28 days</option>
+          <option value="30">30 days</option>
+          <option value="35">35 days</option>
+          <option value="pcod">PCOD / PCOS / Hormonal issue</option>
+        </select>
+      </div>
+
+      {details.cycle_length_type === 'pcod' && (
+        <div className="ob-field fade-in" style={{ background: 'rgba(245,158,11,0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.3)', marginTop: '-0.5rem' }}>
+          <label className="ob-label"><AlertCircle size={14} style={{ marginRight: '0.25rem', color: '#f59e0b' }} /> What is your typical cycle length (in days)?</label>
+          <input
+            className="ob-input"
+            style={{ background: 'var(--bg-main)' }}
+            type="number"
+            placeholder="e.g. 45"
+            value={details.custom_cycle_length || ''}
+            onChange={e => setForm((f: any) => ({
+              ...f,
+              menstruation_details: {
+                ...(f.menstruation_details || {}),
+                custom_cycle_length: e.target.value
+              }
+            }))}
+          />
+          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Your AI predictions will be specially adapted to account for your hormonal profile and cycle length.
+          </p>
+        </div>
+      )}
 
       <div className="ob-field">
         <h4 style={{ color: 'var(--text-main)', marginBottom: '0.5rem', marginTop: '1rem' }}>🌑 Menstrual Phase</h4>

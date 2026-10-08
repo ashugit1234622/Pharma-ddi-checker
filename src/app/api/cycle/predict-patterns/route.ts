@@ -24,8 +24,15 @@ export async function POST(req: NextRequest) {
       Ovulation Phase: ${JSON.stringify(details.ovulation_phase)}
       Luteal Phase: ${JSON.stringify(details.luteal_phase)}
       Overall Patterns: ${details.final_question}
+      Cycle Length/Type: ${details.cycle_length_type === 'pcod' ? 'PCOD/PCOS/Hormonal issue' : (details.cycle_length_type || '28 days')}
+      Custom Cycle Length: ${details.custom_cycle_length || 'N/A'}
       
       Please rephrase these observations into concise, professional, and empathetic clinical predictions of their mood, energy, and physical changes for each phase. 
+      CRITICAL INSTRUCTION: For EACH phase, your prediction string MUST also include suitable health tips, explicitly covering:
+      1. What to avoid
+      2. Diet recommendations
+      3. Medical/lifestyle tips related to their specific menstruation condition (e.g. if they have PCOD/PCOS or irregular cycles).
+      Make sure the prediction explicitly factors in their cycle length type or hormonal issues.
       Output the result as a raw JSON object with the exact following keys (no markdown wrapping, just the JSON):
       {
         "Menstruation": "prediction string",

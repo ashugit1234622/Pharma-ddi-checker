@@ -3,6 +3,7 @@ export interface CycleData {
   age: number;
   conditions: string[];
   medications: string[];
+  menstruation_details?: any;
 }
 
 export interface PhasePrediction {
@@ -67,6 +68,19 @@ export function calculateCycle(data: CycleData): CyclePrediction {
       cycleLength = Math.max(21, cycleLength - 2); // Perimenopause often shortens cycles initially
       isIrregular = true;
       modifierNotes.push("Age-related hormonal shifts may cause shorter or irregular cycles.");
+    }
+  }
+
+  // Override with user's specific cycle settings if provided
+  if (data.menstruation_details) {
+    const { cycle_length_type, custom_cycle_length } = data.menstruation_details;
+    if (cycle_length_type === 'pcod') {
+      isIrregular = true;
+      cycleLength = parseInt(custom_cycle_length) || 35;
+      modifierNotes.push(`Your cycle length was set to ${cycleLength} days due to PCOS/Hormonal factors.`);
+    } else if (cycle_length_type && !isNaN(parseInt(cycle_length_type))) {
+      cycleLength = parseInt(cycle_length_type);
+      modifierNotes.push(`Using your typical cycle length of ${cycleLength} days.`);
     }
   }
 

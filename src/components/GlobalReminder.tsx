@@ -72,7 +72,8 @@ export default function GlobalReminder() {
             lastPeriodDate: new Date(profile.last_menstruation_date),
             age: profile.age || 30,
             conditions: JSON.parse(profile.underlying_diseases || '[]'),
-            medications: JSON.parse(profile.current_medications || '[]')
+            medications: JSON.parse(profile.current_medications || '[]'),
+            menstruation_details: profile.menstruation_details ? (typeof profile.menstruation_details === 'string' ? JSON.parse(profile.menstruation_details) : profile.menstruation_details) : undefined
           });
 
           const daysUntilNext = Math.ceil((calculated.nextPeriodDate.getTime() - now.getTime()) / (1000 * 3600 * 24));

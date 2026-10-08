@@ -60,7 +60,8 @@ export default function CycleTrackerPage() {
               lastPeriodDate: new Date(prof.last_menstruation_date),
               age: prof.age || 30,
               conditions: prof.underlying_diseases || [],
-              medications: prof.current_medications || []
+              medications: prof.current_medications || [],
+              menstruation_details: prof.menstruation_details
             });
             setPrediction(calculated);
             setLoading(false);
@@ -89,7 +90,8 @@ export default function CycleTrackerPage() {
               lastPeriodDate: new Date(data.profile.last_menstruation_date),
               age: data.profile.age || 30,
               conditions: data.profile.underlying_diseases || [],
-              medications: data.profile.current_medications || []
+              medications: data.profile.current_medications || [],
+              menstruation_details: data.profile.menstruation_details
             });
             setPrediction(calculated);
             setLoading(false);
@@ -349,10 +351,10 @@ export default function CycleTrackerPage() {
 
               {profile?.menstruation_details && (
                 <div>
-                  <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Personalized AI Prediction</h3>
-                  <p style={{ margin: 0, color: 'var(--text-main)' }}>
+                  <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Personalized AI Prediction & Tips</h3>
+                  <div style={{ margin: 0, color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
                     {patterns?.[selectedPhase.name] || <span style={{ color: 'var(--text-muted)' }}>Analyzing your patterns...</span>}
-                  </p>
+                  </div>
                 </div>
               )}
 

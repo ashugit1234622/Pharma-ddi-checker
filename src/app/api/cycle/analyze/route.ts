@@ -36,9 +36,11 @@ export async function POST(req: NextRequest) {
       - Age: ${profile.age || 'Unknown'}
       - Medical Conditions: ${JSON.stringify(profile.underlying_diseases || [])}
       - Current Medications: ${JSON.stringify(profile.current_medications || [])}
+      - Cycle Type: ${profile.menstruation_details?.cycle_length_type === 'pcod' ? 'PCOD/PCOS/Hormonal issue' : (profile.menstruation_details?.cycle_length_type || '28 days')}
+      - Custom Cycle Length: ${profile.menstruation_details?.custom_cycle_length || 'N/A'}
       
       Provide a highly personalized 2-sentence insight or health tip for today.
-      If she has specific conditions like PCOS or thyroid issues, or is taking specific meds (like birth control or iron supplements), explicitly mention how her phase interacts with them.
+      If she has specific conditions like PCOS or thyroid issues, or is taking specific meds (like birth control or iron supplements), explicitly mention how her phase interacts with them and her cycle length.
       Include a specific dietary or lifestyle tip for this specific phase.
       Keep it encouraging, medically safe, and very concise.
     `;
