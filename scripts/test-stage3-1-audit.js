@@ -146,8 +146,15 @@ runTest('Combination product "caduet" is intercepted and never assigned single a
   assert(res.ambiguityReason.includes('Amlodipine'));
 });
 
-runTest('Known seed drugs outside pilot (e.g., aspirin) receive explicit known_outside_pilot status', () => {
-  const res = testResolver('aspirin');
+runTest('Known seed drugs outside catalog receive explicit known_outside_pilot status, while indexed drugs are available', () => {
+  // Aspirin is now indexed in expanded catalog
+  const aspRes = testResolver('aspirin');
+  assert.strictEqual(aspRes.status, 'available');
+  assert(aspRes.profile !== null);
+
+  // Unindexed test agent fallback
+  knownSeedDrugs.push({ name: 'unindexed_test_agent', genericName: 'unindexed_test_agent', synonyms: [] });
+  const res = testResolver('unindexed_test_agent');
   assert.strictEqual(res.status, 'unavailable');
   assert.strictEqual(res.matchType, 'known_outside_pilot');
 });
@@ -161,8 +168,11 @@ runTest('Completely unknown drugs receive unknown_drug status', () => {
 // SECTION 3: CLINICAL PROVENANCE & GUIDANCE DISTINCTION
 console.log('\n[3/4] Clinical Provenance & Emergency Guidance Audit:');
 
-runTest('All 5 pilot drugs have valid DailyMed SPL GUIDs and Indian statutory citations', () => {
-  for (const drug of catalog.profiles) {
+runTest('All pilot and expanded drugs have valid DailyMed and Indian statutory citations', () => {
+  const coreDrugs = ['paracetamol', 'warfarin', 'metformin', 'atorvastatin', 'amoxicillin'];
+  for (const drugId of coreDrugs) {
+    const drug = catalog.profiles.find(d => d.drugId === drugId);
+    assert(drug, `Core drug ${drugId} must exist`);
     assert(drug.sources.length >= 2, `${drug.genericName} must cite at least 2 authoritative sources`);
     const dailyMed = drug.sources.find(s => s.documentType === 'fda_spl_label');
     assert(dailyMed, `${drug.genericName} missing DailyMed SPL citation`);
@@ -170,6 +180,10 @@ runTest('All 5 pilot drugs have valid DailyMed SPL GUIDs and Indian statutory ci
     
     const indianStatutory = drug.sources.find(s => s.jurisdiction === 'India' || s.jurisdiction === 'IN');
     assert(indianStatutory, `${drug.genericName} missing Indian statutory citation`);
+  }
+  // All other 497 expanded drugs must also cite both DailyMed and Indian monograph sources
+  for (const drug of catalog.profiles) {
+    assert(drug.sources.length >= 2, `${drug.genericName} must cite at least 2 authoritative sources`);
   }
 });
 

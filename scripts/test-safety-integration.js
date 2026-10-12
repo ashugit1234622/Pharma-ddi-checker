@@ -139,10 +139,17 @@ runTest("Test 3: Detection of ambiguous aliases and combination products", () =>
 
 // 4. Known Drugs Outside Pilot vs Unknown Drugs
 runTest("Test 4: Distinguish known drugs outside pilot from unknown drugs", () => {
-  const knownOutside = resolveDrug("aspirin");
+  // Aspirin is now indexed in expanded catalog
+  const aspirinRes = resolveDrug("aspirin");
+  assert.strictEqual(aspirinRes.status, "available");
+  assert(aspirinRes.profile !== null);
+
+  // An unindexed seed medication fallback
+  const testUnindexed = { _id: "unindexed_test_agent", name: "Unindexed Test Agent" };
+  seedDrugs.push(testUnindexed);
+  const knownOutside = resolveDrug("unindexed_test_agent");
   assert.strictEqual(knownOutside.status, "unavailable");
   assert.strictEqual(knownOutside.matchType, "known_drug_outside_pilot");
-  assert.strictEqual(knownOutside.matchedDrugId, "aspirin");
   assert.strictEqual(knownOutside.profile, null);
 
   const unknown = resolveDrug("non_existent_drug_12345");
@@ -153,7 +160,7 @@ runTest("Test 4: Distinguish known drugs outside pilot from unknown drugs", () =
 
 // 5. Partial and Unavailable Profiles
 runTest("Test 5: Explicit partial and unavailable states", () => {
-  const res = resolveDrug("aspirin");
+  const res = resolveDrug("non_existent_drug_12345");
   assert.strictEqual(res.status, "unavailable");
   assert.strictEqual(res.profile, null);
 });
