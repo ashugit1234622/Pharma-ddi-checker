@@ -1,0 +1,1156 @@
+{
+  "catalogVersion": "1.0.0",
+  "catalogName": "Farma DDI Checker — Individual Drug Safety Catalog (Pilot)",
+  "lastUpdated": "2026-10-12",
+  "description": "Curated individual drug safety profiles for pilot catalog medicines, verified against official US FDA Structured Product Labeling (DailyMed) and National Formulary of India (NFI 6th Ed) monographs.",
+  "profiles": [
+    {
+      "drugId": "paracetamol",
+      "genericName": "paracetamol (acetaminophen)",
+      "aliases": [
+        "Tylenol",
+        "Crocin",
+        "Dolo",
+        "Calpol"
+      ],
+      "productScope": {
+        "matchStatus": "active_ingredient_monotherapy",
+        "formulationDescription": "Oral solid immediate-release dosage forms (tablets, caplets, capsules)",
+        "scopeNotes": "Monotherapy profile applies to oral solid immediate-release dosage forms (standard adult 500mg/650mg). Dosing and toxicity parameters differ for pediatric liquid formulations and intravenous paracetamol (Ofirmev). Calpol, Dolo 650, Crocin represent Indian monotherapy brands; Tylenol represents US OTC monotherapy brand. OTC packaging in US often recommends 3000-3250 mg/day ceiling to prevent inadvertent overdose from multiple combination products."
+      },
+      "dataCompleteness": "available",
+      "boxedWarning": {
+        "present": true,
+        "title": "Severe Liver Injury and Hepatotoxicity Risk",
+        "summary": "Acetaminophen has been associated with cases of acute liver failure, at times resulting in liver transplant and death. Most of the cases of liver injury are associated with the use of acetaminophen at doses that exceed the 4,000 mg per day limit, and often involve more than one acetaminophen-containing product.",
+        "riskFactors": [
+          "Doses exceeding 4000 mg in 24 hours",
+          "Concomitant use of multiple acetaminophen-containing products",
+          "Chronic alcohol consumption (3 or more alcoholic drinks daily)",
+          "Pre-existing chronic liver disease, anorexia, or severe malnutrition"
+        ],
+        "sourceId": "fda_spl_paracetamol"
+      },
+      "contraindications": [
+        {
+          "id": "contra_pcm_severe_hepatic",
+          "clinicalCondition": "Severe active hepatic impairment or severe active liver disease",
+          "category": "absolute",
+          "rationale": "Impaired hepatic glutathione conjugation pathways lead to excessive toxic NAPQI accumulation and accelerated centrilobular hepatocyte necrosis.",
+          "sourceId": "nfi_2021_paracetamol",
+          "verificationStatus": "statutory_formulary"
+        },
+        {
+          "id": "contra_pcm_hypersensitivity",
+          "clinicalCondition": "Known hypersensitivity to paracetamol / acetaminophen or formulation excipients",
+          "category": "absolute",
+          "rationale": "Risk of severe allergic manifestations including anaphylaxis and severe cutaneous adverse reactions (SCAR).",
+          "sourceId": "fda_spl_paracetamol",
+          "verificationStatus": "verified_labeling"
+        }
+      ],
+      "commonAdverseEffects": [
+        {
+          "id": "ae_pcm_nausea",
+          "reaction": "Nausea",
+          "frequencyRange": "1% to 5%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_paracetamol",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_pcm_vomiting",
+          "reaction": "Vomiting",
+          "frequencyRange": "1% to 3%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_paracetamol",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_pcm_headache",
+          "reaction": "Headache",
+          "frequencyRange": "1% to 4%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Nervous system disorders",
+          "sourceId": "fda_spl_paracetamol",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_pcm_insomnia",
+          "reaction": "Insomnia",
+          "frequencyRange": "1% to 3%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Psychiatric disorders",
+          "sourceId": "fda_spl_paracetamol",
+          "evidenceBasis": "product_labeling"
+        }
+      ],
+      "seriousAdverseEffectsAndWarnings": [
+        {
+          "id": "warn_pcm_hepatotoxicity",
+          "title": "Dose-Dependent Hepatotoxicity & Centrilobular Necrosis",
+          "description": "Exceeding recommended therapeutic ceilings leads to depletion of hepatic glutathione stores. Unconjugated NAPQI metabolite covalently binds to hepatic cellular macromolecules producing centrilobular hepatic necrosis. Early clinical signs include nausea, vomiting, diaphoresis, and anorexia, evolving after 48-72 hours into hepatic encephalopathy, coagulopathy, and acute liver failure.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Serum AST/ALT transaminases",
+            "Prothrombin time / INR",
+            "Serum acetaminophen nomogram concentration in acute ingestion"
+          ],
+          "sourceId": "fda_spl_paracetamol"
+        },
+        {
+          "id": "warn_pcm_scar",
+          "title": "Severe Cutaneous Adverse Reactions (SCARs)",
+          "description": "Acetaminophen may cause rare but potentially fatal skin reactions including Stevens-Johnson Syndrome (SJS), Toxic Epidermal Necrolysis (TEN), and Acute Generalized Exanthematous Pustulosis (AGEP).",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Immediate visual inspection of skin and mucous membranes upon reporting of erythema or rash"
+          ],
+          "sourceId": "fda_spl_paracetamol"
+        }
+      ],
+      "precautionsAndSpecialPopulations": {
+        "pregnancy": {
+          "status": "compatible",
+          "summary": "Decades of clinical experience and epidemiological studies indicate paracetamol is the analgesic and antipyretic of choice in all trimesters of pregnancy when clinically indicated. Use at the lowest effective dose for the shortest possible duration.",
+          "sourceId": "nfi_2021_paracetamol"
+        },
+        "lactation": {
+          "status": "compatible",
+          "summary": "Paracetamol is excreted into human breast milk in small quantities (maternal dose < 0.1% to 2%). Maternal use at therapeutic doses does not adversely affect the nursing infant.",
+          "sourceId": "nfi_2021_paracetamol"
+        },
+        "renalImpairment": {
+          "doseAdjustmentRequired": true,
+          "guidance": "In moderate to severe renal impairment (CrCl < 30 mL/min), dosing intervals should be lengthened to 6 to 8 hours due to accumulation of polar glucuronide and sulfate metabolites.",
+          "sourceId": "nfi_2021_paracetamol"
+        },
+        "hepaticImpairment": {
+          "contraindicatedInSevere": true,
+          "guidance": "Contraindicated in severe active hepatic failure. In mild-to-moderate chronic liver disease or alcohol dependence, limit total daily dose to 2000 mg to 3000 mg/day under clinical supervision.",
+          "sourceId": "nfi_2021_paracetamol"
+        },
+        "geriatric": {
+          "guidance": "No age-related pharmacokinetic alterations necessitate automatic dose reduction, but monitor for reduced nutritional intake, lower body weight, or concurrent subclinical renal/hepatic decline.",
+          "sourceId": "fda_spl_paracetamol"
+        }
+      },
+      "dosageAndAdministrationContext": {
+        "hasSpecificGuidance": true,
+        "route": "Oral",
+        "standardAdultContext": "500 mg to 1000 mg orally every 4 to 6 hours as needed for mild-to-moderate pain or fever.",
+        "maxCeilingDose": "4000 mg/24 hours (adults under medical supervision; 3000-3250 mg/24 hours frequently recommended on OTC packaging)",
+        "titrationGuidance": "Maintain at least 4 hours between consecutive doses. Do not exceed 1000 mg in a single dose.",
+        "mandatoryDisclaimer": "This dose context is reference information for standard adult oral formulations only and does not constitute an individualized clinical prescription. Dosing must be tailored by the prescriber based on specific indication, formulation, organ function, and concurrent therapy.",
+        "sourceId": "fda_spl_paracetamol"
+      },
+      "adverseReactionGuidance": [
+        {
+          "id": "adr_pcm_emergency",
+          "urgency": "emergency_immediate_care",
+          "symptomsOrTriggers": [
+            "Suspected acute overdose (> 4g ingested)",
+            "Right upper quadrant abdominal pain with persistent vomiting",
+            "Skin redness, blistering, or mucosal peeling"
+          ],
+          "recommendedAction": "Seek immediate emergency medical evaluation or poison control assistance. Administer N-acetylcysteine within 8 hours of ingestion for maximal hepatoprotection.",
+          "clinicalRationale": "Antidote efficacy diminishes progressively after 8-10 hours post-overdose.",
+          "sourceId": "nfi_2021_paracetamol"
+        },
+        {
+          "id": "adr_pcm_urgent",
+          "urgency": "urgent_physician_consult",
+          "symptomsOrTriggers": [
+            "Yellowing of skin or eyes (jaundice)",
+            "Dark or tea-colored urine",
+            "Light-colored stools"
+          ],
+          "recommendedAction": "Discontinue paracetamol immediately and consult a physician for liver function assessment.",
+          "clinicalRationale": "May indicate evolving subacute hepatotoxicity or biliary impairment.",
+          "sourceId": "fda_spl_paracetamol"
+        },
+        {
+          "id": "adr_pcm_routine",
+          "urgency": "routine_clinical_monitoring",
+          "symptomsOrTriggers": [
+            "Mild stomach discomfort",
+            "Transient nausea without vomiting"
+          ],
+          "recommendedAction": "Take tablets with food or a full glass of water. If symptoms persist beyond 48 hours, consult a pharmacist or physician.",
+          "clinicalRationale": "Common mild gastrointestinal symptoms frequently resolve with co-administration with meals.",
+          "sourceId": "fda_spl_paracetamol"
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "fda_spl_paracetamol",
+          "name": "US FDA Structured Product Labeling (DailyMed) — Acetaminophen Oral Solid",
+          "jurisdiction": "United States",
+          "documentType": "fda_spl_label",
+          "referenceIdentifier": "DailyMed Set ID: 0005aafa-08f8-4990-a54d-cc097195708f",
+          "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0005aafa-08f8-4990-a54d-cc097195708f",
+          "revisionDate": "2026-01-02",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Public Domain (U.S. Government work / openFDA API)",
+          "limitations": "US OTC oral formulation monograph; does not cover intravenous formulations (Ofirmev) or pediatric drops."
+        },
+        {
+          "sourceId": "nfi_2021_paracetamol",
+          "name": "National Formulary of India (NFI) — 6th Edition, Paracetamol Monograph",
+          "jurisdiction": "India",
+          "documentType": "national_formulary",
+          "referenceIdentifier": "NFI-2021-PCM-P1",
+          "url": "",
+          "revisionDate": "2021-10-01",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Official public health publication, Ministry of Health & Family Welfare, Govt. of India",
+          "limitations": "Statutory Indian reference monograph; emphasizes Indian Pharmacopoeia (IP) solid oral formulations (500mg/650mg)."
+        }
+      ]
+    },
+    {
+      "drugId": "warfarin",
+      "genericName": "warfarin sodium",
+      "aliases": [
+        "Coumadin"
+      ],
+      "productScope": {
+        "matchStatus": "active_ingredient_monotherapy",
+        "formulationDescription": "Oral solid tablets (immediate-release, 1mg, 2mg, 2.5mg, 3mg, 4mg, 5mg, 6mg, 7.5mg, 10mg)",
+        "scopeNotes": "Monotherapy profile applies to oral warfarin sodium. Narrow therapeutic index drug requiring patient-specific INR titration. Dose varies substantially with CYP2C9 and VKORC1 genetic polymorphisms, diet, and interacting medications."
+      },
+      "dataCompleteness": "available",
+      "boxedWarning": {
+        "present": true,
+        "title": "Bleeding Risk",
+        "summary": "Warfarin sodium can cause major or fatal bleeding. Perform regular monitoring of INR in all treated patients. An INR greater than 4.0 appears to confer no additional therapeutic benefit in most patients and is associated with a higher risk of bleeding.",
+        "riskFactors": [
+          "INR > 4.0",
+          "Age 65 or older",
+          "History of GI bleeding or ulceration",
+          "Severe hypertension",
+          "Cerebrovascular disease",
+          "Concomitant antiplatelet or NSAID therapy",
+          "Long duration of warfarin therapy"
+        ],
+        "sourceId": "fda_spl_warfarin"
+      },
+      "contraindications": [
+        {
+          "id": "contra_warfarin_pregnancy",
+          "clinicalCondition": "Pregnancy (except women with mechanical heart valves at high risk for thromboembolism)",
+          "category": "absolute",
+          "rationale": "Warfarin crosses the placental barrier, causing fatal fetal hemorrhage and teratogenicity (fetal warfarin syndrome: nasal hypoplasia, stippled epiphyses, microcephaly, optic atrophy).",
+          "sourceId": "fda_spl_warfarin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_warfarin_bleeding",
+          "clinicalCondition": "Hemorrhagic tendencies, blood dyscrasias, or active clinical bleeding",
+          "category": "absolute",
+          "rationale": "Anticoagulation exacerbates active bleeding and impairs hemostatic clotting mechanisms.",
+          "sourceId": "fda_spl_warfarin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_warfarin_gi_ulcer",
+          "clinicalCondition": "Active ulceration or overt bleeding of the gastrointestinal, genitourinary, or respiratory tract",
+          "category": "absolute",
+          "rationale": "High risk of life-threatening hemorrhagic exacerbation from pre-existing mucosal lesions.",
+          "sourceId": "nfi_2021_warfarin",
+          "verificationStatus": "statutory_formulary"
+        },
+        {
+          "id": "contra_warfarin_surgery",
+          "clinicalCondition": "Recent or contemplated surgery of the central nervous system, eye, or traumatic surgery with exposed raw surfaces",
+          "category": "absolute",
+          "rationale": "Hemorrhage in closed anatomical spaces (cranial vault, ocular globe) causes irreversible disability or death.",
+          "sourceId": "fda_spl_warfarin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_warfarin_malignant_htn",
+          "clinicalCondition": "Severe malignant hypertension",
+          "category": "absolute",
+          "rationale": "Markedly increases risk of hemorrhagic stroke and intracerebral microaneurysm rupture.",
+          "sourceId": "fda_spl_warfarin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_warfarin_compliance",
+          "clinicalCondition": "Inability to comply with regular INR monitoring or unsupervised dementia/alcoholism",
+          "category": "absolute",
+          "rationale": "Therapeutic safety strictly depends on tight monitoring of prothrombin time/INR.",
+          "sourceId": "nfi_2021_warfarin",
+          "verificationStatus": "statutory_formulary"
+        }
+      ],
+      "commonAdverseEffects": [
+        {
+          "id": "ae_warfarin_epistaxis",
+          "reaction": "Epistaxis (nosebleeds)",
+          "frequencyRange": "1% to 10%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Respiratory, thoracic and mediastinal disorders",
+          "sourceId": "fda_spl_warfarin",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_warfarin_ecchymosis",
+          "reaction": "Ecchymosis / easy bruising",
+          "frequencyRange": "1% to 10%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Skin and subcutaneous tissue disorders",
+          "sourceId": "fda_spl_warfarin",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_warfarin_gingival",
+          "reaction": "Gingival bleeding (gum bleeding)",
+          "frequencyRange": "1% to 5%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_warfarin",
+          "evidenceBasis": "product_labeling"
+        },
+        {
+          "id": "ae_warfarin_hematuria",
+          "reaction": "Microscopic hematuria",
+          "frequencyRange": "1% to 5%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Renal and urinary disorders",
+          "sourceId": "fda_spl_warfarin",
+          "evidenceBasis": "product_labeling"
+        }
+      ],
+      "seriousAdverseEffectsAndWarnings": [
+        {
+          "id": "warn_warfarin_major_hemorrhage",
+          "title": "Major or Fatal Hemorrhage",
+          "description": "Major hemorrhage (intracranial hemorrhage, massive gastrointestinal bleeding, retroperitoneal hemorrhage) can occur at any time. Bleeding risk escalates steeply when INR exceeds 4.0.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Prothrombin time / INR (regular testing every 1 to 4 weeks once stable)",
+            "Hemoglobin / hematocrit",
+            "Stool occult blood"
+          ],
+          "sourceId": "fda_spl_warfarin"
+        },
+        {
+          "id": "warn_warfarin_skin_necrosis",
+          "title": "Warfarin-Induced Skin Necrosis and Gangrene",
+          "description": "Tissue necrosis and gangrene of skin and other tissues is an uncommon but severe event occurring within days 3 to 8 of initiation, often linked to transient hypercoagulability from rapid protein C depletion.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Immediate discontinuation upon appearance of painful, purpuric, or necrotic skin lesions"
+          ],
+          "sourceId": "fda_spl_warfarin"
+        },
+        {
+          "id": "warn_warfarin_calciphylaxis",
+          "title": "Calciphylaxis / Calcific Uremic Arteriolopathy",
+          "description": "Fatal or life-threatening calciphylaxis has been reported in patients with and without end-stage renal disease receiving warfarin, marked by painful subcutaneous skin ulcers and vascular calcification.",
+          "severity": "high",
+          "monitoringRecommendations": [
+            "Clinical evaluation of painful non-healing skin ulcers"
+          ],
+          "sourceId": "fda_spl_warfarin"
+        },
+        {
+          "id": "warn_warfarin_purple_toes",
+          "title": "Purple Toes Syndrome / Systemic Atheroembolization",
+          "description": "Release of atheromatous plaque emboli causing bilateral purplish discoloration of toes, livedo reticularis, and visceral infarction.",
+          "severity": "moderate",
+          "monitoringRecommendations": [
+            "Inspection of lower extremities for vascular changes"
+          ],
+          "sourceId": "fda_spl_warfarin"
+        }
+      ],
+      "precautionsAndSpecialPopulations": {
+        "pregnancy": {
+          "status": "contraindicated",
+          "summary": "Contraindicated in pregnancy (Category X / black box fetal harm). Crosses placenta causing fetal warfarin syndrome, severe congenital malformations, and fetal hemorrhage.",
+          "sourceId": "fda_spl_warfarin"
+        },
+        "lactation": {
+          "status": "compatible",
+          "summary": "Warfarin does not appear to pass into breast milk in significant amounts; published evidence and ACCP guidelines consider warfarin compatible with breastfeeding. Infant monitoring for bruising is recommended.",
+          "sourceId": "nfi_2021_warfarin"
+        },
+        "renalImpairment": {
+          "doseAdjustmentRequired": true,
+          "guidance": "Anticoagulant-related nephropathy can occur in excessive anticoagulation with hematuria. Renal impairment increases bleeding risk; monitor INR and renal parameters closely.",
+          "sourceId": "fda_spl_warfarin"
+        },
+        "hepaticImpairment": {
+          "contraindicatedInSevere": true,
+          "guidance": "Severe hepatic impairment reduces synthesis of clotting factors and delays warfarin metabolism, substantially elevating bleeding risk. Use extreme caution and monitor INR frequently.",
+          "sourceId": "nfi_2021_warfarin"
+        },
+        "geriatric": {
+          "guidance": "Patients 65 years and older exhibit greater hemodynamic sensitivity and bleeding risk; lower initiation and maintenance doses are typically indicated.",
+          "sourceId": "fda_spl_warfarin"
+        }
+      },
+      "dosageAndAdministrationContext": {
+        "hasSpecificGuidance": true,
+        "route": "Oral",
+        "standardAdultContext": "Individualized based on PT/INR. Common initial maintenance starting dose is 2 mg to 5 mg orally once daily, adjusted based on target INR response (typically target INR 2.0 to 3.0 for DVT/PE/AFib, or 2.5 to 3.5 for mechanical prosthetic valves).",
+        "maxCeilingDose": "No fixed absolute ceiling dose; dosage is strictly governed by INR response.",
+        "titrationGuidance": "Dosing adjustments should be guided by regular INR testing every 1 to 4 weeks once therapeutic stability is achieved. Take at the same time every day, preferably in the evening.",
+        "mandatoryDisclaimer": "This dose context is reference information for standard adult oral formulations only and does not constitute an individualized clinical prescription. Warfarin has a narrow therapeutic window and dosing MUST be strictly titrated to the individual patient's INR by the managing clinician.",
+        "sourceId": "fda_spl_warfarin"
+      },
+      "adverseReactionGuidance": [
+        {
+          "id": "adr_warfarin_emergency",
+          "urgency": "emergency_immediate_care",
+          "symptomsOrTriggers": [
+            "Black tarry stools or bright red rectal bleeding",
+            "Vomiting blood or coffee-ground material",
+            "Red or dark brown urine",
+            "Sudden severe headache, visual loss, or confusion",
+            "Extensive unexplained spontaneous bruising or unprovoked hematoma"
+          ],
+          "recommendedAction": "Seek immediate emergency medical care. Discontinue warfarin immediately. Emergency reversal with vitamin K1 and four-factor prothrombin complex concentrate (PCC) may be required.",
+          "clinicalRationale": "Signs indicate potential major internal or intracerebral hemorrhage requiring emergent hemostatic reversal.",
+          "sourceId": "fda_spl_warfarin"
+        },
+        {
+          "id": "adr_warfarin_urgent",
+          "urgency": "urgent_physician_consult",
+          "symptomsOrTriggers": [
+            "Painful, dark purple, or black discolored skin lesions (possible warfarin necrosis)",
+            "Painful purplish discoloration of toes (purple toes syndrome)"
+          ],
+          "recommendedAction": "Contact the anticoagulation management team immediately for urgent clinical evaluation.",
+          "clinicalRationale": "May indicate early microvascular thrombosis or cholesterol embolization requiring immediate treatment change.",
+          "sourceId": "fda_spl_warfarin"
+        },
+        {
+          "id": "adr_warfarin_routine",
+          "urgency": "routine_clinical_monitoring",
+          "symptomsOrTriggers": [
+            "Minor gum bleeding during brushing",
+            "Minor nosebleeds lasting under 5 minutes"
+          ],
+          "recommendedAction": "Apply local pressure. Inform the anticoagulation clinic or prescriber during the next scheduled INR monitoring check.",
+          "clinicalRationale": "Expected minor hemostatic delay, but increasing frequency requires verification that INR is within target therapeutic range.",
+          "sourceId": "nfi_2021_warfarin"
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "fda_spl_warfarin",
+          "name": "US FDA Structured Product Labeling (DailyMed) — Coumadin (Warfarin Sodium Tablets)",
+          "jurisdiction": "United States",
+          "documentType": "fda_spl_label",
+          "referenceIdentifier": "DailyMed Set ID: 2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+          "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=2cbcc99d-9107-4d39-a1e9-e19305de8b5d",
+          "revisionDate": "2026-06-25",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Public Domain (U.S. Government work / openFDA API)",
+          "limitations": "US FDA approved labeling for oral tablets. Does not cover parenteral formulations or non-vitamin K oral anticoagulants (NOACs)."
+        },
+        {
+          "sourceId": "nfi_2021_warfarin",
+          "name": "National Formulary of India (NFI) — 6th Edition, Warfarin Sodium Monograph",
+          "jurisdiction": "India",
+          "documentType": "national_formulary",
+          "referenceIdentifier": "NFI-2021-WAR-W1",
+          "url": "",
+          "revisionDate": "2021-10-01",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Official public health publication, Ministry of Health & Family Welfare, Govt. of India",
+          "limitations": "Monograph reflects Indian clinical practice and monitoring standards for Warfarin Sodium IP."
+        }
+      ]
+    },
+    {
+      "drugId": "metformin",
+      "genericName": "metformin hydrochloride",
+      "aliases": [
+        "Glucophage",
+        "Glycomet"
+      ],
+      "productScope": {
+        "matchStatus": "active_ingredient_monotherapy",
+        "formulationDescription": "Oral immediate-release solid tablets (500mg, 850mg, 1000mg)",
+        "scopeNotes": "Monotherapy profile applies to immediate-release metformin hydrochloride. Extended-release (XR/ER) formulations have different pharmacokinetic profiles and once-daily dosing. Glycomet is a prominent Indian monotherapy brand; Glucophage is the global innovator brand."
+      },
+      "dataCompleteness": "available",
+      "boxedWarning": {
+        "present": true,
+        "title": "Lactic Acidosis Risk",
+        "summary": "Post-marketing cases of metformin-associated lactic acidosis have resulted in death, hypothermia, hypotension, and resistant bradyarrhythmias. The onset of metformin-associated lactic acidosis is often subtle, accompanied only by nonspecific symptoms such as malaise, myalgias, respiratory distress, somnolence, and abdominal pain.",
+        "riskFactors": [
+          "Renal impairment (eGFR < 30 mL/min/1.73m²)",
+          "Age 65 or older",
+          "Radiological study with contrast agent",
+          "Surgery and other procedures with fasting/dehydration",
+          "Hypoxic states (acute congestive heart failure, sepsis)",
+          "Excessive alcohol consumption",
+          "Hepatic impairment"
+        ],
+        "sourceId": "fda_spl_metformin"
+      },
+      "contraindications": [
+        {
+          "id": "contra_metformin_renal",
+          "clinicalCondition": "Severe renal impairment (eGFR < 30 mL/min/1.73 m²)",
+          "category": "absolute",
+          "rationale": "Metformin is eliminated almost entirely unchanged by the kidneys. Severe renal impairment leads to marked drug accumulation and substantially increased risk of fatal lactic acidosis.",
+          "sourceId": "fda_spl_metformin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_metformin_acidosis",
+          "clinicalCondition": "Acute or chronic metabolic acidosis, including diabetic ketoacidosis (DKA)",
+          "category": "absolute",
+          "rationale": "Pre-existing acid-base imbalance significantly potentiates the risk of catastrophic lactic acidosis.",
+          "sourceId": "fda_spl_metformin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_metformin_hypersensitivity",
+          "clinicalCondition": "Known hypersensitivity to metformin hydrochloride or excipients",
+          "category": "absolute",
+          "rationale": "Risk of anaphylactic or severe hypersensitivity reactions.",
+          "sourceId": "nfi_2021_metformin",
+          "verificationStatus": "statutory_formulary"
+        }
+      ],
+      "commonAdverseEffects": [
+        {
+          "id": "ae_metformin_diarrhea",
+          "reaction": "Diarrhea",
+          "frequencyRange": "10% to 53%",
+          "frequencyCategory": "very_common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_metformin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_metformin_nausea",
+          "reaction": "Nausea and vomiting",
+          "frequencyRange": "7% to 25%",
+          "frequencyCategory": "very_common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_metformin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_metformin_flatulence",
+          "reaction": "Abdominal discomfort / flatulence",
+          "frequencyRange": "6% to 12%",
+          "frequencyCategory": "very_common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_metformin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_metformin_asthenia",
+          "reaction": "Asthenia (physical weakness)",
+          "frequencyRange": "9%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "General disorders and administration site conditions",
+          "sourceId": "fda_spl_metformin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_metformin_dyspepsia",
+          "reaction": "Indigestion / dyspepsia",
+          "frequencyRange": "7%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_metformin",
+          "evidenceBasis": "clinical_trials"
+        }
+      ],
+      "seriousAdverseEffectsAndWarnings": [
+        {
+          "id": "warn_metformin_mala",
+          "title": "Metformin-Associated Lactic Acidosis (MALA)",
+          "description": "MALA is characterized by elevated blood lactate levels (> 5 mmol/L), anion gap metabolic acidosis, and hypothermia followed by hypotension. Mortality approaches 50% in severe unmanaged cases. Hemodialysis is prompt and effective for reversing acidosis and removing accumulated metformin.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Serum creatinine and estimated GFR (eGFR) at baseline and at least annually",
+            "Blood lactate and arterial blood gases if lactic acidosis is suspected",
+            "Electrolyte panel and anion gap"
+          ],
+          "sourceId": "fda_spl_metformin"
+        },
+        {
+          "id": "warn_metformin_b12",
+          "title": "Vitamin B12 Deficiency & Peripheral Neuropathy",
+          "description": "Long-term metformin therapy is associated with a decrease in serum vitamin B12 levels in approximately 7% of patients, likely due to interference with B12-intrinsic factor absorption. May precipitate megaloblastic anemia or peripheral neuropathy.",
+          "severity": "high",
+          "monitoringRecommendations": [
+            "Hematologic parameters (CBC) and serum vitamin B12 every 2 to 3 years"
+          ],
+          "sourceId": "fda_spl_metformin"
+        },
+        {
+          "id": "warn_metformin_hypoglycemia",
+          "title": "Hypoglycemia Risk with Concomitant Antidiabetic Agents",
+          "description": "Hypoglycemia does not occur in patients receiving metformin alone under usual circumstances of use, but can occur with deficient caloric intake or when combined with sulfonylureas, meglitinides, or insulin.",
+          "severity": "moderate",
+          "monitoringRecommendations": [
+            "Self-monitoring of blood glucose when combined with secretagogues or insulin"
+          ],
+          "sourceId": "fda_spl_metformin"
+        }
+      ],
+      "precautionsAndSpecialPopulations": {
+        "pregnancy": {
+          "status": "caution_potential_benefit",
+          "summary": "Published data from post-marketing registries and clinical trials do not indicate an increased risk of major birth defects or miscarriage. Metformin crosses the placenta; management of gestational diabetes should be coordinated under specialist clinical supervision.",
+          "sourceId": "fda_spl_metformin"
+        },
+        "lactation": {
+          "status": "compatible",
+          "summary": "Metformin is excreted into human breast milk in low concentrations (infant dose estimated < 1% of maternal weight-adjusted dose). Published studies show no adverse effects on nursing infants, considered compatible with breastfeeding.",
+          "sourceId": "nfi_2021_metformin"
+        },
+        "renalImpairment": {
+          "doseAdjustmentRequired": true,
+          "contraindicatedCutoff": "eGFR < 30 mL/min/1.73m²",
+          "guidance": "Contraindicated if eGFR < 30 mL/min/1.73m². Initiation is not recommended if eGFR is between 30 and 45 mL/min/1.73m². If eGFR falls to 30-45 during therapy, reduce maximum dose by 50% and assess risk/benefit.",
+          "sourceId": "fda_spl_metformin"
+        },
+        "hepaticImpairment": {
+          "contraindicatedInSevere": true,
+          "guidance": "Patients with hepatic impairment are at significantly increased risk of lactic acidosis due to impaired hepatic lactate clearance; avoid use in patients with clinical or laboratory evidence of hepatic disease.",
+          "sourceId": "fda_spl_metformin"
+        },
+        "geriatric": {
+          "guidance": "Patients 65 years and older have a greater likelihood of having decreased renal function. Monitor renal function regularly and avoid use if eGFR is below cutoffs.",
+          "sourceId": "fda_spl_metformin"
+        }
+      },
+      "dosageAndAdministrationContext": {
+        "hasSpecificGuidance": true,
+        "route": "Oral",
+        "standardAdultContext": "Starting dose: 500 mg orally twice daily or 850 mg once daily taken with meals. Gradually increase by 500 mg weekly or 850 mg every 2 weeks as tolerated up to maintenance of 1500 mg to 2000 mg/day in divided doses.",
+        "maxCeilingDose": "2550 mg/24 hours (immediate-release adult maximum)",
+        "titrationGuidance": "Administer with meals to reduce gastrointestinal adverse effects. Titrate slowly to improve tolerability.",
+        "mandatoryDisclaimer": "This dose context is reference information for standard adult oral formulations only and does not constitute an individualized clinical prescription. Dosing must be tailored by the prescriber based on specific indication, formulation, organ function, and concurrent therapy.",
+        "sourceId": "fda_spl_metformin"
+      },
+      "adverseReactionGuidance": [
+        {
+          "id": "adr_metformin_emergency",
+          "urgency": "emergency_immediate_care",
+          "symptomsOrTriggers": [
+            "Severe unexplained muscle pain or cramping",
+            "Severe weakness or extreme fatigue",
+            "Trouble breathing / deep rapid respiration",
+            "Unusual severe stomach discomfort with persistent nausea and vomiting",
+            "Feeling unusually cold, especially in extremities",
+            "Slow or irregular heartbeat, severe dizziness"
+          ],
+          "recommendedAction": "Discontinue metformin immediately and seek emergency medical care. Inform emergency personnel of metformin therapy.",
+          "clinicalRationale": "Symptoms are hallmark presentations of metformin-associated lactic acidosis, a medical emergency requiring rapid intervention.",
+          "sourceId": "fda_spl_metformin"
+        },
+        {
+          "id": "adr_metformin_urgent",
+          "urgency": "urgent_physician_consult",
+          "symptomsOrTriggers": [
+            "Severe persistent watery diarrhea causing dehydration",
+            "Numbness, tingling, or burning sensation in hands and feet (peripheral neuropathy)",
+            "Unexplained pallor, fatigue, or mouth ulcers (vitamin B12 deficiency)"
+          ],
+          "recommendedAction": "Consult prescribing physician for dose adjustment, electrolyte check, or serum vitamin B12 assessment.",
+          "clinicalRationale": "Persistent GI symptoms may necessitate dose titration or switch to extended-release, and prolonged therapy requires B12 evaluation.",
+          "sourceId": "nfi_2021_metformin"
+        },
+        {
+          "id": "adr_metformin_routine",
+          "urgency": "routine_clinical_monitoring",
+          "symptomsOrTriggers": [
+            "Mild nausea or loose stools during initial days of therapy",
+            "Mild abdominal fullness or flatulence"
+          ],
+          "recommendedAction": "Ensure medication is taken in the middle or end of meals. If symptoms remain mild, continue therapy as GI tolerance typically improves over 1 to 2 weeks.",
+          "clinicalRationale": "Expected transient adverse effects during metformin initiation that usually resolve with food co-administration.",
+          "sourceId": "fda_spl_metformin"
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "fda_spl_metformin",
+          "name": "US FDA Structured Product Labeling (DailyMed) — Glucophage (Metformin Hydrochloride Tablets)",
+          "jurisdiction": "United States",
+          "documentType": "fda_spl_label",
+          "referenceIdentifier": "DailyMed Set ID: 011de1a5-1ac0-4831-9e8d-26ec79ba2205",
+          "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=011de1a5-1ac0-4831-9e8d-26ec79ba2205",
+          "revisionDate": "2024-08-21",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Public Domain (U.S. Government work / openFDA API)",
+          "limitations": "FDA approved labeling for immediate-release tablets. Extended-release formulations have distinct dosage forms and dissolution kinetics."
+        },
+        {
+          "sourceId": "nfi_2021_metformin",
+          "name": "National Formulary of India (NFI) — 6th Edition, Metformin Hydrochloride Monograph",
+          "jurisdiction": "India",
+          "documentType": "national_formulary",
+          "referenceIdentifier": "NFI-2021-MET-M1",
+          "url": "",
+          "revisionDate": "2021-10-01",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Official public health publication, Ministry of Health & Family Welfare, Govt. of India",
+          "limitations": "Monograph reflects Indian clinical practice and standard formulation strengths for Metformin Hydrochloride IP."
+        }
+      ]
+    },
+    {
+      "drugId": "atorvastatin",
+      "genericName": "atorvastatin",
+      "aliases": [
+        "Lipitor",
+        "Atorvaliq",
+        "Caduet"
+      ],
+      "productScope": {
+        "matchStatus": "active_ingredient_monotherapy",
+        "formulationDescription": "Oral immediate-release film-coated tablets (10mg, 20mg, 40mg, 80mg)",
+        "scopeNotes": "Monotherapy profile applies to single-agent atorvastatin calcium tablets. Note: 'Caduet' in aliases is a fixed-dose combination product containing atorvastatin and amlodipine besylate; cardiovascular and vasodilatory risks of amlodipine do not apply to monotherapy atorvastatin."
+      },
+      "dataCompleteness": "available",
+      "boxedWarning": null,
+      "contraindications": [
+        {
+          "id": "contra_atorvastatin_hepatic",
+          "clinicalCondition": "Active liver disease, including unexplained persistent elevations in hepatic transaminase levels",
+          "category": "absolute",
+          "rationale": "Atorvastatin is extensively metabolized by the liver; impaired hepatic clearance increases systemic exposure and potentiates hepatic and skeletal muscle toxicity.",
+          "sourceId": "fda_spl_atorvastatin",
+          "verificationStatus": "verified_labeling"
+        },
+        {
+          "id": "contra_atorvastatin_hypersensitivity",
+          "clinicalCondition": "Known hypersensitivity to atorvastatin or any product excipient",
+          "category": "absolute",
+          "rationale": "Risk of anaphylaxis, angioedema, or severe hypersensitivity reactions.",
+          "sourceId": "fda_spl_atorvastatin",
+          "verificationStatus": "verified_labeling"
+        }
+      ],
+      "commonAdverseEffects": [
+        {
+          "id": "ae_atorvastatin_nasopharyngitis",
+          "reaction": "Nasopharyngitis",
+          "frequencyRange": "8.3%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Infections and infestations",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_arthralgia",
+          "reaction": "Arthralgia (joint pain)",
+          "frequencyRange": "6.9%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Musculoskeletal and connective tissue disorders",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_diarrhea",
+          "reaction": "Diarrhea",
+          "frequencyRange": "6.8%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_pain_extremity",
+          "reaction": "Pain in extremity",
+          "frequencyRange": "6.0%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Musculoskeletal and connective tissue disorders",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_uti",
+          "reaction": "Urinary tract infection",
+          "frequencyRange": "5.7%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Infections and infestations",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_dyspepsia",
+          "reaction": "Dyspepsia",
+          "frequencyRange": "4.7%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_atorvastatin_nausea",
+          "reaction": "Nausea",
+          "frequencyRange": "4.0%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_atorvastatin",
+          "evidenceBasis": "clinical_trials"
+        }
+      ],
+      "seriousAdverseEffectsAndWarnings": [
+        {
+          "id": "warn_atorvastatin_myopathy",
+          "title": "Myopathy and Rhabdomyolysis",
+          "description": "Dose-dependent risk of skeletal muscle toxicity ranging from mild myalgia to severe rhabdomyolysis with myoglobinuria leading to acute renal failure. Risk is heightened by higher doses (80mg), advanced age (>= 65), untreated hypothyroidism, renal impairment, and concomitant interacting medications (CYP3A4 inhibitors, OATP1B1 inhibitors, clarithromycin, fibrates).",
+          "severity": "high",
+          "monitoringRecommendations": [
+            "Creatine kinase (CK) levels at baseline and if muscle pain, tenderness, or weakness develops",
+            "Serum creatinine and urinalysis for myoglobinuria"
+          ],
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        {
+          "id": "warn_atorvastatin_imnm",
+          "title": "Immune-Mediated Necrotizing Myopathy (IMNM)",
+          "description": "Rare autoimmune myopathy associated with anti-HMGCR antibodies characterized by proximal muscle weakness and elevated CK persisting despite statin discontinuation, responsive to immunosuppressives.",
+          "severity": "high",
+          "monitoringRecommendations": [
+            "Anti-HMGCR antibody testing and muscle biopsy if weakness persists after drug cessation"
+          ],
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        {
+          "id": "warn_atorvastatin_hepatic",
+          "title": "Hepatic Transaminase Elevations & Hepatotoxicity",
+          "description": "Persistent increases in serum transaminases (ALT or AST > 3 times ULN) occurred in 0.7% of patients in clinical trials. Rare post-marketing reports of fatal and non-fatal hepatic failure.",
+          "severity": "moderate",
+          "monitoringRecommendations": [
+            "Liver enzyme tests (ALT, AST, total bilirubin) prior to initiation and when clinically indicated thereafter"
+          ],
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        {
+          "id": "warn_atorvastatin_hyperglycemia",
+          "title": "Hyperglycemia and Increased Glycated Hemoglobin (HbA1c)",
+          "description": "Increases in HbA1c and fasting serum glucose levels have been reported with HMG-CoA reductase inhibitors, especially in patients with pre-existing prediabetes or metabolic syndrome.",
+          "severity": "moderate",
+          "monitoringRecommendations": [
+            "Routine monitoring of fasting blood glucose and HbA1c as part of cardiovascular prevention care"
+          ],
+          "sourceId": "fda_spl_atorvastatin"
+        }
+      ],
+      "precautionsAndSpecialPopulations": {
+        "pregnancy": {
+          "status": "caution",
+          "summary": "Treatment should generally be discontinued when pregnancy is recognized. In 2021, the US FDA removed the rigid Category X contraindication to allow shared clinical decision-making for rare high-risk patients (e.g. homozygous familial hypercholesterolemia), but statins remain generally avoided during pregnancy due to fetal cholesterol synthesis disruption.",
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        "lactation": {
+          "status": "contraindicated",
+          "summary": "Treatment with atorvastatin is not recommended during breastfeeding due to the potential for serious adverse reactions in nursing infants related to disruption of lipid metabolism.",
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        "renalImpairment": {
+          "doseAdjustmentRequired": false,
+          "guidance": "Renal disease does not affect plasma concentrations or lipid-lowering efficacy of atorvastatin; dosage adjustments are not required. However, renal impairment is an independent risk factor for rhabdomyolysis.",
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        "hepaticImpairment": {
+          "contraindicatedInSevere": true,
+          "guidance": "Contraindicated in active liver disease. Use with caution in patients who consume substantial quantities of alcohol or have a history of chronic liver disease.",
+          "sourceId": "nfi_2021_atorvastatin"
+        },
+        "geriatric": {
+          "guidance": "Advanced age (65 years and older) is a predisposing factor for myopathy. Monitor closely for muscle symptoms.",
+          "sourceId": "fda_spl_atorvastatin"
+        }
+      },
+      "dosageAndAdministrationContext": {
+        "hasSpecificGuidance": true,
+        "route": "Oral",
+        "standardAdultContext": "Initial recommended starting dose is 10 mg or 20 mg once daily. For patients requiring large LDL-C reduction (> 45%), starting dose may be 40 mg once daily. Dose range is 10 mg to 80 mg once daily, taken at any time of day with or without food.",
+        "maxCeilingDose": "80 mg/24 hours",
+        "titrationGuidance": "Lipid levels should be analyzed within 2 to 4 weeks after initiation or titration, and dosage adjusted accordingly.",
+        "mandatoryDisclaimer": "This dose context is reference information for standard adult oral formulations only and does not constitute an individualized clinical prescription. Dosing must be tailored by the prescriber based on specific indication, formulation, organ function, and concurrent therapy.",
+        "sourceId": "fda_spl_atorvastatin"
+      },
+      "adverseReactionGuidance": [
+        {
+          "id": "adr_atorvastatin_emergency",
+          "urgency": "emergency_immediate_care",
+          "symptomsOrTriggers": [
+            "Severe unexplained muscle pain, tenderness, or weakness",
+            "Dark brown, tea-colored, or cola-colored urine",
+            "Generalized severe muscle weakness accompanied by high fever or malaise"
+          ],
+          "recommendedAction": "Discontinue atorvastatin immediately and seek emergency medical care. Prompt hydration and renal monitoring are essential to prevent acute tubular necrosis from myoglobinuria.",
+          "clinicalRationale": "Hallmark clinical triad of rhabdomyolysis, requiring emergency hospital evaluation.",
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        {
+          "id": "adr_atorvastatin_urgent",
+          "urgency": "urgent_physician_consult",
+          "symptomsOrTriggers": [
+            "Persistent muscle aches or weakness in arms or legs without dark urine",
+            "Yellowing of skin or whites of eyes (jaundice)",
+            "Unusual severe right upper abdominal discomfort, dark urine, or extreme fatigue"
+          ],
+          "recommendedAction": "Contact prescribing physician promptly. Discontinue medication if directed while awaiting creatine kinase and liver enzyme testing.",
+          "clinicalRationale": "Enables early detection and management of statin-associated myopathy or hepatic transaminase elevation before severe injury develops.",
+          "sourceId": "fda_spl_atorvastatin"
+        },
+        {
+          "id": "adr_atorvastatin_routine",
+          "urgency": "routine_clinical_monitoring",
+          "symptomsOrTriggers": [
+            "Mild joint discomfort or mild digestive upset (nausea, indigestion)"
+          ],
+          "recommendedAction": "Take tablet at a consistent time each day with or without food. Report persistent symptoms during regular clinical follow-up.",
+          "clinicalRationale": "Mild symptoms frequently resolve over time and can be monitored during routine cardiovascular follow-up visits.",
+          "sourceId": "nfi_2021_atorvastatin"
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "fda_spl_atorvastatin",
+          "name": "US FDA Structured Product Labeling (DailyMed) — Lipitor (Atorvastatin Calcium Tablets)",
+          "jurisdiction": "United States",
+          "documentType": "fda_spl_label",
+          "referenceIdentifier": "DailyMed Set ID: 00afce9b-48c9-487a-a738-e359c005c707",
+          "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00afce9b-48c9-487a-a738-e359c005c707",
+          "revisionDate": "2025-08-28",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Public Domain (U.S. Government work / openFDA API)",
+          "limitations": "Labeling reflects US FDA-approved oral tablet monotherapy. Excludes fixed-dose combination formulations (e.g. Caduet)."
+        },
+        {
+          "sourceId": "nfi_2021_atorvastatin",
+          "name": "National Formulary of India (NFI) — 6th Edition, Atorvastatin Calcium Monograph",
+          "jurisdiction": "India",
+          "documentType": "national_formulary",
+          "referenceIdentifier": "NFI-2021-ATV-A1",
+          "url": "",
+          "revisionDate": "2021-10-01",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Official public health publication, Ministry of Health & Family Welfare, Govt. of India",
+          "limitations": "Monograph reflects Indian clinical practice and standards for Atorvastatin Calcium IP."
+        }
+      ]
+    },
+    {
+      "drugId": "amoxicillin",
+      "genericName": "amoxicillin",
+      "aliases": [
+        "Amoxil",
+        "Mox",
+        "Novamox",
+        "Augmentin"
+      ],
+      "productScope": {
+        "matchStatus": "active_ingredient_monotherapy",
+        "formulationDescription": "Oral solid capsules and tablets (250mg, 500mg, 875mg)",
+        "scopeNotes": "Monotherapy profile applies to single-agent amoxicillin (trihydrate). Note: 'Augmentin' in aliases is a combination product containing amoxicillin and clavulanate potassium; clavulanate adds specific hepatic cholestatic risks and greater GI hypermotility not characteristic of amoxicillin monotherapy."
+      },
+      "dataCompleteness": "available",
+      "boxedWarning": null,
+      "contraindications": [
+        {
+          "id": "contra_amoxicillin_hypersensitivity",
+          "clinicalCondition": "History of serious hypersensitivity reaction (e.g. anaphylaxis, Stevens-Johnson syndrome) to amoxicillin or other beta-lactam antibacterial drugs",
+          "category": "absolute",
+          "rationale": "Cross-reactivity among penicillins and cephalosporins can trigger fatal anaphylactic shock and severe immunologically mediated cutaneous reactions.",
+          "sourceId": "fda_spl_amoxicillin",
+          "verificationStatus": "verified_labeling"
+        }
+      ],
+      "commonAdverseEffects": [
+        {
+          "id": "ae_amoxicillin_diarrhea",
+          "reaction": "Diarrhea",
+          "frequencyRange": "2% to 4%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_amoxicillin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_amoxicillin_nausea",
+          "reaction": "Nausea",
+          "frequencyRange": "2% to 3%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_amoxicillin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_amoxicillin_vomiting",
+          "reaction": "Vomiting",
+          "frequencyRange": "1% to 2%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Gastrointestinal disorders",
+          "sourceId": "fda_spl_amoxicillin",
+          "evidenceBasis": "clinical_trials"
+        },
+        {
+          "id": "ae_amoxicillin_rash",
+          "reaction": "Skin rash / pruritus",
+          "frequencyRange": "1% to 3%",
+          "frequencyCategory": "common",
+          "systemOrganClass": "Skin and subcutaneous tissue disorders",
+          "sourceId": "fda_spl_amoxicillin",
+          "evidenceBasis": "clinical_trials"
+        }
+      ],
+      "seriousAdverseEffectsAndWarnings": [
+        {
+          "id": "warn_amoxicillin_anaphylaxis",
+          "title": "Serious Anaphylactic / Hypersensitivity Reactions",
+          "description": "Serious and occasionally fatal hypersensitivity (anaphylactic) reactions have been reported in patients on penicillin therapy. These reactions are more likely to occur in individuals with a history of penicillin hypersensitivity and/or a history of sensitivity to multiple allergens.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Careful inquiry concerning previous hypersensitivity reactions to penicillins, cephalosporins, or other allergens prior to initiation",
+            "Immediate availability of epinephrine, oxygen, and airway management"
+          ],
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        {
+          "id": "warn_amoxicillin_cdad",
+          "title": "Clostridioides difficile-Associated Diarrhea (CDAD)",
+          "description": "CDAD has been reported with use of nearly all antibacterial agents, including amoxicillin, and may range in severity from mild diarrhea to fatal colitis. Treatment with antibacterial agents alters the normal flora of the colon leading to overgrowth of C. difficile. CDAD must be considered in all patients who present with diarrhea following antibacterial drug use.",
+          "severity": "high",
+          "monitoringRecommendations": [
+            "Evaluate for C. difficile toxin in stool if severe or persistent diarrhea develops, even up to 2 months post-therapy"
+          ],
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        {
+          "id": "warn_amoxicillin_scar",
+          "title": "Severe Cutaneous Adverse Reactions (SCAR)",
+          "description": "Severe cutaneous adverse reactions, such as Stevens-Johnson syndrome (SJS), toxic epidermal necrolysis (TEN), drug reaction with eosinophilia and systemic symptoms (DRESS), and acute generalized exanthematous pustulosis (AGEP) have been reported in patients taking beta-lactams.",
+          "severity": "critical",
+          "monitoringRecommendations": [
+            "Discontinue therapy immediately at the first appearance of skin rash, mucosal lesions, or any other sign of hypersensitivity"
+          ],
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        {
+          "id": "warn_amoxicillin_mononucleosis",
+          "title": "Erythematous Maculopapular Rash in Infectious Mononucleosis",
+          "description": "A high percentage of patients with infectious mononucleosis (Epstein-Barr virus) who receive amoxicillin develop an erythematous rash. Amoxicillin should not be administered to patients with suspected or confirmed mononucleosis.",
+          "severity": "moderate",
+          "monitoringRecommendations": [
+            "Confirm etiology of pharyngitis / sore throat prior to prescribing amoxicillin"
+          ],
+          "sourceId": "fda_spl_amoxicillin"
+        }
+      ],
+      "precautionsAndSpecialPopulations": {
+        "pregnancy": {
+          "status": "compatible",
+          "summary": "Epidemiological studies and clinical trials have not demonstrated an association with major birth defects or pregnancy complications. Amoxicillin is considered an antibacterial of choice when indicated during pregnancy.",
+          "sourceId": "nfi_2021_amoxicillin"
+        },
+        "lactation": {
+          "status": "compatible",
+          "summary": "Amoxicillin is excreted in human milk in small quantities. Compatible with breastfeeding; monitor the infant for gastrointestinal disturbances (diarrhea), candidiasis, or allergic sensitization.",
+          "sourceId": "nfi_2021_amoxicillin"
+        },
+        "renalImpairment": {
+          "doseAdjustmentRequired": true,
+          "guidance": "Amoxicillin is primarily eliminated by renal excretion. In patients with severe renal impairment (GFR < 30 mL/min), dosing intervals must be adjusted: GFR 10-30 mL/min: 250 mg to 500 mg every 12 hours; GFR < 10 mL/min: 250 mg to 500 mg every 24 hours.",
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        "hepaticImpairment": {
+          "contraindicatedInSevere": false,
+          "guidance": "Hepatic impairment does not require routine dosage adjustment for amoxicillin monotherapy. Caution is advised in severe hepatic disease; cholestatic jaundice is far more frequent with amoxicillin/clavulanate combinations than monotherapy.",
+          "sourceId": "nfi_2021_amoxicillin"
+        },
+        "pediatric": {
+          "guidance": "Pediatric dosing is calculated on a mg/kg/day basis (typically 20 to 40 mg/kg/day in divided doses) according to infection severity.",
+          "sourceId": "nfi_2021_amoxicillin"
+        }
+      },
+      "dosageAndAdministrationContext": {
+        "hasSpecificGuidance": true,
+        "route": "Oral",
+        "standardAdultContext": "Mild-to-moderate infections: 250 mg to 500 mg orally every 8 hours, or 500 mg to 875 mg every 12 hours. Severe infections: 500 mg every 8 hours or 875 mg every 12 hours.",
+        "maxCeilingDose": "Standard adult maximum typically 2000 mg to 3000 mg/24 hours in divided doses.",
+        "titrationGuidance": "Administer at the start of a meal to enhance absorption and minimize gastrointestinal intolerance. Complete the full prescribed course.",
+        "mandatoryDisclaimer": "This dose context is reference information for standard adult oral formulations only and does not constitute an individualized clinical prescription. Dosing must be tailored by the prescriber based on specific indication, formulation, organ function, and concurrent therapy.",
+        "sourceId": "fda_spl_amoxicillin"
+      },
+      "adverseReactionGuidance": [
+        {
+          "id": "adr_amoxicillin_emergency",
+          "urgency": "emergency_immediate_care",
+          "symptomsOrTriggers": [
+            "Sudden shortness of breath, wheezing, or difficulty swallowing",
+            "Swelling of the lips, face, tongue, or throat (angioedema)",
+            "Widespread hives, intense skin itching, severe dizzy spells, or fainting"
+          ],
+          "recommendedAction": "Seek emergency medical services (911/112) immediately. Administer intramuscular epinephrine if prescribed and available. Lie flat and elevate legs if dizzy.",
+          "clinicalRationale": "Indicates life-threatening systemic anaphylaxis requiring immediate emergency airway and cardiovascular stabilization.",
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        {
+          "id": "adr_amoxicillin_urgent",
+          "urgency": "urgent_physician_consult",
+          "symptomsOrTriggers": [
+            "Severe watery or bloody diarrhea (even occurring weeks after completing the antibiotic)",
+            "High fever accompanied by severe abdominal cramping",
+            "Spreading red or purple skin rash with blistering or peeling"
+          ],
+          "recommendedAction": "Discontinue amoxicillin immediately and contact a physician promptly. Do not take anti-diarrheal medications (such as loperamide) without medical advice.",
+          "clinicalRationale": "May indicate Clostridioides difficile colitis (CDAD) or severe cutaneous adverse reactions (SCAR); antimotility agents worsen toxic megacolon in CDAD.",
+          "sourceId": "fda_spl_amoxicillin"
+        },
+        {
+          "id": "adr_amoxicillin_routine",
+          "urgency": "routine_clinical_monitoring",
+          "symptomsOrTriggers": [
+            "Mild loose stools or occasional mild nausea without fever",
+            "Mild stomach rumbles"
+          ],
+          "recommendedAction": "Take doses at the start of light meals and maintain oral fluid hydration. Complete the full prescribed course of antibiotics unless directed otherwise by the doctor.",
+          "clinicalRationale": "Mild gastrointestinal disturbance is common and benign, but stopping antibacterial courses prematurely risks treatment failure and antimicrobial resistance.",
+          "sourceId": "nfi_2021_amoxicillin"
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "fda_spl_amoxicillin",
+          "name": "US FDA Structured Product Labeling (DailyMed) — Amoxil (Amoxicillin Capsules and Tablets)",
+          "jurisdiction": "United States",
+          "documentType": "fda_spl_label",
+          "referenceIdentifier": "DailyMed Set ID: 00fbd46e-05fd-4f8a-9f59-a7a4d01c8e54",
+          "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00fbd46e-05fd-4f8a-9f59-a7a4d01c8e54",
+          "revisionDate": "2023-12-18",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Public Domain (U.S. Government work / openFDA API)",
+          "limitations": "Labeling reflects US FDA-approved oral solid monotherapy formulations. Excludes fixed-dose combination formulations (e.g. Augmentin)."
+        },
+        {
+          "sourceId": "nfi_2021_amoxicillin",
+          "name": "National Formulary of India (NFI) — 6th Edition, Amoxicillin Monograph",
+          "jurisdiction": "India",
+          "documentType": "national_formulary",
+          "referenceIdentifier": "NFI-2021-AMX-A1",
+          "url": "",
+          "revisionDate": "2021-10-01",
+          "retrievalDate": "2026-10-12",
+          "accessTermsAndLicensing": "Official public health publication, Ministry of Health & Family Welfare, Govt. of India",
+          "limitations": "Monograph reflects Indian clinical practice and standards for Amoxicillin IP solid oral dosage forms."
+        }
+      ]
+    }
+  ]
+}

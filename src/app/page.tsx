@@ -10,6 +10,9 @@ import AnalysisScanner from '../components/AnalysisScanner';
 import PrintSummary from '../components/PrintSummary';
 import AasthaChat from '../components/AasthaChat';
 import { CinematicVisualLayer } from '../components/CinematicVisualLayer';
+import IndividualDrugSafetySection from '../components/IndividualDrugSafetySection';
+import { resolveIndividualSafety } from '@/app/actions/safety';
+import { SafetyResolutionResult } from '@/lib/safety/resolver';
 
 interface DrugSearchResult {
   id: string;
@@ -486,13 +489,67 @@ export default function Home() {
   const [error, setError] = useState('');
   const [stepIndex, setStepIndex] = useState(0);
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
-  const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'alternatives'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'adme' | 'toxicity' | 'safety' | 'alternatives'>('overview');
+  const [drug1Safety, setDrug1Safety] = useState<SafetyResolutionResult | null>(null);
+  const [drug2Safety, setDrug2Safety] = useState<SafetyResolutionResult | null>(null);
+  const [safetyLoading, setSafetyLoading] = useState(false);
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   // Ref-based in-flight guard — prevents duplicate API calls from rapid clicks,
   // prescription scanner events, or swap triggers firing before React re-renders.
   const isRunningRef = useRef(false);
+
+  // Resolve Individual Drug Safety profiles asynchronously
+  // When switching DDI pairs or clearing drugs, immediately reset profiles to prevent showing stale safety data
+  useEffect(() => {
+    if (drug1 && drug2) {
+      let isCancelled = false;
+      // Immediately clear previous profiles to avoid any stale data display during fetch
+      setDrug1Safety(null);
+      setDrug2Safety(null);
+      setSafetyLoading(true);
+
+      Promise.all([
+        resolveIndividualSafety(drug1.id || drug1.name),
+        resolveIndividualSafety(drug2.id || drug2.name)
+      ]).then(([s1, s2]) => {
+        if (!isCancelled) {
+          setDrug1Safety(s1);
+          setDrug2Safety(s2);
+          setSafetyLoading(false);
+        }
+      }).catch(err => {
+        if (!isCancelled) {
+          console.error('Failed to load individual safety catalog:', err);
+          setDrug1Safety({
+            status: 'unavailable',
+            queriedDrugId: drug1.name,
+            matchedDrugId: null,
+            matchedName: null,
+            matchType: 'unknown_drug',
+            unavailableReason: 'Individual safety catalog could not be loaded.',
+            profile: null
+          });
+          setDrug2Safety({
+            status: 'unavailable',
+            queriedDrugId: drug2.name,
+            matchedDrugId: null,
+            matchedName: null,
+            matchType: 'unknown_drug',
+            unavailableReason: 'Individual safety catalog could not be loaded.',
+            profile: null
+          });
+          setSafetyLoading(false);
+        }
+      });
+      return () => { isCancelled = true; };
+    } else {
+      setDrug1Safety(null);
+      setDrug2Safety(null);
+      setSafetyLoading(false);
+    }
+  }, [drug1?.id, drug1?.name, drug2?.id, drug2?.name]);
 
   const { data: session, status: sessionStatus } = useSession();
   const userRole = (session?.user as any)?.userRole || 'user';
@@ -1112,6 +1169,19 @@ export default function Home() {
                   </div>
                 </Reveal>
               </div>
+            </div>
+          )}
+
+          {/* ── INDIVIDUAL SAFETY TAB ── */}
+          {activeTab === 'safety' && (
+            <div className="tab-content" key="safety">
+              <IndividualDrugSafetySection
+                drug1Name={drug1?.name || 'Drug 1'}
+                drug2Name={drug2?.name || 'Drug 2'}
+                drug1Safety={drug1Safety}
+                drug2Safety={drug2Safety}
+                loading={safetyLoading}
+              />
             </div>
           )}
 
