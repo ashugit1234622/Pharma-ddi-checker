@@ -1034,6 +1034,7 @@ export default function Home() {
               <button className={`tab-pill ${activeTab === 'overview' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
               <button className={`tab-pill ${activeTab === 'adme' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('adme')}>ADME & Kinetics</button>
               <button className={`tab-pill ${activeTab === 'toxicity' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('toxicity')}>Organ Toxicity</button>
+              <button className={`tab-pill ${activeTab === 'safety' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('safety')}>Individual Safety</button>
               <button className={`tab-pill ${activeTab === 'alternatives' ? 'tab-pill-active' : ''}`} onClick={() => setActiveTab('alternatives')}>Alternatives</button>
             </div>
           </Reveal>
