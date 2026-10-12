@@ -6,6 +6,45 @@ import { useRouter } from 'next/navigation';
 import { CalendarDays, AlertCircle, Loader2, Sparkles, Droplets, X } from 'lucide-react';
 import { calculateCycle, CyclePrediction } from '@/lib/cycle-tracker';
 
+/**
+ * Robustly unwraps insights or tips if the model returned JSON, arrays, or markdown wrappers.
+ */
+function cleanInsightText(raw: unknown): string {
+  if (!raw) return '';
+  if (typeof raw !== 'string') {
+    if (Array.isArray(raw)) return cleanInsightText(raw[0]);
+    if (typeof raw === 'object' && raw !== null) {
+      const obj = raw as Record<string, any>;
+      return cleanInsightText(obj.insight || obj.text || obj.tip || obj.message || Object.values(obj)[0]);
+    }
+    return String(raw);
+  }
+
+  let text = raw.trim();
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try {
+      let parsed = JSON.parse(text);
+      while (Array.isArray(parsed) && parsed.length > 0) {
+        parsed = parsed[0];
+      }
+      if (typeof parsed === 'string') return cleanInsightText(parsed);
+      if (parsed && typeof parsed === 'object') {
+        const candidate = parsed.insight || parsed.text || parsed.tip || parsed.message;
+        if (typeof candidate === 'string') return cleanInsightText(candidate);
+        for (const v of Object.values(parsed)) {
+          if (typeof v === 'string' && v.length > 10) return cleanInsightText(v);
+        }
+      }
+    } catch {
+      const match = text.match(/"insight"\s*:\s*"([^"]+)"/i);
+      if (match && match[1]) return match[1].replace(/\\"/g, '"');
+    }
+  }
+  return text.replace(/^[\[{\s"]+|[\]}\s"]+$/g, '').trim();
+}
+
 export default function CycleTrackerPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -22,9 +61,8 @@ export default function CycleTrackerPage() {
       const detailsStr = JSON.stringify(profile.menstruation_details);
       const cacheKey = `cycle_patterns_${detailsStr.length}`;
       const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try { setPatterns(JSON.parse(cached)); } catch(e) {}
-      } else {
+
+      const fetchPatterns = () => {
         fetch('/api/cycle/predict-patterns', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -38,6 +76,27 @@ export default function CycleTrackerPage() {
           }
         })
         .catch(console.error);
+      };
+
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          // If cached data has Ovulation Window but missing Fertile Window, repair it
+          if (!parsed['Fertile Window'] && (parsed['Ovulation Window'] || parsed['Ovulation'])) {
+            parsed['Fertile Window'] = parsed['Ovulation Window'] || parsed['Ovulation'];
+          }
+          // If missing both Fertile Window and Ovulation Window, invalidate to re-fetch
+          if (!parsed['Fertile Window'] && !parsed['Ovulation Window']) {
+            localStorage.removeItem(cacheKey);
+            fetchPatterns();
+          } else {
+            setPatterns(parsed);
+          }
+        } catch(e) {
+          fetchPatterns();
+        }
+      } else {
+        fetchPatterns();
       }
     }
   }, [profile?.menstruation_details]);
@@ -114,22 +173,22 @@ export default function CycleTrackerPage() {
       const cachedInsight = localStorage.getItem(cacheKey);
       let count = parseInt(localStorage.getItem(countKey) || '0', 10);
 
-      // Invalidate stale cache if it contains raw JSON (a bug from a previous version)
-      if (cachedInsight && cachedInsight.trim().startsWith('{')) {
+      // Invalidate stale cache if it contains raw JSON (starts with { or [ or contains "insight":)
+      if (cachedInsight && (cachedInsight.trim().startsWith('{') || cachedInsight.trim().startsWith('[') || cachedInsight.includes('"insight":') || cachedInsight.includes('{"phase"'))) {
         localStorage.removeItem(cacheKey);
         localStorage.removeItem(countKey);
         count = 0;
       }
 
-      if (cachedInsight && !cachedInsight.trim().startsWith('{') && count >= 3) {
-        // Max 3 regenerations a day, or if we just want to avoid hitting the API if we already have it
-        setInsight(cachedInsight);
+      const cleanCached = cleanInsightText(cachedInsight);
+
+      if (cleanCached && !cleanCached.trim().startsWith('{') && !cleanCached.trim().startsWith('[') && count >= 3) {
+        setInsight(cleanCached);
         return;
       }
       
-      // If we have cached insight, show it immediately while we fetch a new one (if < 3 times)
-      if (cachedInsight && !cachedInsight.trim().startsWith('{')) {
-        setInsight(cachedInsight);
+      if (cleanCached && !cleanCached.trim().startsWith('{') && !cleanCached.trim().startsWith('[')) {
+        setInsight(cleanCached);
       }
 
       // If we already fetched 3 times today, stop.
@@ -142,15 +201,37 @@ export default function CycleTrackerPage() {
       });
       const data = await res.json();
       
-      if (data.insight && !data.insight.includes('Stay hydrated')) {
-        localStorage.setItem(cacheKey, data.insight);
+      const clean = cleanInsightText(data.insight);
+      if (clean && !clean.includes('Stay hydrated')) {
+        localStorage.setItem(cacheKey, clean);
         localStorage.setItem(countKey, (count + 1).toString());
-        setInsight(data.insight);
+        setInsight(clean);
+      } else if (clean) {
+        setInsight(clean);
       }
     } catch (e) {
       console.error(e);
       if (!insight) setInsight("Stay hydrated and listen to your body! Get plenty of rest today.");
     }
+  };
+
+  const getPhasePattern = (phaseName?: string) => {
+    if (!phaseName || !patterns) return null;
+    if (patterns[phaseName]) return cleanInsightText(patterns[phaseName]);
+    // Aliases for Fertile Window / Ovulation Window
+    if (phaseName === 'Fertile Window' || phaseName === 'Ovulation Window') {
+      const p = patterns['Fertile Window'] || patterns['Ovulation Window'] || patterns['Ovulation'] || patterns['Fertile Phase'];
+      if (p) return cleanInsightText(p);
+    }
+    // Case-insensitive match
+    const lower = phaseName.toLowerCase();
+    for (const [k, v] of Object.entries(patterns)) {
+      const kl = k.toLowerCase();
+      if (kl === lower || (lower.includes('fertile') && kl.includes('ovulat')) || (lower.includes('ovulat') && kl.includes('fertile'))) {
+        return cleanInsightText(v as string);
+      }
+    }
+    return null;
   };
 
   if (loading) {
@@ -217,7 +298,7 @@ export default function CycleTrackerPage() {
           <Sparkles size={18} /> Personalized Insight
         </h2>
         <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
-          {insight ? insight : (
+          {insight ? cleanInsightText(insight) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
               <Loader2 className="spinner" size={16} /> Generating personalized insight...
             </div>
@@ -255,7 +336,7 @@ export default function CycleTrackerPage() {
             // Colors for phases
             let color = '#d946ef'; // Menstruation (Pink)
             if (phase.name === 'Follicular Phase') color = '#a855f7'; // Purple
-            if (phase.name === 'Ovulation Window') color = '#3b82f6'; // Blue
+            if (phase.name === 'Fertile Window' || phase.name === 'Ovulation Window') color = '#3b82f6'; // Blue
             if (phase.name === 'Luteal Phase') color = '#f59e0b'; // Yellow
             
             return (
@@ -285,7 +366,7 @@ export default function CycleTrackerPage() {
             const isCurrent = currentPhase.name === phase.name;
             let color = '#d946ef';
             if (phase.name === 'Follicular Phase') color = '#a855f7';
-            if (phase.name === 'Ovulation Window') color = '#3b82f6';
+            if (phase.name === 'Fertile Window' || phase.name === 'Ovulation Window') color = '#3b82f6';
             if (phase.name === 'Luteal Phase') color = '#f59e0b';
 
             return (
@@ -353,7 +434,7 @@ export default function CycleTrackerPage() {
                 <div>
                   <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Personalized AI Prediction & Tips</h3>
                   <div style={{ margin: 0, color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                    {patterns?.[selectedPhase.name] || <span style={{ color: 'var(--text-muted)' }}>Analyzing your patterns...</span>}
+                    {getPhasePattern(selectedPhase.name) || <span style={{ color: 'var(--text-muted)' }}>Analyzing your patterns...</span>}
                   </div>
                 </div>
               )}

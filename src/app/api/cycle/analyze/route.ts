@@ -3,6 +3,55 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getGeminiProvider } from '@/lib/ai/provider';
 
+function extractCleanInsight(raw: unknown): string {
+  if (!raw) return '';
+  if (typeof raw !== 'string') {
+    if (Array.isArray(raw)) {
+      return extractCleanInsight(raw[0]);
+    }
+    if (typeof raw === 'object' && raw !== null) {
+      const obj = raw as Record<string, any>;
+      return extractCleanInsight(obj.insight || obj.text || obj.tip || obj.message || obj.response || Object.values(obj)[0]);
+    }
+    return String(raw);
+  }
+
+  let text = raw.trim();
+  // Strip markdown code fences if present
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  // If text looks like a JSON array or object, parse and extract inner insight
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try {
+      let parsed = JSON.parse(text);
+      while (Array.isArray(parsed) && parsed.length > 0) {
+        parsed = parsed[0];
+      }
+      if (typeof parsed === 'string') {
+        return extractCleanInsight(parsed);
+      }
+      if (parsed && typeof parsed === 'object') {
+        const candidate = parsed.insight || parsed.text || parsed.tip || parsed.message || parsed.response;
+        if (typeof candidate === 'string') {
+          return extractCleanInsight(candidate);
+        }
+        for (const v of Object.values(parsed)) {
+          if (typeof v === 'string' && v.length > 10) return extractCleanInsight(v);
+        }
+      }
+    } catch {
+      // Regex fallback if JSON was slightly malformed
+      const match = text.match(/"insight"\s*:\s*"([^"]+)"/i);
+      if (match && match[1]) {
+        return match[1].replace(/\\"/g, '"');
+      }
+    }
+  }
+
+  // Remove any remaining outer bracket/brace artifacts
+  return text.replace(/^[\[{\s"]+|[\]}\s"]+$/g, '').trim();
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -43,32 +92,15 @@ export async function POST(req: NextRequest) {
       If she has specific conditions like PCOS or thyroid issues, or is taking specific meds (like birth control or iron supplements), explicitly mention how her phase interacts with them and her cycle length.
       Include a specific dietary or lifestyle tip for this specific phase.
       Keep it encouraging, medically safe, and very concise.
+      IMPORTANT: Return ONLY plain text sentences. Do NOT return JSON, do NOT return arrays, and do NOT wrap in brackets.
     `;
 
     try {
       const ai = getGeminiProvider();
-      const response = await ai.complete("You are a medical AI assistant.", prompt);
+      const response = await ai.complete("You are a medical AI assistant providing clear text advice without JSON formatting.", prompt);
       
-      const raw = response.trim();
-
-      // The router uses responseMimeType: "application/json" by default, so the model
-      // may return a JSON object. Extract just the insight string if that happens.
-      let insightText = raw;
-      try {
-        // Strip markdown fences if present
-        const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-        const parsed = JSON.parse(stripped);
-        // Support {"insight":"..."} or {"phase":"...","insight":"..."} shapes
-        if (parsed && typeof parsed.insight === 'string') {
-          insightText = parsed.insight;
-        } else if (parsed && typeof parsed.text === 'string') {
-          insightText = parsed.text;
-        }
-      } catch {
-        // Not JSON — already a plain text string, use as-is
-      }
-
-      return NextResponse.json({ insight: insightText });
+      const insightText = extractCleanInsight(response);
+      return NextResponse.json({ insight: insightText || "Stay hydrated and listen to your body today!" });
     } catch (aiError: any) {
       console.error('[Cycle AI] Gemini API Error:', aiError.message);
       
@@ -78,7 +110,7 @@ export async function POST(req: NextRequest) {
         fallback = "Make sure to rest and eat iron-rich foods to help replenish your body during this phase.";
       } else if (currentPhase.name === "Follicular Phase") {
         fallback = "Your energy levels are rising! This is a great time to tackle complex tasks or higher-intensity workouts.";
-      } else if (currentPhase.name === "Fertile Window") {
+      } else if (currentPhase.name === "Fertile Window" || currentPhase.name === "Ovulation Window") {
         fallback = "Your estrogen peaks during this window. You might feel highly energetic and sociable.";
       } else if (currentPhase.name === "Luteal Phase") {
         fallback = "As progesterone rises, you may feel tired. Prioritize sleep and gentle stretching like yoga.";
