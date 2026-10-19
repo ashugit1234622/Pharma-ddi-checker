@@ -16,6 +16,11 @@ function tryGetDatabase() {
   }
 }
 
+const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+if (!nextAuthSecret && process.env.NODE_ENV === 'production') {
+  throw new Error("FATAL CONFIG ERROR: NEXTAUTH_SECRET environment variable is missing.");
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -83,7 +88,20 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (trigger === 'update' && session) {
         if (session.profileComplete !== undefined) token.profileComplete = session.profileComplete;
-        if (session.userRole !== undefined) token.userRole = session.userRole;
+        // Do NOT trust session.userRole from client to prevent privilege escalation
+        if (token.userId) {
+          try {
+            const pool = tryGetDatabase();
+            if (pool) {
+              const profileRes = await pool.query('SELECT user_role FROM patient_profiles WHERE user_id = $1', [token.userId]);
+              if (profileRes.rows.length > 0) {
+                token.userRole = profileRes.rows[0].user_role || 'user';
+              }
+            }
+          } catch (e) {
+            console.error('[NextAuth] jwt refresh error on update:', e);
+          }
+        }
       }
 
       if (user?.email) {
@@ -124,5 +142,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "pharma-ddi-checker-secret-key",
+  secret: nextAuthSecret || (process.env.NODE_ENV === 'development' ? 'dev-only-secret-do-not-use-in-prod' : undefined),
 };

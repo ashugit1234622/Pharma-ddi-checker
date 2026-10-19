@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getAIProvider, extractJson } from "../../../lib/ai/provider";
 import { getRoleInstruction, UserRole } from "../../../lib/ai/roleContext";
 import { z } from "zod";
+import { validateSafeUrl, readStreamWithLimit } from "@/lib/security/ssrf";
 
 const RequestSchema = z.object({ barcode: z.string().min(1) });
 
@@ -387,43 +388,74 @@ async function tryRxNormByName(name: string): Promise<MedicineData | null> {
   }
 }
 
-// ─── QR URL Fetcher ───────────────────────────────────────────────────────────
+// ─── QR URL Fetcher (Hardened against SSRF) ──────────────────────────────────
 // Fetches the page a QR URL points to and extracts product name/info.
-// Returns both structured data if possible AND a raw product name for further lookup.
-async function fetchQRUrl(url: string): Promise<{ medicine?: MedicineData; productName?: string }> {
+// Enforces: HTTPS only, private/loopback IP denial, manual redirect validation,
+// 5s timeout, and 512KB response body cap.
+async function fetchQRUrl(rawUrl: string): Promise<{ medicine?: MedicineData; productName?: string }> {
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/91.0",
-        "Accept": "text/html,application/json",
-      },
-      signal: AbortSignal.timeout(9000),
-      redirect: "follow",
-    });
-    if (!res.ok) return {};
+    let currentUrl = rawUrl.trim();
+    let hops = 0;
+    const maxHops = 2; // Allow at most 2 safe redirect hops
+    let res: Response | null = null;
+    let finalHostname = '';
+
+    while (hops <= maxHops) {
+      const validation = await validateSafeUrl(currentUrl);
+      if (!validation.valid || !validation.url) {
+        console.warn(`[MedCheck SSRF Block] Rejected URL "${currentUrl}": ${validation.reason}`);
+        return {};
+      }
+
+      finalHostname = validation.url.hostname;
+
+      res = await fetch(currentUrl, {
+        headers: {
+          "User-Agent": "PharmaDDIChecker/1.0 (QR Health Scanner)",
+          "Accept": "text/html,application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+        redirect: "manual",
+      });
+
+      // Handle 3xx redirects manually with safety re-verification
+      if ([301, 302, 303, 307, 308].includes(res.status)) {
+        const location = res.headers.get("location");
+        if (!location) return {};
+        currentUrl = new URL(location, currentUrl).toString();
+        hops++;
+        continue;
+      }
+
+      break;
+    }
+
+    if (!res || !res.ok) return {};
 
     const ct = res.headers.get("content-type") || "";
-    const hostname = new URL(url).hostname;
+    const rawBody = await readStreamWithLimit(res.body, 512 * 1024);
 
     // JSON response
     if (ct.includes("application/json")) {
-      const d = await res.json();
-      const name = d.productName || d.name || d.brand || d.product_name || d.title || "";
-      const generic = d.genericName || d.ingredient || d.activeIngredient || "";
-      if (name) {
-        return {
-          medicine: buildMedicineData(name, d.brandName || name, generic,
-            d.strength || "", d.dosageForm || d.form || "",
-            d.manufacturer || d.company || "", "Unable to Verify", "Medium",
-            `QR Page (${hostname})`),
-          productName: name,
-        };
-      }
+      try {
+        const d = JSON.parse(rawBody);
+        const name = d.productName || d.name || d.brand || d.product_name || d.title || "";
+        const generic = d.genericName || d.ingredient || d.activeIngredient || "";
+        if (name) {
+          return {
+            medicine: buildMedicineData(name, d.brandName || name, generic,
+              d.strength || "", d.dosageForm || d.form || "",
+              d.manufacturer || d.company || "", "Unable to Verify", "Medium",
+              `QR Page (${finalHostname})`),
+            productName: name,
+          };
+        }
+      } catch { /* malformed json */ }
     }
 
     // HTML response
-    if (ct.includes("text/html")) {
-      const html = await res.text();
+    if (ct.includes("text/html") || ct.includes("text/plain")) {
+      const html = rawBody;
 
       // schema.org Product
       const scripts = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi) || [];
@@ -439,7 +471,7 @@ async function fetchQRUrl(url: string): Promise<{ medicine?: MedicineData; produ
             const desc = (prod.description || "").substring(0, 100);
             return {
               medicine: buildMedicineData(name, brand || name, desc, "", "",
-                brand, "Unable to Verify", "Medium", `QR Page (${hostname})`),
+                brand, "Unable to Verify", "Medium", `QR Page (${finalHostname})`),
               productName: name,
             };
           }
@@ -457,12 +489,14 @@ async function fetchQRUrl(url: string): Promise<{ medicine?: MedicineData; produ
       if (rawTitle.length > 3 && !GENERIC_TITLES.some(g => rawTitle.toLowerCase() === g)) {
         return {
           medicine: buildMedicineData(rawTitle, "", metaDesc?.substring(0, 80) || "",
-            "", "", hostname, "Unable to Verify", "Low", `QR Page (${hostname})`),
+            "", "", finalHostname, "Unable to Verify", "Low", `QR Page (${finalHostname})`),
           productName: rawTitle,
         };
       }
     }
-  } catch { /* timeout or network error */ }
+  } catch (err: any) {
+    console.warn(`[MedCheck fetchQRUrl] Error: ${err.message}`);
+  }
   return {};
 }
 

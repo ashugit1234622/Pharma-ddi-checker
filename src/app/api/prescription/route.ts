@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { extractJson } from "../../../lib/ai/provider";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
 
 export interface PrescribedMedicine {
   rawName: string;
@@ -64,6 +67,26 @@ function getOcrApiKeys(): Array<{ name: string; key: string }> {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
+  }
+
+  // Rate limit: 10 OCR requests per user/IP per 15-minute window
+  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
+  const rateLimitResult = checkRateLimit(`ocr:${clientKey}`, 10, 15 * 60 * 1000);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Maximum 10 prescription scans per 15 minutes." },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+        },
+      }
+    );
+  }
+
   let body: unknown;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
@@ -71,6 +94,11 @@ export async function POST(req: NextRequest) {
   const { image } = body as { image?: string };
   if (!image || typeof image !== "string" || image.length < 100) {
     return NextResponse.json({ error: "No valid image data provided." }, { status: 400 });
+  }
+
+  // Maximum payload limit: ~5MB base64 string
+  if (image.length > 7000000) {
+    return NextResponse.json({ error: "Image payload exceeds maximum allowable limit of ~5MB." }, { status: 413 });
   }
 
   const ocrKeys = getOcrApiKeys();

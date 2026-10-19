@@ -8,6 +8,7 @@ import { ConstrainedAnswerSchema } from "../../../lib/ai/schemas";
 import { findSharedCypSignal } from "../../../lib/ddi/ruleEngine";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
 
 const RequestSchema = z.object({
   drug1Id: z.string().min(1),
@@ -19,6 +20,25 @@ const FALLBACK_ANSWER =
   "The available evidence in this analysis does not establish an answer to that question.";
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
+  }
+
+  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
+  const rateLimitResult = checkRateLimit(`ask:${clientKey}`, 30, 10 * 60 * 1000);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait a few moments before asking more questions." },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+        },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -43,17 +63,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not load drug data." }, { status: 503 });
   }
 
-  let userRole: UserRole = 'user';
-  try {
-    const session = await getServerSession(authOptions);
-    userRole = (session?.user as any)?.userRole || 'user';
-  } catch (e) {}
+  const userRole: UserRole = (session.user as any)?.userRole || 'user';
 
   try {
     const provider = getAIProvider();
     const cypSignals = findSharedCypSignal(bundle.drug1, bundle.drug2);
+    const sanitizedQuestion = `<user_question>\n${question.replace(/<\/?user_question>/gi, '')}\n</user_question>`;
     const userPrompt = JSON.stringify(
-      { question, evidenceBundle: bundle, cypSignals },
+      { question: sanitizedQuestion, evidenceBundle: bundle, cypSignals },
       null,
       2
     );

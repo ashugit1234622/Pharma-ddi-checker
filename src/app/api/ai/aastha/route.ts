@@ -5,6 +5,7 @@ import { buildAasthaPrompt } from "@/lib/ai/prompts";
 import { AasthaResponseSchema } from "@/lib/ai/schemas";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
 
 const AasthaRequestSchema = z.object({
   message: z.string().min(1),
@@ -38,13 +39,33 @@ export async function POST(req: NextRequest) {
 
   const { message, conversationHistory, drugContext, reportContext, userProfile } = parsed.data;
 
+  if (message.length > 1000) {
+    return NextResponse.json({ error: "Message exceeds maximum allowable length of 1000 characters." }, { status: 400 });
+  }
+
   let userRole = 'user';
+  let userId: string | undefined = undefined;
   try {
     const session = await getServerSession(authOptions);
     if (session?.user) {
       userRole = (session.user as any).userRole || 'user';
+      userId = (session.user as any).id || session.user.email || undefined;
     }
   } catch (e) {}
+
+  const clientKey = getClientIdentifier(req, userId);
+  const rateLimitResult = checkRateLimit(`aastha:${clientKey}`, 30, 10 * 60 * 1000);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait a few moments before sending more messages." },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+        },
+      }
+    );
+  }
 
   let rawResponse: string | null = null;
   try {

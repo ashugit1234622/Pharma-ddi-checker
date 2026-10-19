@@ -54,6 +54,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: [] });
   }
 
+  if (q.length > 60) {
+    return NextResponse.json({ error: "Query exceeds maximum allowable length of 60 characters." }, { status: 400 });
+  }
+
+  if (/(.)\1{5,}/.test(q)) {
+    return NextResponse.json({ error: "Query contains abnormal repetition." }, { status: 400 });
+  }
+
+  if (!/^[a-zA-Z0-9\s\-_.,()/+&%]+$/.test(q)) {
+    return NextResponse.json({ error: "Query contains invalid characters." }, { status: 400 });
+  }
+
   const queryLower = q.toLowerCase();
   const allFoods = loadFoods();
 

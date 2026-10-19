@@ -108,9 +108,10 @@ export default function CycleTrackerPage() {
     }
 
     if (status === 'authenticated') {
-      // 1. Try to load profile from cache for instant render
+      // 1. Try to load profile from session cache for instant render
       try {
-        const cachedProfile = localStorage.getItem('pharma_profile_cache');
+        localStorage.removeItem('pharma_profile_cache'); // Clear legacy persistent storage
+        const cachedProfile = sessionStorage.getItem('pharma_profile_cache');
         if (cachedProfile) {
           const prof = JSON.parse(cachedProfile);
           setProfile(prof);
@@ -134,7 +135,9 @@ export default function CycleTrackerPage() {
         .then(res => res.json())
         .then(data => {
           if (data.profile) {
-            localStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
+            try {
+              sessionStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
+            } catch (_) {}
             setProfile(data.profile);
             if (data.profile.gender !== 'female') {
               router.push('/');

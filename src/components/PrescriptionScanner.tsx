@@ -283,10 +283,11 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
     if (file && file.type.startsWith('image/')) handleFileUpload(file);
   };
 
-  // Restore session from cache
+  // Restore session from cache (tab-scoped sessionStorage)
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('pharma_prescription_session');
+      localStorage.removeItem('pharma_prescription_session'); // Clear legacy persistent storage
+      const stored = sessionStorage.getItem('pharma_prescription_session');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.result) {
@@ -297,11 +298,11 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
     } catch (e) {}
   }, []);
 
-  // Save session to cache
+  // Save session to cache (tab-scoped sessionStorage)
   useEffect(() => {
     try {
       if (result) {
-        localStorage.setItem('pharma_prescription_session', JSON.stringify({ result }));
+        sessionStorage.setItem('pharma_prescription_session', JSON.stringify({ result }));
       }
     } catch (e) {}
   }, [result]);
@@ -310,7 +311,10 @@ export default function PrescriptionScanner({ onCheckInteraction }: Props) {
     stopCamera(); setScanState('idle'); setResult(null); setErrorMsg('');
     setArRect({ top: 0.12, left: 0.08, right: 0.08, bottom: 0.12 }); setSelectedPair(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    try { localStorage.removeItem('pharma_prescription_session'); } catch(e) {}
+    try {
+      sessionStorage.removeItem('pharma_prescription_session');
+      localStorage.removeItem('pharma_prescription_session');
+    } catch(e) {}
   };
 
   const handleInteractionCheck = () => {

@@ -55,13 +55,14 @@ export default function Header() {
     onValid();
   };
 
-  // ── Profile: try localStorage first (instant), refresh silently ──
+  // ── Profile: try sessionStorage first (instant, tab-scoped), refresh silently ──
   useEffect(() => {
     if (status !== 'authenticated') return;
 
-    // Instant load from cache
+    // Instant load from tab-scoped session cache
     try {
-      const cached = localStorage.getItem('pharma_profile_cache');
+      localStorage.removeItem('pharma_profile_cache'); // Clear legacy persistent storage
+      const cached = sessionStorage.getItem('pharma_profile_cache');
       if (cached) {
         const prof = JSON.parse(cached);
         if (prof.gender) {
@@ -78,7 +79,9 @@ export default function Header() {
       .then(res => res.json())
       .then(data => {
         if (data.profile) {
-          localStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
+          try {
+            sessionStorage.setItem('pharma_profile_cache', JSON.stringify(data.profile));
+          } catch (_) {}
           if (data.profile.gender) {
             setUserGender(data.profile.gender);
             if (data.profile.gender === 'female' && !data.profile.last_menstruation_date) {

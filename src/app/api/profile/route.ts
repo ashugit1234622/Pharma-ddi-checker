@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       display_name, age, gender, blood_group,
       underlying_diseases, allergies, current_medications,
       medical_history, emergency_contact, last_menstruation_date,
-      user_role, consent_accepted, menstruation_details
+      consent_accepted, menstruation_details
     } = body;
 
     // Step 2: Get DB
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       user = { id: newId };
     }
 
-    // Step 4: Upsert profile
+    // Step 4: Upsert profile (user_role cannot be modified via client API)
     const existingRes = await pool.query('SELECT id FROM patient_profiles WHERE user_id = $1', [user.id]);
     const existing = existingRes.rows[0];
     const profileId = existing?.id || uuidv4();
@@ -91,16 +91,16 @@ export async function POST(req: NextRequest) {
           display_name=$1, age=$2, gender=$3, blood_group=$4,
           underlying_diseases=$5, allergies=$6, current_medications=$7,
           medical_history=$8, emergency_contact=$9, last_menstruation_date=$10, 
-          user_role=$11, consent_accepted=$12, menstruation_details=$14,
-          consent_accepted_at=CASE WHEN $12 = true AND consent_accepted_at IS NULL THEN CURRENT_TIMESTAMP ELSE consent_accepted_at END,
+          consent_accepted=$11, menstruation_details=$13,
+          consent_accepted_at=CASE WHEN $11 = true AND consent_accepted_at IS NULL THEN CURRENT_TIMESTAMP ELSE consent_accepted_at END,
           updated_at=CURRENT_TIMESTAMP
-        WHERE user_id=$13
+        WHERE user_id=$12
       `, [
         display_name || null, age ? parseInt(age) : null, gender || null, blood_group || null,
         JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []), medical_history || null,
         emergency_contact || null, last_menstruation_date || null,
-        user_role || 'user', consent_accepted || false, user.id,
+        consent_accepted || false, user.id,
         menstruation_details ? JSON.stringify(menstruation_details) : null
       ]);
     } else {
@@ -109,14 +109,14 @@ export async function POST(req: NextRequest) {
           (id, user_id, display_name, age, gender, blood_group,
            underlying_diseases, allergies, current_medications, medical_history, emergency_contact, last_menstruation_date,
            user_role, consent_accepted, consent_accepted_at, menstruation_details)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CASE WHEN $14 = true THEN CURRENT_TIMESTAMP ELSE NULL END, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'user', $12, CASE WHEN $12 = true THEN CURRENT_TIMESTAMP ELSE NULL END, $13)
       `, [
         profileId, user.id, display_name || null, age ? parseInt(age) : null,
         gender || null, blood_group || null,
         JSON.stringify(underlying_diseases || []), JSON.stringify(allergies || []),
         JSON.stringify(current_medications || []), medical_history || null,
         emergency_contact || null, last_menstruation_date || null,
-        user_role || 'user', consent_accepted || false,
+        consent_accepted || false,
         menstruation_details ? JSON.stringify(menstruation_details) : null
       ]);
     }

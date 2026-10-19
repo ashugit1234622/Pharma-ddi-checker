@@ -6,9 +6,17 @@ let initializationPromise: Promise<void> | null = null;
 export function getDatabase(): Pool {
   if (pool) return pool;
   
+  const caCert = process.env.CA_CERT;
+  const sslConfig = process.env.DATABASE_URL?.includes('neon.tech')
+    ? {
+        rejectUnauthorized: true,
+        ...(caCert ? { ca: caCert } : {})
+      }
+    : (caCert ? { rejectUnauthorized: true, ca: caCert } : undefined);
+
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined
+    ssl: sslConfig
   });
 
   if (!initializationPromise) {

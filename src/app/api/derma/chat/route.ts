@@ -5,6 +5,7 @@ import { getDatabase } from "@/lib/db";
 import { getGeminiProvider, extractJson } from "@/lib/ai/provider";
 import { DERMA_SYSTEM_PROMPT, buildDermaPrompt } from "@/lib/ai/prompts";
 import { DermaChatSchema } from "@/lib/ai/schemas";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
 
 function tryGetDatabase() {
   try { return getDatabase(); }
@@ -13,6 +14,23 @@ function tryGetDatabase() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
+  }
+
+  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
+  const rateLimitResult = checkRateLimit(`derma:${clientKey}`, 30, 10 * 60 * 1000);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait a few moments before sending more messages." },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+        },
+      }
+    );
+  }
   
   let body;
   try {
@@ -22,8 +40,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { message, history } = body;
-  if (!message || typeof message !== "string") {
+  if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
+  }
+
+  if (message.length > 1000) {
+    return NextResponse.json({ error: "Message exceeds maximum length of 1000 characters." }, { status: 400 });
   }
 
   let profile = null;
