@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 let drugsCache: any[] | null = null;
 
@@ -42,11 +43,20 @@ function fuzzyScore(a: string, b: string): number {
 }
 
 export async function GET(request: Request) {
+  const rateLimitResult = await enforceRateLimit(request, {
+    category: 'search_drugs',
+    policy: RATE_LIMIT_POLICIES.SEARCH,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, "Too many search requests. Please slow down.");
+  }
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim() ?? '';
 
   if (q.length < 1) {
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ data: [] }, { headers: createRateLimitHeaders(rateLimitResult) });
   }
 
   if (q.length > 60) {
@@ -122,5 +132,7 @@ export async function GET(request: Request) {
       indications: s.drug.indications,
     }));
 
-  return NextResponse.json({ data: results });
+  return NextResponse.json({ data: results }, {
+    headers: createRateLimitHeaders(rateLimitResult),
+  });
 }

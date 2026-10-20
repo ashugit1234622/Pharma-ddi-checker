@@ -5,7 +5,7 @@ import { buildAasthaPrompt } from "@/lib/ai/prompts";
 import { AasthaResponseSchema } from "@/lib/ai/schemas";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 const AasthaRequestSchema = z.object({
   message: z.string().min(1),
@@ -53,17 +53,16 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {}
 
-  const clientKey = getClientIdentifier(req, userId);
-  const rateLimitResult = checkRateLimit(`aastha:${clientKey}`, 30, 10 * 60 * 1000);
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'aastha',
+    policy: RATE_LIMIT_POLICIES.AI_CHAT,
+    userId,
+  });
+
   if (!rateLimitResult.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Please wait a few moments before sending more messages." },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
-        },
-      }
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded. Please wait a few moments before sending more messages."
     );
   }
 
@@ -97,7 +96,9 @@ export async function POST(req: NextRequest) {
     }
 
     const parsedAiResponse = AasthaResponseSchema.parse(parsed);
-    return NextResponse.json({ data: parsedAiResponse });
+    return NextResponse.json({ data: parsedAiResponse }, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
 
   } catch (err) {
     console.error("[AASTHA API Error]:", err instanceof Error ? err.message : err);

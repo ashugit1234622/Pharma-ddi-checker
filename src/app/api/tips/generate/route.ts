@@ -6,6 +6,7 @@ import { TIPS_SYSTEM_PROMPT, buildTipsGenerationPrompt } from '@/lib/ai/prompts'
 import { TipsGenerationSchema } from '@/lib/ai/schemas';
 import { getDatabase } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from '@/lib/security/rateLimit';
 
 function tryGetDatabase() {
   try {
@@ -20,6 +21,20 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userIdAuth = (session.user as any)?.id || session.user.email;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'tips_gen',
+    policy: RATE_LIMIT_POLICIES.AI_EXPENSIVE,
+    userId: userIdAuth,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(
+      rateLimitResult,
+      'Rate limit exceeded for generating personalized tips. Please wait a few moments before trying again.'
+    );
   }
 
   try {
@@ -97,6 +112,8 @@ export async function POST(req: NextRequest) {
         dietRestrictions: parsed.dietRestrictions.length,
         medicalTips: parsed.medicalTips.length,
       },
+    }, {
+      headers: createRateLimitHeaders(rateLimitResult),
     });
   } catch (e: any) {
     console.error('[Tips Generate] Error:', e.message, e.stack);

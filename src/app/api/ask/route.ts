@@ -8,7 +8,7 @@ import { ConstrainedAnswerSchema } from "../../../lib/ai/schemas";
 import { findSharedCypSignal } from "../../../lib/ddi/ruleEngine";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 const RequestSchema = z.object({
   drug1Id: z.string().min(1),
@@ -25,17 +25,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
   }
 
-  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
-  const rateLimitResult = checkRateLimit(`ask:${clientKey}`, 30, 10 * 60 * 1000);
+  const userId = (session.user as any)?.id || session.user.email || undefined;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'ask',
+    policy: RATE_LIMIT_POLICIES.AI_CHAT,
+    userId,
+  });
+
   if (!rateLimitResult.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Please wait a few moments before asking more questions." },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
-        },
-      }
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded. Please wait a few moments before asking more questions."
     );
   }
 
@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ answerable: false, answer: FALLBACK_ANSWER, sourceIds: [] });
     }
 
-    return NextResponse.json(parsedAnswer.data);
+    return NextResponse.json(parsedAnswer.data, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (err) {
     return NextResponse.json(
       { answerable: false, answer: "The AI service is currently unavailable. Please try again.", sourceIds: [] },

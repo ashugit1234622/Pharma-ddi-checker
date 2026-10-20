@@ -5,6 +5,7 @@ import { runDDIAnalysis, AIUnavailableError, AIValidationError } from "../../../
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 const RequestSchema = z.object({
   drug1Id: z.string().min(1),
@@ -34,6 +35,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Select two different drugs." }, { status: 400 });
   }
 
+  // Rate Limiting (Dual-dimension: User + IP, Burst + Sustained)
+  let session = null;
+  let userId: string | undefined = undefined;
+  let userRole = 'user';
+  try {
+    session = await getServerSession(authOptions);
+    if (session?.user) {
+      userId = (session.user as any).id || session.user.email || undefined;
+      userRole = (session.user as any).userRole || 'user';
+    }
+  } catch (e) {
+    console.error("Failed to fetch session in analyze route", e);
+  }
+
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'ddi',
+    policy: RATE_LIMIT_POLICIES.DDI,
+    userId,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded for DDI analysis. Please wait a few moments before requesting more analyses."
+    );
+  }
+
   // 1. Build the deterministic evidence bundle (DB + rule engine).
   let bundle;
   try {
@@ -48,12 +76,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Fetch User Profile & Role
+  // 2. Fetch User Profile
   let userProfile = null;
-  let userRole = 'user';
   try {
-    const session = await getServerSession(authOptions);
-    userRole = (session?.user as any)?.userRole || 'user';
     if (session?.user?.email) {
       const pool = getDatabase();
       const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
@@ -90,6 +115,8 @@ export async function POST(req: NextRequest) {
         evidenceBundle: bundle,
         meta: { fromCache, model, aiAvailable: true },
       }
+    }, {
+      headers: createRateLimitHeaders(rateLimitResult),
     });
   } catch (err) {
     const aiError =

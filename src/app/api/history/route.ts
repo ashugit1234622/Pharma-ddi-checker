@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next"
+import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = (session.user as any)?.id || session.user.email;
+    const rateLimitResult = await enforceRateLimit(req, {
+      category: 'history',
+      policy: RATE_LIMIT_POLICIES.CRUD,
+      userId,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult);
     }
 
     const pool = getDatabase();
@@ -22,7 +34,9 @@ export async function GET(req: NextRequest) {
 
     const recordsRes = await pool.query('SELECT * FROM patient_records WHERE user_id = $1 ORDER BY created_at DESC', [user.id]);
     
-    return NextResponse.json(recordsRes.rows);
+    return NextResponse.json(recordsRes.rows, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (error: any) {
     console.error('History fetch error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -34,6 +48,17 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = (session.user as any)?.id || session.user.email;
+    const rateLimitResult = await enforceRateLimit(req, {
+      category: 'history',
+      policy: RATE_LIMIT_POLICIES.CRUD,
+      userId,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult);
     }
 
     const body = await req.json();
@@ -56,7 +81,9 @@ export async function POST(req: NextRequest) {
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [newRecordId, user.id, record_type, title, summary || '', JSON.stringify(data_json)]);
 
-    return NextResponse.json({ success: true, id: newRecordId });
+    return NextResponse.json({ success: true, id: newRecordId }, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (error: any) {
     console.error('History save error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -68,6 +95,17 @@ export async function DELETE(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = (session.user as any)?.id || session.user.email;
+    const rateLimitResult = await enforceRateLimit(req, {
+      category: 'history',
+      policy: RATE_LIMIT_POLICIES.CRUD,
+      userId,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult);
     }
 
     const { searchParams } = new URL(req.url);
@@ -90,7 +128,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Record not found or not authorized' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (error: any) {
     console.error('History delete error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

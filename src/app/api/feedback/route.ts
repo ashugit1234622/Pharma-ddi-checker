@@ -3,12 +3,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
 import { v4 as uuidv4 } from 'uuid';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userIdAuth = (session.user as any)?.id || session.user.email;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'feedback',
+    policy: RATE_LIMIT_POLICIES.CRUD,
+    userId: userIdAuth,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult);
   }
 
   try {
@@ -48,7 +60,9 @@ export async function POST(req: NextRequest) {
       [feedbackId, userId, userName, userTier, category, content]
     );
 
-    return NextResponse.json({ success: true, feedbackId });
+    return NextResponse.json({ success: true, feedbackId }, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (error: any) {
     console.error("[Feedback API Error]:", error);
     return NextResponse.json({ error: "Failed to submit feedback" }, { status: 500 });

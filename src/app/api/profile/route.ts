@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '@/lib/db';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 function tryGetDatabase() {
   try {
@@ -48,6 +49,17 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized: no session', step: 'auth' }, { status: 401 });
+  }
+
+  const userIdAuth = (session.user as any)?.id || session.user.email;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'profile',
+    policy: RATE_LIMIT_POLICIES.CRUD,
+    userId: userIdAuth,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult);
   }
 
   try {

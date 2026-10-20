@@ -234,7 +234,12 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
         })
       });
 
-      if (!res.ok) throw new Error('Failed to fetch response');
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => null);
+        const errorMsg = errorJson?.error || (res.status === 429 ? "Rate limit exceeded. Please wait a moment before sending more messages." : "Failed to fetch response");
+        setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+        return;
+      }
       const { data } = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.answer }]);
     } catch (error) {
@@ -303,7 +308,14 @@ export default function AasthaChat({ isAnalyzing, drug1, drug2, report, inline =
         })
       });
 
-      if (!res.ok) throw new Error('Aastha API failed');
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => null);
+        const errorMsg = errorJson?.error || (res.status === 429 ? "Rate limit reached. Please wait a moment before speaking again." : "Aastha couldn't respond. Please try again.");
+        setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+        setVoiceMode('error');
+        setVoiceError(errorMsg);
+        return;
+      }
       const { data } = await res.json();
       const answer: string = data.answer;
 

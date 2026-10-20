@@ -5,6 +5,7 @@ import { getAIProvider, extractJson } from "../../../lib/ai/provider";
 import { getRoleInstruction, UserRole } from "../../../lib/ai/roleContext";
 import { z } from "zod";
 import { validateSafeUrl, readStreamWithLimit } from "@/lib/security/ssrf";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 const RequestSchema = z.object({ barcode: z.string().min(1) });
 
@@ -647,12 +648,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  // Read role from session (graceful fallback to 'user')
+  // Read role and userId from session (graceful fallback to 'user')
   let userRole: UserRole = 'user';
+  let userId: string | undefined = undefined;
   try {
     const session = await getServerSession(authOptions);
     userRole = (session?.user as any)?.userRole || 'user';
+    userId = (session?.user as any)?.id || session?.user?.email || undefined;
   } catch (_) {}
+
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'medcheck',
+    policy: RATE_LIMIT_POLICIES.AI_EXPENSIVE,
+    userId,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded for barcode and medicine lookup. Please wait a few moments before trying again."
+    );
+  }
 
   const rawScan = parsed.data.barcode.trim();
   const cacheKey = rawScan.toLowerCase();

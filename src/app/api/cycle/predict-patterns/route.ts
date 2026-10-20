@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getGeminiProvider } from '@/lib/ai/provider';
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 function extractCleanText(val: unknown): string {
   if (!val) return '';
@@ -53,6 +54,20 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = (session.user as any)?.id || session.user.email;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'cycle_predict',
+    policy: RATE_LIMIT_POLICIES.AI_EXPENSIVE,
+    userId,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(
+      rateLimitResult,
+      'Rate limit exceeded for menstrual cycle AI pattern prediction. Please wait a few moments before trying again.'
+    );
   }
 
   try {

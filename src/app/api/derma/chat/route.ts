@@ -5,7 +5,7 @@ import { getDatabase } from "@/lib/db";
 import { getGeminiProvider, extractJson } from "@/lib/ai/provider";
 import { DERMA_SYSTEM_PROMPT, buildDermaPrompt } from "@/lib/ai/prompts";
 import { DermaChatSchema } from "@/lib/ai/schemas";
-import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 function tryGetDatabase() {
   try { return getDatabase(); }
@@ -18,17 +18,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
   }
 
-  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
-  const rateLimitResult = checkRateLimit(`derma:${clientKey}`, 30, 10 * 60 * 1000);
+  const userId = (session.user as any)?.id || session.user.email || undefined;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'derma',
+    policy: RATE_LIMIT_POLICIES.AI_CHAT,
+    userId,
+  });
+
   if (!rateLimitResult.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Please wait a few moments before sending more messages." },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
-        },
-      }
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded. Please wait a few moments before sending more messages."
     );
   }
   
@@ -80,7 +80,9 @@ export async function POST(req: NextRequest) {
     const jsonStr = extractJson(rawRes);
     const parsed = DermaChatSchema.parse(JSON.parse(jsonStr));
 
-    return NextResponse.json(parsed);
+    return NextResponse.json(parsed, {
+      headers: createRateLimitHeaders(rateLimitResult),
+    });
   } catch (error: any) {
     console.error("[Derma API] Error:", error);
     return NextResponse.json(

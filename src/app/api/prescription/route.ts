@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { extractJson } from "../../../lib/ai/provider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { checkRateLimit, getClientIdentifier } from "@/lib/security/rateLimit";
+import { enforceRateLimit, RATE_LIMIT_POLICIES, rateLimitResponse, createRateLimitHeaders } from "@/lib/security/rateLimit";
 
 export interface PrescribedMedicine {
   rawName: string;
@@ -72,18 +72,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized. Please sign in to use this service." }, { status: 401 });
   }
 
-  // Rate limit: 10 OCR requests per user/IP per 15-minute window
-  const clientKey = getClientIdentifier(req, (session.user as any)?.id || session.user.email || undefined);
-  const rateLimitResult = checkRateLimit(`ocr:${clientKey}`, 10, 15 * 60 * 1000);
+  // Rate limit: Tiered User + IP protection for expensive vision OCR
+  const userId = (session.user as any)?.id || session.user.email || undefined;
+  const rateLimitResult = await enforceRateLimit(req, {
+    category: 'ocr',
+    policy: RATE_LIMIT_POLICIES.OCR,
+    userId,
+  });
+
   if (!rateLimitResult.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Maximum 10 prescription scans per 15 minutes." },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
-        },
-      }
+    return rateLimitResponse(
+      rateLimitResult,
+      "Rate limit exceeded for prescription OCR scanning. Please wait a few moments before trying again."
     );
   }
 
@@ -162,7 +162,9 @@ export async function POST(req: NextRequest) {
 
       if (!Array.isArray(parsed.medicines)) parsed.medicines = [];
       console.log(`[PRESCRIPTION OCR] Success with ${name}. Extracted ${parsed.medicines.length} medicines.`);
-      return NextResponse.json(parsed);
+      return NextResponse.json(parsed, {
+        headers: createRateLimitHeaders(rateLimitResult),
+      });
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
