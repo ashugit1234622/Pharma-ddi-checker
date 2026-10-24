@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { buildEvidenceBundle, DrugNotFoundError } from "../../../lib/ddi/evidenceBundle";
 import { runDDIAnalysis, AIUnavailableError, AIValidationError } from "../../../lib/ai/analysis";
+import { DDIAnalysisSchema } from "../../../lib/ai/schemas";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
@@ -98,6 +99,85 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     console.error("Failed to fetch user profile for AI analysis", e);
+  }
+
+  // 2.5 Check User's Neon DB Patient Records (History Reuse)
+  if (session?.user?.email && !forceRefresh) {
+    try {
+      const pool = getDatabase();
+      const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [session.user.email]);
+      if (userRes.rows.length > 0) {
+        const dbUserId = userRes.rows[0].id;
+        
+        const d1Name = (bundle.drug1?.generic_name || drug1Id).toLowerCase().trim();
+        const d2Name = (bundle.drug2?.generic_name || drug2Id).toLowerCase().trim();
+        const d1Id = drug1Id.toLowerCase().trim();
+        const d2Id = drug2Id.toLowerCase().trim();
+
+        const historyRes = await pool.query(`
+          SELECT id, data_json, created_at, title
+          FROM patient_records
+          WHERE user_id = $1 AND record_type = 'ddi_check'
+          ORDER BY created_at DESC
+        `, [dbUserId]);
+
+        for (const row of historyRes.rows) {
+          try {
+            const parsedData = typeof row.data_json === 'string' ? JSON.parse(row.data_json) : row.data_json;
+            const meta = parsedData?._meta;
+
+            let isMatch = false;
+
+            // Priority 1: Exact canonical ID match via stored _meta
+            if (meta?.drug1Id && meta?.drug2Id) {
+              const metaIds = [String(meta.drug1Id).toLowerCase().trim(), String(meta.drug2Id).toLowerCase().trim()].sort();
+              const targetIds = [d1Id, d2Id].sort();
+              if (metaIds[0] === targetIds[0] && metaIds[1] === targetIds[1]) {
+                isMatch = true;
+              }
+            }
+
+            // Priority 2: Title bidirectional matching
+            if (!isMatch && row.title) {
+              const lowerTitle = String(row.title).toLowerCase();
+              if (
+                (lowerTitle.includes(d1Name) && lowerTitle.includes(d2Name)) ||
+                (lowerTitle.includes(d1Id) && lowerTitle.includes(d2Id))
+              ) {
+                isMatch = true;
+              }
+            }
+
+            if (isMatch) {
+              const cleanData = { ...parsedData };
+              delete cleanData._meta;
+              const validated = DDIAnalysisSchema.parse(cleanData);
+
+              console.log(`[DDI History Hit] Reusing saved report for user ${dbUserId} (${row.title})`);
+              return NextResponse.json({
+                data: {
+                  analysis: validated,
+                  evidenceBundle: bundle,
+                  meta: {
+                    fromCache: true,
+                    model: 'user_history',
+                    aiAvailable: true,
+                    savedAt: row.created_at,
+                    recordId: row.id
+                  },
+                }
+              }, {
+                headers: createRateLimitHeaders(rateLimitResult),
+              });
+            }
+          } catch {
+            // Ignore unparseable historical record safely
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Error reading from user patient_records history:", e);
+    }
   }
 
   // 3. Run AI analysis over the bundle.

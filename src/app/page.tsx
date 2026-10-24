@@ -486,6 +486,7 @@ export default function Home() {
   const [drug2, setDrug2] = useState<DrugSearchResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [report, setReport] = useState<DDIAnalysis | null>(null);
+  const [reportMeta, setReportMeta] = useState<{ fromCache?: boolean; model?: string | null; savedAt?: string } | null>(null);
   const [error, setError] = useState('');
   const [stepIndex, setStepIndex] = useState(0);
   const [doseMode, setDoseMode] = useState<'normal' | 'high' | 'elderly'>('normal');
@@ -688,6 +689,7 @@ export default function Home() {
     isRunningRef.current = true;
     setAnalyzing(true);
     setReport(null);
+    setReportMeta(null);
     setError('');
 
     // Create a new AbortController for this request
@@ -708,25 +710,37 @@ export default function Home() {
       if (json.error) setError(json.error);
       else if (json.data?.analysis) {
         const analysis = json.data.analysis;
+        const meta = json.data.meta || {};
         setReport(analysis);
+        setReportMeta(meta);
         
-        // Auto-save to history with specific formatted summary
-        const score = severityToScore(analysis.severity);
-        const tox = analysis.toxicityScores?.drug1 || {};
-        const organs = Object.entries(tox).filter(([_, v]) => (v as number) > 30).map(([k]) => k).join(', ') || 'None';
-        
-        const summaryText = `${d1.name} with ${d2.name}\nscore-${score}\norgans effected: ${organs}\nshort summary for whether to use it or not: ${analysis.executiveSummary}`;
-        
-        fetch('/api/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            record_type: 'ddi_check',
-            title: `${d1.name} + ${d2.name}`,
-            summary: summaryText,
-            data_json: analysis
-          })
-        }).catch(err => console.error("Auto-save failed", err));
+        // Auto-save to history ONLY if this report was not just loaded from user history
+        if (meta.model !== 'user_history') {
+          const score = severityToScore(analysis.severity);
+          const tox = analysis.toxicityScores?.drug1 || {};
+          const organs = Object.entries(tox).filter(([_, v]) => (v as number) > 30).map(([k]) => k).join(', ') || 'None';
+          
+          const summaryText = `${d1.name} with ${d2.name}\nscore-${score}\norgans effected: ${organs}\nshort summary for whether to use it or not: ${analysis.executiveSummary}`;
+          
+          fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              record_type: 'ddi_check',
+              title: `${d1.name} + ${d2.name}`,
+              summary: summaryText,
+              data_json: {
+                ...analysis,
+                _meta: {
+                  drug1Id: d1.id,
+                  drug2Id: d2.id,
+                  drug1Name: d1.name,
+                  drug2Name: d2.name
+                }
+              }
+            })
+          }).catch(err => console.error("Auto-save failed", err));
+        }
 
         setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
       } else if (json.data?.aiError) setError(json.data.aiError);
@@ -799,7 +813,7 @@ export default function Home() {
   };
 
   const handleReset = () => { 
-    setDrug1(null); setDrug2(null); setReport(null); setError(''); setDoseMode('normal'); 
+    setDrug1(null); setDrug2(null); setReport(null); setReportMeta(null); setError(''); setDoseMode('normal'); 
     clearSessionCache();
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
@@ -978,10 +992,54 @@ export default function Home() {
                    report.severity === 'minor'           ? <><CheckCircle className="icon" size={16} /> MINOR INTERACTION</> : <><CheckCircle className="icon" size={20} /> NO SIGNIFICANT INTERACTION</>}
                 </div>
                 <p style={{ fontSize: '0.97rem', lineHeight: 1.7, marginTop: '0.75rem', color: 'var(--text-main)' }}>{report.executiveSummary}</p>
-                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
                     Confidence: <strong style={{ color: 'var(--text-muted)', textTransform: 'capitalize' }}>{report.confidence}</strong>
                   </div>
+                  {reportMeta?.model === 'user_history' && (
+                    <div style={{ 
+                      fontSize: '0.78rem', 
+                      color: 'var(--accent-primary)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.35rem',
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      fontWeight: 500
+                    }}>
+                      💾 Loaded from Your History {reportMeta.savedAt ? `(${new Date(reportMeta.savedAt).toLocaleDateString()})` : ''}
+                    </div>
+                  )}
+                  {reportMeta?.fromCache && reportMeta?.model !== 'user_history' && (
+                    <div style={{ 
+                      fontSize: '0.78rem', 
+                      color: 'var(--text-muted)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.35rem',
+                      background: 'var(--bg-hover)',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '6px'
+                    }}>
+                      ⚡ Cached Analysis
+                    </div>
+                  )}
+                  {!reportMeta?.fromCache && reportMeta && (
+                    <div style={{ 
+                      fontSize: '0.78rem', 
+                      color: 'var(--success)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.35rem',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '6px'
+                    }}>
+                      ✨ Live AI Analysis
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Print button, Save Button, Clear Button */}
@@ -989,7 +1047,7 @@ export default function Home() {
                 <button 
                   className="btn btn-outline print-hide" 
                   style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                  onClick={() => { setDrug1(null); setDrug2(null); setReport(null); clearSessionCache(); }}
+                  onClick={() => { setDrug1(null); setDrug2(null); setReport(null); setReportMeta(null); clearSessionCache(); }}
                 >
                   <XCircle className="icon" size={16} /> Clear
                 </button>
@@ -1011,7 +1069,15 @@ export default function Home() {
                           record_type: 'ddi_check',
                           title: `${drug1?.name} + ${drug2?.name}`,
                           summary: report.executiveSummary,
-                          data_json: report
+                          data_json: {
+                            ...report,
+                            _meta: {
+                              drug1Id: drug1?.id,
+                              drug2Id: drug2?.id,
+                              drug1Name: drug1?.name,
+                              drug2Name: drug2?.name
+                            }
+                          }
                         })
                       });
                       btn.innerHTML = '✓ Saved';
