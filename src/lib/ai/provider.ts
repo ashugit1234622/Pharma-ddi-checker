@@ -42,9 +42,9 @@ const COOLDOWN_MS_429 = 60000;  // 60s for quota exhaustion
 
 const providerHealthMap = new Map<string, ProviderHealth>();
 
-function getHealth(key: string): ProviderHealth {
-  if (!providerHealthMap.has(key)) {
-    providerHealthMap.set(key, {
+function getHealth(providerKey: string): ProviderHealth {
+  if (!providerHealthMap.has(providerKey)) {
+    providerHealthMap.set(providerKey, {
       consecutiveFailures: 0,
       consecutive503s: 0,
       consecutive429s: 0,
@@ -57,11 +57,19 @@ function getHealth(key: string): ProviderHealth {
       latencyWindow: []
     });
   }
-  return providerHealthMap.get(key)!;
+  return providerHealthMap.get(providerKey)!;
 }
 
-function avgLatency(key: string): number {
-  const h = getHealth(key);
+function disableKey(envVarName: string) {
+  providerHealthMap.forEach((health, key) => {
+    if (key.includes(`(${envVarName})`) || key.startsWith(`${envVarName}:`)) {
+      health.disabled = true;
+    }
+  });
+}
+
+function avgLatency(providerKey: string): number {
+  const h = getHealth(providerKey);
   if (h.latencyWindow.length === 0) return Infinity;
   return h.latencyWindow.reduce((a, b) => a + b, 0) / h.latencyWindow.length;
 }
@@ -184,7 +192,7 @@ export class RouterProvider implements AIProvider {
 
     // Filter to eligible providers (not disabled, not in active cooldown)
     let eligible = this.providers.filter(p => {
-      const h = getHealth(p.envVarName);
+      const h = getHealth(p.modelId);
       if (h.disabled) return false;
       if (h.circuitState === CircuitState.OPEN && h.cooldownUntil > now) return false;
       return true;
@@ -194,13 +202,20 @@ export class RouterProvider implements AIProvider {
       throw new Error("AI analysis is temporarily unavailable. Please try again shortly.");
     }
 
-    // Sort: HALF_OPEN test probes first, then by lowest latency
+    // Sort: HALF_OPEN test probes first, then gemini-3.5-flash before lite, then lowest latency
     eligible.sort((a, b) => {
-      const ha = getHealth(a.envVarName);
-      const hb = getHealth(b.envVarName);
+      const ha = getHealth(a.modelId);
+      const hb = getHealth(b.modelId);
       if (ha.circuitState === CircuitState.HALF_OPEN && hb.circuitState !== CircuitState.HALF_OPEN) return -1;
       if (hb.circuitState === CircuitState.HALF_OPEN && ha.circuitState !== CircuitState.HALF_OPEN) return 1;
-      return avgLatency(a.envVarName) - avgLatency(b.envVarName);
+
+      // Model priority: deeper clinical model first, fallback to lite
+      if (a.modelName !== b.modelName) {
+        if (a.modelName === "gemini-3.5-flash") return -1;
+        if (b.modelName === "gemini-3.5-flash") return 1;
+      }
+
+      return avgLatency(a.modelId) - avgLatency(b.modelId);
     });
 
     const allErrors: string[] = [];
@@ -208,15 +223,15 @@ export class RouterProvider implements AIProvider {
     for (const p of eligible) {
       if (signal?.aborted) throw new Error("AbortError: Cancelled");
 
-      const h = getHealth(p.envVarName);
+      const h = getHealth(p.modelId);
 
       // Transition OPEN → HALF_OPEN when cooldown expires
       if (h.circuitState === CircuitState.OPEN && h.cooldownUntil <= Date.now()) {
         h.circuitState = CircuitState.HALF_OPEN;
-        console.log(`[${this.poolName}] ${p.envVarName} cooldown expired. Testing with probe request (HALF_OPEN).`);
+        console.log(`[${this.poolName}] ${p.modelId} cooldown expired. Testing with probe request (HALF_OPEN).`);
       }
 
-      console.log(`[${this.poolName}] Attempting with ${p.envVarName} (${p.modelName})`);
+      console.log(`[${this.poolName}] Attempting with ${p.modelId}`);
       const t0 = Date.now();
 
       try {
@@ -232,7 +247,7 @@ export class RouterProvider implements AIProvider {
         h.latencyWindow.push(latency);
         if (h.latencyWindow.length > MAX_LATENCY_WINDOW) h.latencyWindow.shift();
 
-        console.log(`[${this.poolName}] Success on ${p.envVarName} (${latency}ms)`);
+        console.log(`[${this.poolName}] Success on ${p.modelId} (${latency}ms)`);
         return result;
 
       } catch (err: any) {
@@ -242,30 +257,31 @@ export class RouterProvider implements AIProvider {
         h.lastFailure = Date.now();
         h.failureReason = msg;
         h.consecutiveFailures++;
-        allErrors.push(`[${p.envVarName}]: ${msg.slice(0, 120)}`);
+        allErrors.push(`[${p.modelId}]: ${msg.slice(0, 120)}`);
 
         // ── Classify error and apply cooldown ───────────────────────────────
         if (msg.includes("401") || msg.includes("403")) {
-          console.error(`[${this.poolName}] ${p.envVarName} auth error. Disabling permanently.`);
+          console.error(`[${this.poolName}] ${p.envVarName} auth error. Disabling all providers for this key.`);
           h.disabled = true;
+          disableKey(p.envVarName);
         } else if (msg.includes("404") || msg.includes("NOT_FOUND")) {
-          console.error(`[${this.poolName}] Model ${p.modelName} not found on ${p.envVarName}. Disabling.`);
+          console.error(`[${this.poolName}] Model ${p.modelName} not found on ${p.envVarName}. Disabling this model.`);
           h.disabled = true;
         } else if (msg.includes("503") || msg.includes("Timeout") || msg.includes("UNAVAILABLE")) {
           h.consecutive503s++;
           h.cooldownUntil = Date.now() + COOLDOWN_MS_503;
-          console.warn(`[${this.poolName}] ${p.envVarName} 503/timeout. Cooldown 30s.`);
+          console.warn(`[${this.poolName}] ${p.modelId} 503/timeout. Cooldown 30s.`);
         } else if (msg.includes("429") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
           h.consecutive429s++;
           h.cooldownUntil = Date.now() + COOLDOWN_MS_429;
-          console.warn(`[${this.poolName}] ${p.envVarName} 429/quota. Cooldown 60s.`);
+          console.warn(`[${this.poolName}] ${p.modelId} 429/quota. Cooldown 60s.`);
         }
 
         // ── Open circuit if too many consecutive failures ────────────────────
         if (h.circuitState === CircuitState.HALF_OPEN || h.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           h.circuitState = CircuitState.OPEN;
           h.cooldownUntil = Date.now() + Math.max(h.cooldownUntil - Date.now(), COOLDOWN_MS_503);
-          console.warn(`[${this.poolName}] Circuit OPEN for ${p.envVarName}.`);
+          console.warn(`[${this.poolName}] Circuit OPEN for ${p.modelId}.`);
         }
       }
     }
@@ -293,8 +309,8 @@ const OCR_KEYS = [
   "PRESCRIPTION_GEMINI_API_KEY_4",
 ];
 
-// Models known to work in this environment for DDI (one provider instance per key)
-const DDI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+// Models known to work in this environment for DDI (gemini-3.5-flash primary, flash-lite fallback)
+const DDI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
 
 // Lite model known to work for Aastha/chat (preserves quota)
 const LITE_MODELS = ["gemini-3.5-flash-lite"];

@@ -4,6 +4,7 @@ import { UserRole } from './roleContext';
 import { DDIAnalysisSchema, DDIAnalysis } from './schemas';
 import { getDatabase } from '../db';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 export class AIUnavailableError extends Error {
   constructor(message: string) {
@@ -17,6 +18,18 @@ export class AIValidationError extends Error {
     super(message);
     this.name = 'AIValidationError';
   }
+}
+
+export function getProfileHash(profile: any): string {
+  if (!profile) return 'generic';
+  const normalized = {
+    age: profile.age ?? '',
+    gender: profile.gender ?? '',
+    allergies: Array.isArray(profile.allergies) ? [...profile.allergies].sort() : [],
+    underlying_diseases: Array.isArray(profile.underlying_diseases) ? [...profile.underlying_diseases].sort() : [],
+    current_medications: Array.isArray(profile.current_medications) ? [...profile.current_medications].sort() : [],
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex').slice(0, 16);
 }
 
 export async function runDDIAnalysis(
@@ -39,18 +52,17 @@ export async function runDDIAnalysis(
   }
 
   const userRole = options?.userRole || 'user';
+  const profileHash = getProfileHash(options?.userProfile);
 
   // 1. Check cache if database is available and refresh not forced
-  // IMPORTANT: We MUST bypass the global cache if a userProfile is provided,
-  // to prevent leaking personalized reports to other users.
-  if (pool && !options?.forceRefresh && !options?.userProfile) {
+  if (pool && !options?.forceRefresh) {
     try {
       const res = await pool.query(
-        'SELECT result_json FROM ddi_cache_v2 WHERE drug1_id = $1 AND drug2_id = $2 AND user_role = $3',
-        [d1, d2, userRole]
+        'SELECT result_json FROM ddi_cache_v2 WHERE drug1_id = $1 AND drug2_id = $2 AND user_role = $3 AND profile_hash = $4',
+        [d1, d2, userRole, profileHash]
       );
       if (res.rows.length > 0) {
-        console.log(`[DDI Cache Hit] ${d1} + ${d2} (${userRole})`);
+        console.log(`[DDI Cache Hit] ${d1} + ${d2} (${userRole}, profile: ${profileHash})`);
         const parsed = DDIAnalysisSchema.parse(JSON.parse(res.rows[0].result_json));
         return { analysis: parsed, fromCache: true, model: 'cache' };
       }
@@ -60,7 +72,7 @@ export async function runDDIAnalysis(
   }
 
   // 2. Cache miss: Call AI Provider
-  console.log(`[DDI Cache Miss] Fetching from AI for ${d1} + ${d2} (${userRole})`);
+  console.log(`[DDI Cache Miss] Fetching from AI for ${d1} + ${d2} (${userRole}, profile: ${profileHash})`);
   const provider = getAIProvider();
   let raw: string;
   try {
@@ -78,14 +90,19 @@ export async function runDDIAnalysis(
     throw new AIValidationError(`AI returned invalid schema: ${error}`);
   }
 
-  // 3. Save to cache asynchronously if DB is available
-  if (pool && !options?.userProfile) {
-    pool.query(
-      `INSERT INTO ddi_cache_v2 (id, drug1_id, drug2_id, user_role, result_json)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (drug1_id, drug2_id, user_role) DO UPDATE SET result_json = EXCLUDED.result_json, created_at = CURRENT_TIMESTAMP`,
-      [uuidv4(), d1, d2, userRole, cleanJsonString]
-    ).catch(e => console.error("Failed to write to DDI cache:", e));
+  // 3. Save to cache if DB is available
+  if (pool) {
+    try {
+      await pool.query(
+        `INSERT INTO ddi_cache_v2 (id, drug1_id, drug2_id, user_role, profile_hash, result_json)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (drug1_id, drug2_id, user_role, profile_hash) 
+         DO UPDATE SET result_json = EXCLUDED.result_json, created_at = CURRENT_TIMESTAMP`,
+        [uuidv4(), d1, d2, userRole, profileHash, cleanJsonString]
+      );
+    } catch (e) {
+      console.error("Failed to write to DDI cache:", e);
+    }
   }
 
   return { analysis, fromCache: false, model: provider.modelId };

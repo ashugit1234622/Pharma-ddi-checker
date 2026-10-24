@@ -255,10 +255,15 @@ async function initializeSchema(db: Pool) {
       drug1_id TEXT NOT NULL,
       drug2_id TEXT NOT NULL,
       user_role TEXT DEFAULT 'user',
+      profile_hash TEXT DEFAULT 'generic',
       result_json TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(drug1_id, drug2_id, user_role)
+      UNIQUE(drug1_id, drug2_id, user_role, profile_hash)
     );
+    ALTER TABLE ddi_cache_v2 ADD COLUMN IF NOT EXISTS profile_hash TEXT DEFAULT 'generic';
+    ALTER TABLE ddi_cache_v2 DROP CONSTRAINT IF EXISTS ddi_cache_v2_drug1_id_drug2_id_user_role_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_ddi_cache_v2_lookup ON ddi_cache_v2 (drug1_id, drug2_id, user_role, profile_hash);
+
     CREATE TABLE IF NOT EXISTS feedbacks (
       id TEXT PRIMARY KEY,
       user_id TEXT,
